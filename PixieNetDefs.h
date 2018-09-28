@@ -52,6 +52,8 @@
 #define NTRACE_SAMPLES 8192
 #define TWOTO32   4294967296
 #define ICRSCALE 15        // factor between current iCR read and ICR in cps
+#define N_FPGA_BYTES 6022648
+
 
 // Limits for settings
 #define MIN_CW 5             // Coinc Window limits
@@ -95,6 +97,7 @@
 #define ACOUNTER_CLR  0x009
 #define ARTC_CLR      0x00A
 #define ABVAL         0x00B
+#define AFPGACONF     0x00D
 #define CA_DAC        0x004
 
 // block 1
