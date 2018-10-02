@@ -97,7 +97,7 @@ void I2Cmasterack(volatile unsigned int *mapped) {
     mval = 0x0004;   // clear SCL and SDA but not CTRL to keep control of SDA     
     mapped[AI2CREG] = mval; 
     usleep(I2CWAIT);
-    mval = 2;   // set SCL     
+    mval = 6;   // set SCL     
     mapped[AI2CREG] = mval; 
     usleep(I2CWAIT);
 }
