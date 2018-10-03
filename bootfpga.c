@@ -58,14 +58,11 @@ int main( void ) {
   void *map_addr;
   int size = 4096;
   volatile unsigned int *mapped;
-  int k;
-
 
   unsigned int mval = 0;
   FILE * fil;
-  unsigned int filesize = 937657;
-  int j;
-  unsigned int csr, counter1, nWords;
+  unsigned int j;
+  unsigned int counter1, nWords;
   unsigned short confdata[N_FPGA_BYTES/2];
 
 
@@ -96,17 +93,21 @@ int main( void ) {
     // ************************ read data  *********************************
 
        
-     fil = fopen("PN_XL_K7.bin","rb");
+     fil = fopen("PNXLK7dual.bin","rb");
      nWords = fread(confdata, 2, (N_FPGA_BYTES/2), fil);
       if(((N_FPGA_BYTES/2) - nWords) > 1) {
          // ndat differing from nWords by 1 is OK if N_COMFPGA_BYTES is an odd number 
-         printf("ERROR: reading FPGA configuration incomplete.");
+         printf("ERROR: reading FPGA configuration incomplete\n");
          flock( fd, LOCK_UN );
          munmap(map_addr, size);
-         fclose(fd);
-         close(fil);
+         close(fd);
+         fclose(fil);
          return(-1);
       }
+        else
+  {
+      printf("FPGA file loaded (%d words).\n", nWords);
+  }
       fclose(fil);
  
    // ************************ FPGA programming  *********************************
@@ -115,57 +116,81 @@ int main( void ) {
 
   // progb toggle
   mval = mapped[AAUXCTRL];	
+  printf("AUXCTRL read: 0x%x\n",mval);
   mval = mval ^ 0x0200;    // Set  FPGA Progb = 0 to clear it
+  mval = 0x0000;
   mapped[AAUXCTRL] = mval;
+  printf("AUXCTRL write: 0x%x\n",mval);
   usleep(I2CWAIT);
   mval = mval | 0x0200;    // Set  FPGA Progb = 1 to start configuration
+  mval = 0x0300;
   mapped[AAUXCTRL] = mval;
+  printf("AUXCTRL write: 0x%x\n",mval);
   usleep(I2CWAIT);
+
+
 
   // check INIT, continue when high
   // Initialize counter1 to 0. If mval.15==0, finished clearing communication FPGA 
   mapped[AOUTBLOCK] = OB_EVREG;	  // read/write from/to MZ event block
   mval = mapped[ACSROUT];	
+  printf("ACSROUT read: 0x%x\n",mval);
   counter1 = 0;
-  while ((mval& 0x8000) != 0x0000 && counter1 < 100) {
+  while ((mval& 0x8000) == 0x0000 && counter1 < 100) {
       usleep(I2CWAIT);
       mval = mapped[ACSROUT];
+      printf("ACSROUT read: 0x%x\n",mval);
       counter1++;
   }
   if (counter1 == 100)
   {
-         printf(ErrMSG, "ERROR: Clearing FPGA timed out.");
+         printf("ERROR: Clearing FPGA timed out\n");
           flock( fd, LOCK_UN );
           munmap(map_addr, size);      
           close(fd);
          return(-2);
   }
+  else
+  {
+      printf("FPGA cleared (%x)\n",mval);
+  }
 
+  
   // download configuration data
   mapped[AOUTBLOCK] = OB_IOREG;	  // read/write from/to MZ IO block
+  printf("Starting FPGA download. Percent done: ");
 
-   for( j=0; j <N_FPGA_BYTES/2; j++)      
+   for( j=0; j < N_FPGA_BYTES/2; j++)      
    {
       mapped[AFPGACONF] = confdata[j];
-      usleep(1);
+       mval = mapped[AAUXCTRL];	    // read for delay
+       mval = mapped[AAUXCTRL];	
+       mval = mapped[AAUXCTRL];	
+     // if( j % 65536 ==0)  { printf  ("\rprogress %d %% ", j/N_FPGA_BYTES*2); fflush(stdout); }
+     if( j % (N_FPGA_BYTES/20) ==0)  { printf  ("%d",200*j/N_FPGA_BYTES); fflush(stdout); }
+     if( j % 32768 ==0)  { printf  ("_"); fflush(stdout); }
+
+  //    usleep(1);
    } 
+    printf(" finished\n");
 
    
   // check DONE, ok when high
   // If mval.14==0, configuration ok
   mapped[AOUTBLOCK] = OB_EVREG;	  // read/write from/to MZ event block
   mval = mapped[ACSROUT];	
-  if(mval& 0x4000) != 0x4000) {
-         printf(ErrMSG, "ERROR: Programming FPGA not successful.");
+  if( (mval& 0x4000) != 0x4000) {
+         printf("ERROR: Programming FPGA not successful.\n");
           flock( fd, LOCK_UN );
           munmap(map_addr, size);      
           close(fd);
          return(-3);
   } else {
-    printf(ErrMSG, "Programming FPGA successful !");
+    printf("Programming FPGA successful !\n");
   }
 
-   
+  
+
  
  // clean up  
   mapped[AOUTBLOCK] = OB_IOREG;	  // read/write from/to MZ IO block
