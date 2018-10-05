@@ -52,7 +52,7 @@
 #define NTRACE_SAMPLES 8192
 #define TWOTO32   4294967296
 #define ICRSCALE 15        // factor between current iCR read and ICR in cps
-#define N_FPGA_BYTES 6022648
+#define N_FPGA_BYTES 6022736
 
 
 // Limits for settings
@@ -153,6 +153,12 @@
 #define OB_EVREG     0x1			// Event data
 #define OB_RSREG     0x2			// run statistics
 #define OB_WFREG     0x3			// channel waveforms
+#define OB_MZ_IOREG  0x04
+#define OB_MZ_EVREG  0x05
+#define OB_MZ_RSREG  0x06
+#define OB_MZ_WFREG  0x07
+#define OB_K0_IOREG  0x08
+#define OB_K1_IOREG  0x10
 
 
 

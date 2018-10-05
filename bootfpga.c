@@ -112,7 +112,7 @@ int main( void ) {
  
    // ************************ FPGA programming  *********************************
 
-  mapped[AOUTBLOCK] = OB_IOREG;	  // read/write from/to MZ IO block
+  mapped[AOUTBLOCK] = OB_MZ_IOREG;	  // read/write from/to MZ IO block
 
   // progb toggle
   mval = mapped[AAUXCTRL];	
@@ -132,7 +132,7 @@ int main( void ) {
 
   // check INIT, continue when high
   // Initialize counter1 to 0. If mval.15==0, finished clearing communication FPGA 
-  mapped[AOUTBLOCK] = OB_EVREG;	  // read/write from/to MZ event block
+  mapped[AOUTBLOCK] = OB_MZ_EVREG;	  // read/write from/to MZ event block
   mval = mapped[ACSROUT];	
   printf("ACSROUT read: 0x%x\n",mval);
   counter1 = 0;
@@ -157,7 +157,7 @@ int main( void ) {
 
   
   // download configuration data
-  mapped[AOUTBLOCK] = OB_IOREG;	  // read/write from/to MZ IO block
+  mapped[AOUTBLOCK] = OB_MZ_IOREG;	  // read/write from/to MZ IO block
   printf("Starting FPGA download\n Percent done: ");
 
    for( j=0; j < N_FPGA_BYTES/2; j++)      
@@ -177,7 +177,7 @@ int main( void ) {
    
   // check DONE, ok when high
   // If mval.14==0, configuration ok
-  mapped[AOUTBLOCK] = OB_EVREG;	  // read/write from/to MZ event block
+  mapped[AOUTBLOCK] = OB_MZ_EVREG;	  // read/write from/to MZ event block
   mval = mapped[ACSROUT];	
   if( (mval& 0x4000) != 0x4000) {
          printf("ERROR: Programming FPGA not successful.\n");
@@ -193,7 +193,7 @@ int main( void ) {
 
  
  // clean up  
-  mapped[AOUTBLOCK] = OB_IOREG;	  // read/write from/to MZ IO block
+  mapped[AOUTBLOCK] = OB_MZ_EVREG;	  // read/write from/to MZ IO block
 
  flock( fd, LOCK_UN );
  munmap(map_addr, size);

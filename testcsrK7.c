@@ -101,9 +101,26 @@ int main( int argc, char *argv[] ) {
 
    // ************************ set up controller registers for external R/W *********************************
 
-  mapped[AOUTBLOCK] = OB_IOREG;	  // read/write from/to MZ IO block
-  mval = mapped[0x0000];	     //K7_CSR = 0
+  mapped[AOUTBLOCK] = OB_MZ_IOREG;	  // read/write from/to MZ IO block
+  mval = mapped[AOUTBLOCK];	     
+  printf( "MZ CSRin read: 0x%x\n", mval );
+
+  mval =0xA5FF;
+  mapped[AOUTBLOCK] = mval;	  // change value
+  printf( "MZ CSR write: 0x%x\n", mval );
+  mval = 0;
+  mval = mapped[AOUTBLOCK];	     //read back
   printf( "MZ CSR read: 0x%x\n", mval );
+
+   mapped[AOUTBLOCK] = OB_MZ_RSREG;	  // read/write from/to MZ IO block
+  mval = mapped[0x0000];	    
+  printf( "MZ CSRout low read: 0x%x\n", mval );
+   mval = mapped[0x0001];	     
+  printf( "MZ CSRout high read: 0x%x\n", mval );
+     mval = mapped[0x0010];	     
+  printf( "MZ sysrevision read: 0x%x\n", mval );
+
+  return(0);
 
 
   mval = 0x0004;     // CS FPGA 0    
