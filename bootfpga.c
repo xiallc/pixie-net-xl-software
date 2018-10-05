@@ -139,7 +139,7 @@ int main( void ) {
   while ((mval& 0x8000) == 0x0000 && counter1 < 100) {
       usleep(I2CWAIT);
       mval = mapped[ACSROUT];
-      printf("ACSROUT read: 0x%x\n",mval);
+   //   printf("ACSROUT read: 0x%x\n",mval);
       counter1++;
   }
   if (counter1 == 100)
@@ -152,13 +152,13 @@ int main( void ) {
   }
   else
   {
-      printf("FPGA cleared (%x)\n",mval);
+      printf("FPGA cleared (CSR = 0x%x)\n",mval);
   }
 
   
   // download configuration data
   mapped[AOUTBLOCK] = OB_IOREG;	  // read/write from/to MZ IO block
-  printf("Starting FPGA download. Percent done: ");
+  printf("Starting FPGA download\n Percent done: ");
 
    for( j=0; j < N_FPGA_BYTES/2; j++)      
    {
@@ -167,12 +167,12 @@ int main( void ) {
        mval = mapped[AAUXCTRL];	
        mval = mapped[AAUXCTRL];	
      // if( j % 65536 ==0)  { printf  ("\rprogress %d %% ", j/N_FPGA_BYTES*2); fflush(stdout); }
-     if( j % (N_FPGA_BYTES/20) ==0)  { printf  ("%d",200*j/N_FPGA_BYTES); fflush(stdout); }
-     if( j % 32768 ==0)  { printf  ("_"); fflush(stdout); }
+     if( j % (N_FPGA_BYTES/10) ==0)  { printf  ("%d",200*j/N_FPGA_BYTES); fflush(stdout); }
+     if( j % 65536 ==0)  { printf  ("_"); fflush(stdout); }
 
   //    usleep(1);
    } 
-    printf(" finished\n");
+    printf(" done\n");
 
    
   // check DONE, ok when high
