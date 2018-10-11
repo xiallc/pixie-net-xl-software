@@ -153,12 +153,18 @@
 #define OB_EVREG     0x1			// Event data
 #define OB_RSREG     0x2			// run statistics
 #define OB_WFREG     0x3			// channel waveforms
-#define OB_MZ_IOREG  0x04
-#define OB_MZ_EVREG  0x05
-#define OB_MZ_RSREG  0x06
-#define OB_MZ_WFREG  0x07
-#define OB_K0_IOREG  0x08
-#define OB_K1_IOREG  0x10
+
+
+// PN XL specific
+#define CS_MZ   0x00
+#define CS_K0   0x08
+#define CS_K1   0x10
+#define AMZCSROUTL  0x20
+#define AMZCSROUTH  0x21
+#define AMZBRDINFO  0x22
+
+
+
 
 
 

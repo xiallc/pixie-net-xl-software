@@ -112,33 +112,44 @@ int main( void ) {
  
    // ************************ FPGA programming  *********************************
 
-  mapped[AOUTBLOCK] = OB_MZ_IOREG;	  // read/write from/to MZ IO block
+  mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ 
+
+ /* // test read write
+  mval = mapped[0x1];	
+  printf("0x1 read: 0x%x\n",mval);
+  mval = 0x0;
+  mapped[0x6] = mval;	
+  mval = mapped[AMZCSROUTH];	
+  printf("0x1 read: 0x%x\n\n",mval);
+
+  */
 
   // progb toggle
   mval = mapped[AAUXCTRL];	
   printf("AUXCTRL read: 0x%x\n",mval);
-  mval = mval ^ 0x0200;    // Set  FPGA Progb = 0 to clear it
+//  mval = mval ^ 0x0200;    // Set  FPGA Progb = 0 to clear it
   mval = 0x0000;
   mapped[AAUXCTRL] = mval;
   printf("AUXCTRL write: 0x%x\n",mval);
   usleep(I2CWAIT);
-  mval = mval | 0x0200;    // Set  FPGA Progb = 1 to start configuration
+//  mval = mval | 0x0200;    // Set  FPGA Progb = 1 to start configuration
   mval = 0x0300;
   mapped[AAUXCTRL] = mval;
   printf("AUXCTRL write: 0x%x\n",mval);
   usleep(I2CWAIT);
-
+  mval = mapped[AAUXCTRL];	
+  printf("AUXCTRL read: 0x%x\n",mval);
 
 
   // check INIT, continue when high
   // Initialize counter1 to 0. If mval.15==0, finished clearing communication FPGA 
-  mapped[AOUTBLOCK] = OB_MZ_EVREG;	  // read/write from/to MZ event block
-  mval = mapped[ACSROUT];	
+  //mapped[AOUTBLOCK] = OB_MZ_EVREG;	  // read/write from/to MZ event block
+  mval = mapped[AMZCSROUTL];	
   printf("ACSROUT read: 0x%x\n",mval);
   counter1 = 0;
   while ((mval& 0x8000) == 0x0000 && counter1 < 100) {
       usleep(I2CWAIT);
-      mval = mapped[ACSROUT];
+      mval = mapped[AMZCSROUTL];
    //   printf("ACSROUT read: 0x%x\n",mval);
       counter1++;
   }
@@ -157,7 +168,7 @@ int main( void ) {
 
   
   // download configuration data
-  mapped[AOUTBLOCK] = OB_MZ_IOREG;	  // read/write from/to MZ IO block
+  //mapped[AOUTBLOCK] = OB_MZ_IOREG;	  // read/write from/to MZ IO block
   printf("Starting FPGA download\n Percent done: ");
 
    for( j=0; j < N_FPGA_BYTES/2; j++)      
@@ -177,8 +188,8 @@ int main( void ) {
    
   // check DONE, ok when high
   // If mval.14==0, configuration ok
-  mapped[AOUTBLOCK] = OB_MZ_EVREG;	  // read/write from/to MZ event block
-  mval = mapped[ACSROUT];	
+//  mapped[AOUTBLOCK] = OB_MZ_EVREG;	  // read/write from/to MZ event block
+  mval = mapped[AMZCSROUTL];	
   if( (mval& 0x4000) != 0x4000) {
          printf("ERROR: Programming FPGA not successful.\n");
           flock( fd, LOCK_UN );
@@ -193,7 +204,7 @@ int main( void ) {
 
  
  // clean up  
-  mapped[AOUTBLOCK] = OB_MZ_EVREG;	  // read/write from/to MZ IO block
+//  mapped[AOUTBLOCK] = OB_MZ_EVREG;	  // read/write from/to MZ IO block
 
  flock( fd, LOCK_UN );
  munmap(map_addr, size);

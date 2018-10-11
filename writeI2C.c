@@ -124,7 +124,7 @@ int main( int argc, char *argv[] ) {
    // ************************ prepare to write *********************************
 
       
-  mapped[AOUTBLOCK] = OB_IOREG;	  // read/write from/to MZ IO block
+  mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
   mval = mapped[AAUXCTRL];	
   mval = mval | 0x0010;    // set bit 4 to select MZ I2C pins
   mapped[AAUXCTRL] = mval;

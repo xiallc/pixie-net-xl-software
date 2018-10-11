@@ -101,42 +101,60 @@ int main( int argc, char *argv[] ) {
 
    // ************************ set up controller registers for external R/W *********************************
 
-  mapped[AOUTBLOCK] = OB_MZ_IOREG;	  // read/write from/to MZ IO block
-  mval = mapped[AOUTBLOCK];	     
-  printf( "MZ CSRin read: 0x%x\n", mval );
+  mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
+  mval = mapped[ACOINCPATTERN];	     
+  printf( "MZ CP read: 0x%x\n", mval );
 
-  mval =0xA5FF;
-  mapped[AOUTBLOCK] = mval;	  // change value
-  printf( "MZ CSR write: 0x%x\n", mval );
+  mval = mval+15;
+  mapped[ACOINCPATTERN] = mval;	  // change value
+  printf( "MZ CP write: 0x%x\n", mval );
   mval = 0;
-  mval = mapped[AOUTBLOCK];	     //read back
-  printf( "MZ CSR read: 0x%x\n", mval );
+  mval = mapped[ACOINCPATTERN];	     //read back
+  printf( "MZ CP read: 0x%x\n", mval );
 
-   mapped[AOUTBLOCK] = OB_MZ_RSREG;	  // read/write from/to MZ IO block
-  mval = mapped[0x0000];	    
-  printf( "MZ CSRout low read: 0x%x\n", mval );
-   mval = mapped[0x0001];	     
-  printf( "MZ CSRout high read: 0x%x\n", mval );
-     mval = mapped[0x0010];	     
-  printf( "MZ sysrevision read: 0x%x\n", mval );
-
-  return(0);
+  mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
+  mval = mapped[AMZSYSREV];	    
+  printf( "MZ SYSREV low read: 0x%x\n", mval );
+   mval = mapped[AMZCSROUTH];	     
+  printf( "MZ CSRout high read: 0x%x\n\n", mval );
+ //    mval = mapped[0x0010];	     
+ // printf( "MZ sysrevision read: 0x%x\n", mval );
 
 
-  mval = 0x0004;     // CS FPGA 0    
-  mapped[AOUTBLOCK] = mval;	  // read/write from/to FPGA 0  
+ 
+  mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0  
 
-  mval = mapped[0x0000];	     //K7_CSR = 0
-  printf( "K7 0 CSR read: 0x%x\n", mval );
+  mapped[AMZ_EXAFWR] = addr;     // write to  k7's addr
+  mapped[AMZ_EXDWR] = val;
+  usleep(2);
 
-  mval =0xA5FF;
-  mapped[0x0000] = mval;	  // change value
-  printf( "K7 0 CSR write: 0x%x\n", mval );
+    mapped[AMZ_EXAFWR] = addr+1;     // write to  k7's addr
+  mapped[AMZ_EXDWR] = val+1;
+  usleep(2);
 
-  mval = 0;
-  mval = mapped[0x0000];	     //K7_CSR = 0
-  printf( "K7 0 CSR read: 0x%x\n", mval );
-  
+mapped[AMZ_EXAFRD] = addr;     // read from k7's addr
+  usleep(2);
+mval = mapped[AMZ_EXDRD];      // read value
+//printf( "K7 0 CP read: %d\n", mval );
+
+
+ // mapped[AMZ_EXAFWR] = addr;     // write to K7's CP
+ // mapped[AMZ_EXDWR] = val;    // write value
+ // mapped[AMZ_EXAFRD] = 0x01;     // read from k7's CP
+//mval = mapped[AMZ_EXDRD];      // read value
+  printf( "K7 0 read from 0x%x: %d\n\n", addr, mval );
+
+
+
+
+
+
+
+
+
+
+ 
+  mapped[AOUTBLOCK] = CS_MZ;	  // deselect FPGA 0  
  
  // clean up  
  flock( fd, LOCK_UN );
