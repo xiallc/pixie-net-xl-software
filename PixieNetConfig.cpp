@@ -516,16 +516,28 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
 
   // *************** system parameters ********************************* 
   ret = parse_single_int_val( label_to_values, "NUMBER_CHANNELS", config->NUMBER_CHANNELS, ignore_missing );
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -2;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -1;
   
   ret = parse_single_int_val( label_to_values, "C_CONTROL", config->C_CONTROL, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -3;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -2;
 
   ret = parse_single_dbl_val( label_to_values, "REQ_RUNTIME", config->REQ_RUNTIME, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -7;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -3;
 
   ret = parse_single_int_val( label_to_values, "POLL_TIME", config->POLL_TIME, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -4;
+
+  ret = parse_single_int_val( label_to_values, "CRATE_ID", config->POLL_TIME, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -5;
+
+  ret = parse_single_int_val( label_to_values, "SLOT_ID", config->POLL_TIME, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -6;
+
+  ret = parse_single_int_val( label_to_values, "MODULE_ID", config->POLL_TIME, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -7;
+
+  ret = parse_single_int_val( label_to_values, "AUX_CTRL", config->AUX_CTRL, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -11;
   
   // *************** module parameters ************************************
 
@@ -548,14 +560,17 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
   if (ignore_missing==0)           // initialize only when reading defaults 
       config->MODULE_CSRB = 0;
                          
-  ret = parse_single_bool_val( label_to_values, "MCSRB_TERM01_01", bit, ignore_missing ) ;
+ /* ret = parse_single_bool_val( label_to_values, "MCSRB_TERM01_01", bit, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )    return -3;
   if(ret==0) config->MODULE_CSRB = SetOrClrBit(1, config->MODULE_CSRB, bit);  
  
   ret = parse_single_bool_val( label_to_values, "MCSRB_TERM23_02", bit, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )    return -4;
   if(ret==0) config->MODULE_CSRB = SetOrClrBit(2, config->MODULE_CSRB, bit);  
-  
+  */
+
+  ret = parse_single_int_val( label_to_values, "RUN_TYPE", config->RUN_TYPE, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -8;
 
 //   printf("COINCIDENCE_PATTERN = 0x%x\n",config->COINCIDENCE_PATTERN);
    // --------------- COINC PATTERN bits -------------------------------------
@@ -632,28 +647,31 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
   
   ret = parse_single_dbl_val( label_to_values, "COINCIDENCE_WINDOW", config->COINCIDENCE_WINDOW, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -7;
-  
-  ret = parse_single_int_val( label_to_values, "RUN_TYPE", config->RUN_TYPE, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -8;
 
-  ret = parse_single_int_val( label_to_values, "FILTER_RANGE", config->FILTER_RANGE, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -9;
-  
-  ret = parse_single_int_val( label_to_values, "ACCEPT_PATTERN", config->ACCEPT_PATTERN, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -10;
-  
   ret = parse_single_int_val( label_to_values, "SYNC_AT_START", config->SYNC_AT_START, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -11;
+
+  ret = parse_single_int_val( label_to_values, "SLOW_FILTER_RANGE", config->FILTER_RANGE, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -9;
   
-  ret = parse_single_dbl_val( label_to_values, "HV_DAC", config->HV_DAC, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -9;
+  ret = parse_single_int_val( label_to_values, "FAST_FILTER_RANGE", config->FILTER_RANGE, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -9;
   
-  ret = parse_single_int_val( label_to_values, "SERIAL_IO", config->SERIAL_IO, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -10;
-  
-  ret = parse_single_int_val( label_to_values, "AUX_CTRL", config->AUX_CTRL, ignore_missing ) ;
+   ret = parse_single_int_val( label_to_values, "FASTTRIG_BACKPLANEENA", config->SYNC_AT_START, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -11;
+
+  ret = parse_single_int_val( label_to_values, "TRIG_CONFIG0", config->FILTER_RANGE, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -9;
   
+  ret = parse_single_int_val( label_to_values, "TRIG_CONFIG1", config->FILTER_RANGE, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -9;
+
+   ret = parse_single_int_val( label_to_values, "TRIG_CONFIG2", config->SYNC_AT_START, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -11;
+
+  ret = parse_single_int_val( label_to_values, "TRIG_CONFIG3", config->FILTER_RANGE, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -9;
+   
   //unsigned int MOD_U4, MOD_U3, MOD_U2, MOD_U1, MOD_U0;
 
   // *************** channel parameters ************************************
@@ -670,137 +688,152 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
      }
   }
 
-  ret = parse_multiple_bool_val( label_to_values, "CCSRA_GROUP_00", bits, ignore_missing );
+  ret = parse_multiple_bool_val( label_to_values, "CCSRA_FTRIGSEL_00", bits, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )    return -26;
   if(ret==0) 
      for( int i = 0; i < NCHANNELS; ++i )
        config->CHANNEL_CSRA[i] = SetOrClrBit(0, config->CHANNEL_CSRA[i], bits[i]);  
 
-  ret = parse_multiple_bool_val( label_to_values, "CCSRA_GOOD_02", bits, ignore_missing );
+  ret = parse_multiple_bool_val( label_to_values, "CCSRA_EXTTRIGSEL_01", bits, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )    return -27;
   if(ret==0) 
      for( int i = 0; i < NCHANNELS; ++i )
-       config->CHANNEL_CSRA[i] = SetOrClrBit(2, config->CHANNEL_CSRA[i], bits[i]);  
+       config->CHANNEL_CSRA[i] = SetOrClrBit(1, config->CHANNEL_CSRA[i], bits[i]);  
                                
-  ret = parse_multiple_bool_val( label_to_values, "CCSRA_TRIGENA_04", bits, ignore_missing ) ;
+  ret = parse_multiple_bool_val( label_to_values, "CCSRA_GOOD_02", bits, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )    return -28;
   if(ret==0) 
     for( int i = 0; i < NCHANNELS; ++i )
-       config->CHANNEL_CSRA[i] = SetOrClrBit(4, config->CHANNEL_CSRA[i], bits[i]);  
+       config->CHANNEL_CSRA[i] = SetOrClrBit(2, config->CHANNEL_CSRA[i], bits[i]);  
                                
-  ret = parse_multiple_bool_val( label_to_values, "CCSRA_INVERT_05", bits, ignore_missing ) ;
+  ret = parse_multiple_bool_val( label_to_values, "CCSRA_CHANTRIGSEL_03", bits, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )    return -29;
   if(ret==0) 
     for( int i = 0; i < NCHANNELS; ++i )
-       config->CHANNEL_CSRA[i] = SetOrClrBit(5, config->CHANNEL_CSRA[i], bits[i]);  
+       config->CHANNEL_CSRA[i] = SetOrClrBit(3, config->CHANNEL_CSRA[i], bits[i]);  
                                
-  ret = parse_multiple_bool_val( label_to_values, "CCSRA_VETO_REJLO_06", bits, ignore_missing ) ;
+  ret = parse_multiple_bool_val( label_to_values, "CCSRA_SYNCDATAACQ_04", bits, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )    return -30;
   if(ret==0) 
     for( int i = 0; i < NCHANNELS; ++i )
-      config->CHANNEL_CSRA[i] = SetOrClrBit(6, config->CHANNEL_CSRA[i], bits[i]);  
+      config->CHANNEL_CSRA[i] = SetOrClrBit(4, config->CHANNEL_CSRA[i], bits[i]);  
                               
-  ret = parse_multiple_bool_val( label_to_values, "CCSRA_NEGE_09", bits, ignore_missing) ;
+  ret = parse_multiple_bool_val( label_to_values, "CCSRA_POLARITY_05", bits, ignore_missing) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )    return -31;
   for( int i = 0; i < NCHANNELS; ++i )
-    config->CHANNEL_CSRA[i] = SetOrClrBit(9, config->CHANNEL_CSRA[i], bits[i]);  
+    config->CHANNEL_CSRA[i] = SetOrClrBit(5, config->CHANNEL_CSRA[i], bits[i]);  
                             
-  ret = parse_multiple_bool_val( label_to_values, "CCSRA_GATE_REJLO_12", bits, ignore_missing );
+  ret = parse_multiple_bool_val( label_to_values, "CCSRA_VETOENA_06", bits, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )    return -32;
   if(ret==0) 
    for( int i = 0; i < NCHANNELS; ++i )
-     config->CHANNEL_CSRA[i] = SetOrClrBit(12, config->CHANNEL_CSRA[i], bits[i]);  
+     config->CHANNEL_CSRA[i] = SetOrClrBit(6, config->CHANNEL_CSRA[i], bits[i]);  
+
+
+  ret = parse_multiple_bool_val( label_to_values, "CCSRA_HISTOE_07", bits, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )    return -26;
+  if(ret==0) 
+     for( int i = 0; i < NCHANNELS; ++i )
+       config->CHANNEL_CSRA[i] = SetOrClrBit(7, config->CHANNEL_CSRA[i], bits[i]);  
+
+  ret = parse_multiple_bool_val( label_to_values, "CCSRA_TRACEENA_08", bits, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )    return -27;
+  if(ret==0) 
+     for( int i = 0; i < NCHANNELS; ++i )
+       config->CHANNEL_CSRA[i] = SetOrClrBit(8, config->CHANNEL_CSRA[i], bits[i]);  
+                               
+  ret = parse_multiple_bool_val( label_to_values, "CCSRA_QDCENA_09", bits, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )    return -28;
+  if(ret==0) 
+    for( int i = 0; i < NCHANNELS; ++i )
+       config->CHANNEL_CSRA[i] = SetOrClrBit(9, config->CHANNEL_CSRA[i], bits[i]);  
+                               
+  ret = parse_multiple_bool_val( label_to_values, "CCSRA_CFDMODE_10", bits, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )    return -29;
+  if(ret==0) 
+    for( int i = 0; i < NCHANNELS; ++i )
+       config->CHANNEL_CSRA[i] = SetOrClrBit(10, config->CHANNEL_CSRA[i], bits[i]);  
+                               
+  ret = parse_multiple_bool_val( label_to_values, "CCSRA_GLOBTRIG_11", bits, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )    return -30;
+  if(ret==0) 
+    for( int i = 0; i < NCHANNELS; ++i )
+      config->CHANNEL_CSRA[i] = SetOrClrBit(11, config->CHANNEL_CSRA[i], bits[i]);  
+                              
+  ret = parse_multiple_bool_val( label_to_values, "CCSRA_ESUMSENA_12", bits, ignore_missing) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )    return -31;
+  for( int i = 0; i < NCHANNELS; ++i )
+    config->CHANNEL_CSRA[i] = SetOrClrBit(12, config->CHANNEL_CSRA[i], bits[i]);  
+                            
+  ret = parse_multiple_bool_val( label_to_values, "CCSRA_CHANTRIG_13", bits, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )    return -32;
+  if(ret==0) 
+   for( int i = 0; i < NCHANNELS; ++i )
+     config->CHANNEL_CSRA[i] = SetOrClrBit(13, config->CHANNEL_CSRA[i], bits[i]);  
+
+  ret = parse_multiple_bool_val( label_to_values, "CCSRA_ENARELAY_14", bits, ignore_missing) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )    return -31;
+  for( int i = 0; i < NCHANNELS; ++i )
+    config->CHANNEL_CSRA[i] = SetOrClrBit(14, config->CHANNEL_CSRA[i], bits[i]);  
+                            
+  ret = parse_multiple_bool_val( label_to_values, "CCSRA_PILEUPCTRL_15", bits, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )    return -32;
+  if(ret==0) 
+   for( int i = 0; i < NCHANNELS; ++i )
+     config->CHANNEL_CSRA[i] = SetOrClrBit(15, config->CHANNEL_CSRA[i], bits[i]);  
  
   //   for( int i = 0; i < NCHANNELS; ++i )
   //     printf("CHANNEL_CSRA = 0x%x\n",config->CHANNEL_CSRA[i]);                       
 
   //CSRC
-  ret = parse_multiple_bool_val( label_to_values, "CCSRC_VETO_REJHI_00", bits, ignore_missing ) ;
+  ret = parse_multiple_bool_val( label_to_values, "CCSRC_INVERSEPILEUP_00", bits, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )    return -33;
   if(ret==0) 
     for( int i = 0; i < NCHANNELS; ++i )
       config->CHANNEL_CSRC[i] = SetOrClrBit(0, config->CHANNEL_CSRC[i], bits[i]);  
  
-  ret = parse_multiple_bool_val( label_to_values, "CCSRC_GATE_REJHI_01", bits, ignore_missing ) ;
+  ret = parse_multiple_bool_val( label_to_values, "CCSRC_ENAENERGYCUT_01", bits, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )    return -34;
   if(ret==0) 
     for( int i = 0; i < NCHANNELS; ++i )
       config->CHANNEL_CSRC[i] = SetOrClrBit(1, config->CHANNEL_CSRC[i], bits[i]);  
 
-  ret = parse_multiple_bool_val( label_to_values, "CCSRC_GATE_FROMVETO_02", bits, ignore_missing ) ;
+  ret = parse_multiple_bool_val( label_to_values, "CCSRC_GROUPTRIGSEL_02", bits, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )    return -35;
   if(ret==0) 
     for( int i = 0; i < NCHANNELS; ++i )
       config->CHANNEL_CSRC[i] = SetOrClrBit(2, config->CHANNEL_CSRC[i], bits[i]);   
 
-  ret = parse_multiple_bool_val( label_to_values, "CCSRC_PILEUP_DISABLE_03", bits, ignore_missing );
+  ret = parse_multiple_bool_val( label_to_values, "CCSRC_CHANVETOSEL_03", bits, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )    return -2;
   if(ret==0) 
     for( int i = 0; i < NCHANNELS; ++i )
       config->CHANNEL_CSRC[i] = SetOrClrBit(3, config->CHANNEL_CSRC[i], bits[i]);   
 
-  ret = parse_multiple_bool_val( label_to_values, "CCSRC_RBAD_DISABLE_04", bits, ignore_missing ) ;
+  ret = parse_multiple_bool_val( label_to_values, "CCSRC_MODVETOSEL_04", bits, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )    return -36;
   if(ret==0) 
     for( int i = 0; i < NCHANNELS; ++i )
       config->CHANNEL_CSRC[i] = SetOrClrBit(4, config->CHANNEL_CSRC[i], bits[i]);   
     
-  ret = parse_multiple_bool_val( label_to_values, "CCSRC_PILEUP_INVERT_05", bits, ignore_missing ) ;
+  ret = parse_multiple_bool_val( label_to_values, "CCSRC_EXTTSENA_05", bits, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )    return -37;
   if(ret==0) 
     for( int i = 0; i < NCHANNELS; ++i )
       config->CHANNEL_CSRC[i] = SetOrClrBit(5, config->CHANNEL_CSRC[i], bits[i]);   
     
-  ret = parse_multiple_bool_val( label_to_values, "CCSRC_PILEUP_PAUSE_06", bits, ignore_missing );
-  if( (ignore_missing==0 && ret==1) || (ret<0) )    return -38;
-  if(ret==0) 
-    for( int i = 0; i < NCHANNELS; ++i )
-      config->CHANNEL_CSRC[i] = SetOrClrBit(6, config->CHANNEL_CSRC[i], bits[i]);   
-    
-  ret = parse_multiple_bool_val( label_to_values, "CCSRC_GATE_FEDGE_07", bits, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) )    return -39;
-  if(ret==0) 
-    for( int i = 0; i < NCHANNELS; ++i )
-      config->CHANNEL_CSRC[i] = SetOrClrBit(7, config->CHANNEL_CSRC[i], bits[i]);   
-    
-  ret = parse_multiple_bool_val( label_to_values, "CCSRC_GATE_STATS_08", bits, ignore_missing );
-  if( (ignore_missing==0 && ret==1) || (ret<0) )    return -40;
-  if(ret==0) 
-    for( int i = 0; i < NCHANNELS; ++i )
-      config->CHANNEL_CSRC[i] = SetOrClrBit(8, config->CHANNEL_CSRC[i], bits[i]);   
-    
-  ret = parse_multiple_bool_val( label_to_values, "CCSRC_VETO_FEDGE_09", bits, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) )    return -41;
-  if(ret==0) 
-    for( int i = 0; i < NCHANNELS; ++i )
-      config->CHANNEL_CSRC[i] = SetOrClrBit(9, config->CHANNEL_CSRC[i], bits[i]);   
-    
-  ret = parse_multiple_bool_val( label_to_values, "CCSRC_GATE_ISPULSE_10", bits, ignore_missing );
-  if( (ignore_missing==0 && ret==1) || (ret<0) )    return -42;
-  if(ret==0) 
-    for( int i = 0; i < NCHANNELS; ++i )
-      config->CHANNEL_CSRC[i] = SetOrClrBit(10, config->CHANNEL_CSRC[i], bits[i]);   
-
-  ret = parse_multiple_bool_val( label_to_values, "CCSRC_TRACE4X_11", bits, ignore_missing );
-  if( (ignore_missing==0 && ret==1) || (ret<0) )    return -45;
-  if(ret==0) 
-    for( int i = 0; i < NCHANNELS; ++i )
-      config->CHANNEL_CSRC[i] = SetOrClrBit(11, config->CHANNEL_CSRC[i], bits[i]);       
-       
-  ret = parse_multiple_bool_val( label_to_values, "CCSRC_CPC2PSA_14", bits, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) )    return -43;
-  if(ret==0) 
-    for( int i = 0; i < NCHANNELS; ++i )
-      config->CHANNEL_CSRC[i] = SetOrClrBit(14, config->CHANNEL_CSRC[i], bits[i]);   
-    
-  ret = parse_multiple_bool_val( label_to_values, "CCSRC_GATE_PULSEFEDGE_15", bits, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) )    return -44;
-  if(ret==0) 
-    for( int i = 0; i < NCHANNELS; ++i )
-      config->CHANNEL_CSRC[i] = SetOrClrBit(15, config->CHANNEL_CSRC[i], bits[i]);   
   
 
       // --------------- other channel parameters -------------------------------------
+  ret = parse_multiple_dbl_val( label_to_values, "ANALOG_GAIN", config->ANALOG_GAIN, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -20;
+  
+  ret = parse_multiple_dbl_val( label_to_values, "DIG_GAIN", config->DIG_GAIN, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -21;
+  
+  ret = parse_multiple_dbl_val( label_to_values, "VOFFSET", config->VOFFSET, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -22;
+      
   ret = parse_multiple_dbl_val( label_to_values, "ENERGY_RISETIME", config->ENERGY_RISETIME, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -15;
   
@@ -816,15 +849,12 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
   ret = parse_multiple_dbl_val( label_to_values, "TRIGGER_THRESHOLD", config->TRIGGER_THRESHOLD, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -19;
   
-  ret = parse_multiple_dbl_val( label_to_values, "ANALOG_GAIN", config->ANALOG_GAIN, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -20;
-  
-  ret = parse_multiple_dbl_val( label_to_values, "DIG_GAIN", config->DIG_GAIN, ignore_missing );
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -21;
-  
-  ret = parse_multiple_dbl_val( label_to_values, "VOFFSET", config->VOFFSET, ignore_missing );
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -22;
-  
+  ret = parse_multiple_int_val( label_to_values, "CFD_THRESHOLD", config->BINFACTOR, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -27;
+
+  ret = parse_multiple_int_val( label_to_values, "THRESH_WIDTH", config->BINFACTOR, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -27;
+    
   ret = parse_multiple_dbl_val( label_to_values, "TRACE_LENGTH", config->TRACE_LENGTH, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -23;
   
@@ -833,61 +863,89 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
   
   ret = parse_multiple_int_val( label_to_values, "BINFACTOR", config->BINFACTOR, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -27;
-  
-  ret = parse_multiple_dbl_val( label_to_values, "TAU", config->TAU, ignore_missing );
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -28;
-  
+
+    ret = parse_multiple_int_val( label_to_values, "INTEGRATOR", config->INTEGRATOR, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -33;
+
   ret = parse_multiple_int_val( label_to_values, "BLCUT", config->BLCUT, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
-  
+
+    ret = parse_multiple_dbl_val( label_to_values, "BASELINE_PERCENT", config->BASELINE_PERCENT, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -31;
+
+    ret = parse_multiple_int_val( label_to_values, "BLAVG", config->BLAVG, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -37;
+
+  ret = parse_multiple_dbl_val( label_to_values, "TAU", config->TAU, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -28;
+     
   ret = parse_multiple_dbl_val( label_to_values, "XDT", config->XDT, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -30;
   
-  ret = parse_multiple_dbl_val( label_to_values, "BASELINE_PERCENT", config->BASELINE_PERCENT, ignore_missing );
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -31;
-  
-  ret = parse_multiple_int_val( label_to_values, "PSA_THRESHOLD", config->PSA_THRESHOLD, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -32;
-  
-  ret = parse_multiple_int_val( label_to_values, "INTEGRATOR", config->INTEGRATOR, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -33;
-  
-  ret = parse_multiple_dbl_val( label_to_values, "GATE_WINDOW", config->GATE_WINDOW, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -34;
-  
-  ret = parse_multiple_dbl_val( label_to_values, "GATE_DELAY", config->GATE_DELAY, ignore_missing );
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -35;
-  
-  ret = parse_multiple_dbl_val( label_to_values, "COINC_DELAY", config->COINC_DELAY, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -36;
-  
-  ret = parse_multiple_int_val( label_to_values, "BLAVG", config->BLAVG, ignore_missing );
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -37;
-  
+    ret = parse_multiple_int_val( label_to_values, "MULTIPLICITY_MASKL", config->BLCUT, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
+
+    ret = parse_multiple_int_val( label_to_values, "MULTIPLICITY_MASKM", config->BLCUT, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
+
+    ret = parse_multiple_int_val( label_to_values, "MULTIPLICITY_MASKH", config->BLCUT, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
+
+    ret = parse_multiple_int_val( label_to_values, "MULTIPLICITY_MASKX", config->BLCUT, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
+
+    ret = parse_multiple_int_val( label_to_values, "FASTTRIG_BACKLEN", config->BLCUT, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
+
+    ret = parse_multiple_int_val( label_to_values, "CFD_DELAY", config->BLCUT, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
+
+    ret = parse_multiple_int_val( label_to_values, "CFD_SCALE", config->BLCUT, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
+
+    ret = parse_multiple_int_val( label_to_values, "EXTTRIG_STRETCH", config->BLCUT, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
+
+      ret = parse_multiple_int_val( label_to_values, "VETO_STRETCH", config->BLCUT, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
+
+    ret = parse_multiple_int_val( label_to_values, "CHANTRIG_STRETCH", config->BLCUT, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
+
+    ret = parse_multiple_int_val( label_to_values, "TRIGOUT_LENGTH", config->BLCUT, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
+
+    ret = parse_multiple_int_val( label_to_values, "EXTERN_DELAYLEN", config->BLCUT, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
+
+      ret = parse_multiple_int_val( label_to_values, "FTRIGOUT_DELAY", config->BLCUT, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
+
   ret = parse_multiple_int_val( label_to_values, "QDC0_LENGTH", config->QDC0_LENGTH, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -38;
   
   ret = parse_multiple_int_val( label_to_values, "QDC1_LENGTH", config->QDC1_LENGTH, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -39;
-  
-  ret = parse_multiple_int_val( label_to_values, "QDC0_DELAY", config->QDC0_DELAY, ignore_missing );
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -40;
-  
-  ret = parse_multiple_int_val( label_to_values, "QDC1_DELAY", config->QDC1_DELAY, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -41;
-
-  ret = parse_multiple_int_val( label_to_values, "QDC_DIV8", config->QDC_DIV8, ignore_missing );
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -42;
-    
-  ret = parse_multiple_dbl_val( label_to_values, "MCA2D_SCALEX", config->MCA2D_SCALEX, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) ) return -43;
-
-  ret = parse_multiple_dbl_val( label_to_values, "MCA2D_SCALEY", config->MCA2D_SCALEY, ignore_missing );
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -44;
-
-  ret = parse_multiple_dbl_val( label_to_values, "PSA_NG_THRESHOLD", config->PSA_NG_THRESHOLD, ignore_missing );
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -45;
  
+    ret = parse_multiple_int_val( label_to_values, "QDC2_LENGTH", config->QDC0_LENGTH, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -38;
+  
+  ret = parse_multiple_int_val( label_to_values, "QDC3_LENGTH", config->QDC1_LENGTH, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -39;
+  
+    ret = parse_multiple_int_val( label_to_values, "QDC4_LENGTH", config->QDC0_LENGTH, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -38;
+  
+  ret = parse_multiple_int_val( label_to_values, "QDC5_LENGTH", config->QDC1_LENGTH, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -39;
+  
+    ret = parse_multiple_int_val( label_to_values, "QDC6_LENGTH", config->QDC0_LENGTH, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -38;
+  
+  ret = parse_multiple_int_val( label_to_values, "QDC7_LENGTH", config->QDC1_LENGTH, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -39;
+  
+
  
     if(ignore_missing==1) 
   {

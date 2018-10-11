@@ -110,6 +110,12 @@ typedef struct PixieNetFippiConfig {
    */
   unsigned int POLL_TIME;
 
+  /* ID numbers to be compatible with P16 data format      */
+
+  unsigned int  CRATE_ID;
+  unsigned int  SLOT_ID;
+  unsigned int  MODULE_ID;
+
   /* SYS_U## : reserved parameters  */
 
   // ***** end of system parameters ********************************************
@@ -128,6 +134,13 @@ typedef struct PixieNetFippiConfig {
       Module control bit B.2: if 1, termination for ch.2,3 is 50 Ohm
    */
   unsigned int MODULE_CSRB;
+
+    /** Dictates what type of data is saved and the format.
+      1280 (0x500) means save listmode data with waveforms.
+      1281 (0x501) means save listmode without waveforms
+       768 (0x301) Histogram only, do not save listmode data (I assume?)
+   */
+  unsigned int RUN_TYPE;
   
   
   /** Coincidence pattern for accepted between channels.
@@ -143,133 +156,119 @@ typedef struct PixieNetFippiConfig {
    */
   double COINCIDENCE_WINDOW;
 
-  /** Dictates what type of data is saved and the format.
-      1280 (0x500) means save listmode data with waveforms.
-      1281 (0x501) means save listmode without waveforms
-       768 (0x301) Histogram only, do not save listmode data (I assume?)
-   */
-  unsigned int RUN_TYPE;
-  
-  /** The clock decimation factor for calculating trigger and energy values.
-      May be from 1 to 6.  
-      See section 6.5 of Pixie4e users manual for description
-   */
-  unsigned int FILTER_RANGE;
+              
 
-    /** The acceptance bitmask for individual events.
-      0x01...0x08: If set, indicates that data for channel 0..3 have been recorded
-      0x10: Logic level of FRONT panel input (unconfirmed)
-      0x20: Result of LOCAL acceptance test
-      0x40: Logic level of backplane STATUS line (unconfirmed)
-      0x80: Logic level of backplane TOKEN line (= result of global coincidence test), see section 7 (unconfirmed)
-   
-      Will typically have value of 0x20 (dec 32).
-   */
-  unsigned int ACCEPT_PATTERN;
   
   /** If set to true, resets FPGA/DAC timers. */
   unsigned int SYNC_AT_START;
   
-  /** Voltage, in volts, to output to DAC on from of PIXIE-NET system, intended
-      to drive a high voltage power supply.
-      Must be between 0 and 5.
+   /* reseved for daq resume */
+
+   unsigned int RESUME;
+
+     /** The clock decimation factor for calculating trigger and energy values.
+      May be from 1 to 6.  
+      See section 6.5 of Pixie4e users manual for description
+      different values for slow and fast filter (some revisions)
    */
-  double HV_DAC;
-  
-  /** Offboard serial.
-      Typical value of 14000 
-  */
-  unsigned int SERIAL_IO;
+  unsigned int SLOW_FILTER_RANGE;
+  unsigned int FAST_FILTER_RANGE;
+
+ /* Enable sending fast trigger to backplane # 
+    probably unused */
+ unsigned int FASTTRIG_BACKPLANEENA;
   
   /** Typical value of 1 
   Bit0 : pulser enabled   */
   unsigned int AUX_CTRL;
-  
+
+  /* General trigger configuration */ 
+  unsigned int TRIG_CONFIG0;
+  unsigned int TRIG_CONFIG1;
+  unsigned int TRIG_CONFIG2;
+  unsigned int TRIG_CONFIG3;
   
   //Currently unused parameters.
   //unsigned int MOD_U3, MOD_U2, MOD_U1, MOD_U0;
   
-  /** Options relating to the triggering of a single channel, as a bitmask bitmask.
-      CCSRA_GROUP_00       0          if 1, respond to distributed group triggers, not local triggers
-      CCSRA_U_01           0
-      CCSRA_GOOD_02        1          if 0, channel will not be processed
-      CCSRA_U_03           0
-      CCSRA_TRIGENA_04     1          if 1, enable trigger (local and distributed)
-      CCSRA_INVERT_05      1          if 1, ADC data is inverted before processing (for falling edge pulses)
-      CCSRA_VETO_REJLO_06  0          if 1, reject events when global Veto is low
-      CCSRA_U_07           0
-      CCSRA_U_08           0
-      CCSRA_NEGE_09        0          if 1, allow negative numbers as result of energy computation, NYI
-      CCSRA_U_10           0
-      CCSRA_U_11           0
-      CCSRA_GATE_REJLO_12  0          if 1, reject events when channel-specific GATE signal is low
-      CCSRA_U_13           0
-      CCSRA_U_14           0
-      CCSRA_U_15           0
-   
-     To Read a PMT, you would typically use a value of
-     (0x0004 | 0x0010 | 0x0020) = 180.
-   */
-  unsigned int CHANNEL_CSRA[NCHANNELS]; //         180    180    180      180
+  /** Options relating to the triggering of a single channel, as a bitmask.
+    CCSRA_FTRIGSEL_00     // fast trigger selection - 1: select external fast trigger; 0: select local fast trigger
+    CCSRA_EXTTRIGSEL_01   // module validation signal selection - 1: select module gate signal; 0: select global validation signal (RevD & RevF only)
+    CCSRA_GOOD_02         // good-channel bit - 1: channel data will be read out; 0: channel data will not be read out
+    CCSRA_CHANTRIGSEL_03  // channel validation signal selection - 1: select channel gate signal; 0: select channel validation signal (RevD & RevF only)
+    CCSRA_SYNCDATAACQ_04  // block data acquisition if trace or header DPMs are full - 1: enable; 0: disable
+    CCSRA_POLARITY_05     // input signal polarity control
+    CCSRA_VETOENA_06      // veto channel trigger - 1: enable; 0: disable
+    CCSRA_HISTOE_07       // histogram energy in the on-board MCA
+    CCSRA_TRACEENA_08     // trace capture and associated header data - 1: enable; 0: disable
+    CCSRA_QDCENA_09       // QDC summing and associated header data - 1: enable; 0: dsiable
+    CCSRA_CFDMODE_10      // CFD for real time, trace capture and QDC capture - 1: enable; 0: disable 
+    CCSRA_GLOBTRIG_11     // global trigger for validation - 1: enable; 0: disable
+    CCSRA_ESUMSENA_12     // raw energy sums and baseline in event header - 1: enable; 0: disable
+    CCSRA_CHANTRIG_13     // channel trigger for validation - 1: enable; 0: disable
+    CCSRA_ENARELAY_14     // Control input relay: 1: connect, 0: disconnect
+          
+    // Control pileup rejection using bit 15 and 16 of ChanCSRA:
+      // bits[16:15]
+      // 00: record all events (trace, timestamps, etc., but no energy for piled-up events)
+      // 01: only record single events (trace, energy, timestamps, etc.) (i.e., reject piled-up events)
+      // 10: record trace, timestamps, etc., for piled-up events but do not record trace for single events
+      // 11: only record trace, timestamps, etc., for piled-up events (i.e., reject single events)
+   CCSRA_PILEUPCTRL_15  
+   CCSRC_INVERSEPILEUP_00
   
-  /** Further channel specific options; has not been explored yet.
-   Typically has a value of zero.
-   Reserved for customized code and firmware 
+   CCSRC_ENAENERGYCUT_01  // Enable "no trace for large pulses" feature - 1: enable; 0: disable
+   CCSRC_GROUPTRIGSEL_02  // Group trigger selection - 1: external group trigger; 0: local fast trigger
+   CCSRC_CHANVETOSEL_03  // Channel veto selection - 1: channel validation trigger; 0: front panel channel veto
+   CCSRC_MODVETOSEL_04  // Module veto selection - 1: module validation trigger; 0: front panel module veto
+   CCSRC_EXTTSENA_05  // External timestamps in event header - 1: enable; 0: disable
 
    */
+  unsigned int CHANNEL_CSRA[NCHANNELS]; //         180    180    180      180
   unsigned int CHANNEL_CSRB[NCHANNELS]; //         0      0      0      0
+  unsigned int CHANNEL_CSRC[NCHANNELS]; //         0      0      0      0
   
-  /** Further channel specific aquisition settings
-      CCSRC_VETO_REJHI_00      0      if 1, reject events when global Veto is high
-      CCSRC_GATE_REJHI_01      0      if 1, reject events when channel-specific Gate signal is high
-      CCSRC_GATE_FROMVETO_02   0      if 1, use global Veto as the input for this channel's Gate logic
-      CCSRC_PILEUP_DISABLE_03  0      if 1, disable pileup rejection
-      CCSRC_RBAD_DISABLE_04    0      if 1, disable rejection of out-of-range events
-      CCSRC_PILEUP_INVERT_05   0      if 1, accept only pulses that are piled up
-      CCSRC_PILEUP_PAUSE_06    0      if 1, disable pileup inspection for 32 clock cycles after trigger. For ringing input signals.
-      CCSRC_GATE_FEDGE_07      0      if 1, count Gate pulses on falling edge
-      CCSRC_GATE_STATS_08      0      if 1, run statistics are in GATE mode, only counting while GATE in on
-      CCSRC_VETO_FEDGE_09      0      if 1, count Veto pulses on falling edge
-      CCSRC_GATE_ISPULSE_10    0      if 1, logic to re-pulse incoming Gate signal with specified GATE_WINDOW is enabled
-      CCSRC_TRACE4X_11         0      if 1, captured traces and fast filter is 4x longer
-      CCSRC_U_12               0
-      CCSRC_U_13               0
-      CCSRC_CPC2PSA_14         0      if 1, report gate pulse count as PSA value of list mode record 
-      CCSRC_GATE_PULSEFEDGE_15 0      if 1, start pulse GATE_WINDOW at falling edge of Gate input signal
-   
-     Typical value would be 0, which enables pilup and rangebad (energy) rejection.
-   */
-  unsigned int CHANNEL_CSRC[NCHANNELS]; //         0      0    0      0
-  
-  double ENERGY_RISETIME[NCHANNELS]; //      0.256  0.256  0.256  0.256                Energy filter rise time
-  double ENERGY_FLATTOP[NCHANNELS]; //       0.128  0.128  0.128  0.128                Energy filter flat top
-  double TRIGGER_RISETIME[NCHANNELS]; //     0.048  0.048  0.048  0.048                Trigger filter rise time
-  double TRIGGER_FLATTOP[NCHANNELS]; //      0.128  0.128  0.128  0.128                Trigger filter flat top
-  double TRIGGER_THRESHOLD[NCHANNELS]; //    6.0      6.0      6.0      6.0            Trigger threshold
-  double ANALOG_GAIN[NCHANNELS]; //          2.0    2.0    2.0    2.0                  Gain with switches/relays/VGAs
-  double DIG_GAIN[NCHANNELS]; //             1.0   1.0   1.0   1.0                     Digital gain adjustment factor.
-  double VOFFSET[NCHANNELS]; //              0.095515   0.103931  0.201588   0.207211  Offset
-  double TRACE_LENGTH[NCHANNELS]; //         1.5  1.5  1.5  1.5                        Captured waveform length
-  double TRACE_DELAY[NCHANNELS]; //          0.500  0.500  0.500  0.500                Pre-trigger delay
-  unsigned int BINFACTOR[NCHANNELS]; //            1      1      1      1              MCA binning factor: divide by 2^N)
-  double TAU[NCHANNELS]; //                  0.05   0.05   0.05   0.05                 Preamplifier decay time
-  unsigned int BLCUT[NCHANNELS]; //                20     20     20     20             Threshold for bad baseline measurements
-  double XDT[NCHANNELS]; //                  0.0667 0.0667 0.0667 0.0667               Sampling interval in untriggered traces, NYI
-  double BASELINE_PERCENT[NCHANNELS]; //     10     10     10     10                   Target offset for baseline, nominally in percent, NYI
-  unsigned int PSA_THRESHOLD[NCHANNELS]; //        25     25     25     25             Threshold in CFD and PSA,
-  unsigned int INTEGRATOR[NCHANNELS]; //           0      0      0      0              Filter mode: 0-trapezoidal, 1-gap sum integral NYI, 2-ignore gap sum, NYI. 
-  double GATE_WINDOW[NCHANNELS]; //          0.008  0.008  0.008  0.008                Coincidence window with gate
-  double GATE_DELAY[NCHANNELS]; //           0.008  0.008  0.008  0.008                Delay of external gate signal
-  double COINC_DELAY[NCHANNELS]; //          0.008  0.008  0.008  0.008                Delay of ADC signal before coincidence test
-  unsigned int BLAVG[NCHANNELS]; //                65532  65532  65532  65532          Baseline averaging
-  unsigned int QDC0_LENGTH[NCHANNELS]; //          0      0      0      0              Length of PSA sum
-  unsigned int QDC1_LENGTH[NCHANNELS]; //          0      0      0      0              Length of PSA sum
-  unsigned int QDC0_DELAY[NCHANNELS]; //           0      0      0      0              Delay of PSA sum relative to trigger point
-  unsigned int QDC1_DELAY[NCHANNELS]; //           0      0      0      0              Delay of PSA sum relative to trigger point
-  unsigned int QDC_DIV8[NCHANNELS];//             0      0      0      0              divide QDC sums by another factor 8, to fit in 64K max output number
-  double MCA2D_SCALEX[NCHANNELS];    //     1      1      1      1                     scaling factor for 2D histogram (bin to increment is Ex/ MCA2D_SCALEX)
-  double MCA2D_SCALEY[NCHANNELS];    //     1      1      1      1                     scaling factor for 2D histogram (bin to increment is Ey/ MCA2D_SCALEY)
-  double PSA_NG_THRESHOLD[NCHANNELS];//     1      1      1      1                     threshold to distinguish neutrons and gammas in PSA parameter R=Q0/Q1
+  double ANALOG_GAIN[NCHANNELS]; //                       Gain with switches/relays/VGAs
+  double DIG_GAIN[NCHANNELS]; //                          Digital gain adjustment factor.
+  double VOFFSET[NCHANNELS]; //                           Offset
+  double ENERGY_RISETIME[NCHANNELS]; //                   Energy filter rise time
+  double ENERGY_FLATTOP[NCHANNELS]; //                    Energy filter flat top
+  double TRIGGER_RISETIME[NCHANNELS]; //                  Trigger filter rise time
+  double TRIGGER_FLATTOP[NCHANNELS]; //                   Trigger filter flat top
+  double TRIGGER_THRESHOLD[NCHANNELS]; //                 Trigger threshold 
+  unsigned int CFD_THRESHOLD[NCHANNELS]; //               CFD trigger threshold
+  unsigned int THRESH_WIDTH[NCHANNELS]; //                Width for trigger above threshold
+  double TRACE_LENGTH[NCHANNELS]; //                      Captured waveform length
+  double TRACE_DELAY[NCHANNELS]; //                       Pre-trigger delay
+  unsigned int BINFACTOR[NCHANNELS]; //                   MCA binning factor: divide by 2^N)
+  unsigned int INTEGRATOR[NCHANNELS]; //                  Filter mode: 0-trapezoidal, 1-gap sum integral NYI, 2-ignore gap sum, NYI. 
+    unsigned int BLCUT[NCHANNELS]; //                     Threshold for bad baseline measurements
+  double BASELINE_PERCENT[NCHANNELS]; //                  Target offset for baseline, nominally in percent, NYI
+  unsigned int BLAVG[NCHANNELS]; //                       Baseline averaging
+  double TAU[NCHANNELS]; //                               Preamplifier decay time
+  double XDT[NCHANNELS]; //                               Sampling interval in untriggered traces, NYI
+  unsigned int MULTIPLICITY_MASKL[NCHANNELS]; //          Mask multiplicity contribution group - low 16-bit
+  unsigned int MULTIPLICITY_MASKM[NCHANNELS]; //          Mask multiplicity contribution group - medium 16-bit
+  unsigned int MULTIPLICITY_MASKH[NCHANNELS]; //          Mask multiplicity contribution group - high 16-bit
+  unsigned int MULTIPLICITY_MASKX[NCHANNELS]; //          Mask multiplicity contribution group - extra 16-bit
+  unsigned int FASTTRIG_BACKLEN;              //             Length of fast rigger signal on the backplane
+  unsigned int CFD_DELAY ;                    //              iThemba CFD delay
+  unsigned int CFD_SCALE;                     //              iThemba CFD scale; 0(div2), 1(div4), 2(div8), 3(div16)
+  unsigned int EXTTRIG_STRETCH;               //              iThemba external trigger stretch
+  unsigned int VETO_STRETCH ;                 //              iThemba veto signal (channel gate or module gate) stretch
+  unsigned int CHANTRIG_STRETCH;              //
+  unsigned int TRIGOUT_LENGTH ;               //
+  unsigned int EXTERN_DELAYLEN ;              //               Delay length for each channel's input signal
+  unsigned int FTRIGOUT_DELAY;                //               Fast trigger output delay for system synchronization; delay = (FtrigoutDelay + 4)*10ns 
+  unsigned int QDCLen0[NCHANNELS];                // iThemba QDC length #0 
+  unsigned int QDCLen1[NCHANNELS];                // iThemba QDC length #1 
+  unsigned int QDCLen2[NCHANNELS];                // iThemba QDC length #2 
+  unsigned int QDCLen3[NCHANNELS];                // iThemba QDC length #3 
+  unsigned int QDCLen4[NCHANNELS];                // iThemba QDC length #4 
+  unsigned int QDCLen5[NCHANNELS];                // iThemba QDC length #5 
+  unsigned int QDCLen6[NCHANNELS];                // iThemba QDC length #6 
+  unsigned int QDCLen7[NCHANNELS];                // iThemba QDC length #7 
+
 } PixieNetFippiConfig;
 
 

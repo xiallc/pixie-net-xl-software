@@ -129,8 +129,8 @@ int main(void) {
   // with xx = parameter number (line) in file and yy = channel number (0 for module)
 
   // ********** SYSTEM PARAMETERS ******************
-    if(fippiconfig.NUMBER_CHANNELS != NCHANNELS) {
-      printf("Invalid NUMBER_CHANNELS = %d, should be %d\n",fippiconfig.NUMBER_CHANNELS,NCHANNELS);
+    if(fippiconfig.NUMBER_CHANNELS != NCHANNELS_PRESENT) {
+      printf("Invalid NUMBER_CHANNELS = %d, should be %d\n",fippiconfig.NUMBER_CHANNELS,NCHANNELS_PRESENT);
       return -100;
     }
 
