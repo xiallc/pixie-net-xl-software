@@ -63,6 +63,7 @@ int main( int argc, char *argv[] ) {
   unsigned int val = 0;
   unsigned int addr = 0;
   unsigned int mval = 0;
+  unsigned int k;
 
 
   // *************** PS/PL IO initialization *********************
@@ -101,7 +102,7 @@ int main( int argc, char *argv[] ) {
 
    // ************************ set up controller registers for external R/W *********************************
 
-  mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
+/*  mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
   mval = mapped[ACOINCPATTERN];	     
   printf( "MZ CP read: 0x%x\n", mval );
 
@@ -111,7 +112,7 @@ int main( int argc, char *argv[] ) {
   mval = 0;
   mval = mapped[ACOINCPATTERN];	     //read back
   printf( "MZ CP read: 0x%x\n", mval );
-
+*/
   mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
   mval = mapped[AMZSYSREV];	    
   printf( "MZ SYSREV low read: 0x%x\n", mval );
@@ -122,19 +123,54 @@ int main( int argc, char *argv[] ) {
 
 
  
-  mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0  
+  mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
+
+  // select sys registers
+        mapped[AMZ_EXAFWR] = 3;     // write to  k7's addr
+      mapped[AMZ_EXDWR] = 0;
+ 
+  // write into ext sys I/O regs
+  for(k=0;k<16;k++) {
+     if(k!=3) {
+      mapped[AMZ_EXAFWR] = k;     // write to  k7's addr
+      mapped[AMZ_EXDWR] = k+1;
+     //   usleep(5);
+        }
+ //        printf( "K7 0 write to 0x%x: %d\n", k, k*val );
+
+  }
+
+   // read from ext sys I/O regs
+  for(k=0;k<16;k++) {
+      mapped[AMZ_EXAFRD] = k;     // write to  k7's addr
+        usleep(1);
+      mval = mapped[AMZ_EXDRD]; 
+     printf( "K7 0 read from 0x%x: %d\n", k, mval );
+     //   usleep(5);
+  }
+
+     // read from ext sys O regs
+  for(k=0;k<16;k++) {
+      mapped[AMZ_EXAFRD] = k+0x80;     // write to  k7's addr
+        usleep(1);
+      mval = mapped[AMZ_EXDRD]; 
+     printf( "K7 0 read from 0x%x: %d\n", k+0x80, mval );
+    //    usleep(5);
+  }
+
 
   mapped[AMZ_EXAFWR] = addr;     // write to  k7's addr
   mapped[AMZ_EXDWR] = val;
-  usleep(2);
+//  usleep(2);
 
-    mapped[AMZ_EXAFWR] = addr+1;     // write to  k7's addr
-  mapped[AMZ_EXDWR] = val+1;
-  usleep(2);
+// write somewhere else to make sure we don't read a stuck bus
+//    mapped[AMZ_EXAFWR] = addr+1;     // write to  k7's addr
+//  mapped[AMZ_EXDWR] = val+1;
+//  usleep(2);
 
 mapped[AMZ_EXAFRD] = addr;     // read from k7's addr
   usleep(2);
-mval = mapped[AMZ_EXDRD];      // read value
+ mval = mapped[AMZ_EXDRD];      // read value
 //printf( "K7 0 CP read: %d\n", mval );
 
 
