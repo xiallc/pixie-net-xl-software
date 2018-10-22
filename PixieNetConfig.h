@@ -149,6 +149,11 @@ typedef struct PixieNetFippiConfig {
       0xFFFE = 65534 lets any hit pattern through.
    */
   unsigned int COINCIDENCE_PATTERN;
+
+    /** The module ends its spill when this number of events has been acquired. 
+   */
+
+   unsigned int MAX_EVENTS;
   
   /** Time between triggers, in micro-seconds, to consider the two hits to be a
       coincidence. 
@@ -230,44 +235,44 @@ typedef struct PixieNetFippiConfig {
   
   double ANALOG_GAIN[NCHANNELS]; //                       Gain with switches/relays/VGAs
   double DIG_GAIN[NCHANNELS]; //                          Digital gain adjustment factor.
-  double VOFFSET[NCHANNELS]; //                           Offset
-  double ENERGY_RISETIME[NCHANNELS]; //                   Energy filter rise time
-  double ENERGY_FLATTOP[NCHANNELS]; //                    Energy filter flat top
-  double TRIGGER_RISETIME[NCHANNELS]; //                  Trigger filter rise time
-  double TRIGGER_FLATTOP[NCHANNELS]; //                   Trigger filter flat top
+  double VOFFSET[NCHANNELS]; //                      V     Offset
+  double ENERGY_RISETIME[NCHANNELS]; //              us     Energy filter rise time
+  double ENERGY_FLATTOP[NCHANNELS]; //               us     Energy filter flat top
+  double TRIGGER_RISETIME[NCHANNELS]; //             us     Trigger filter rise time
+  double TRIGGER_FLATTOP[NCHANNELS]; //              us     Trigger filter flat top
   double TRIGGER_THRESHOLD[NCHANNELS]; //                 Trigger threshold 
   unsigned int CFD_THRESHOLD[NCHANNELS]; //               CFD trigger threshold
-  unsigned int THRESH_WIDTH[NCHANNELS]; //                Width for trigger above threshold
-  double TRACE_LENGTH[NCHANNELS]; //                      Captured waveform length
-  double TRACE_DELAY[NCHANNELS]; //                       Pre-trigger delay
+  unsigned int THRESH_WIDTH[NCHANNELS]; //           us     Width for trigger above threshold
+  double TRACE_LENGTH[NCHANNELS]; //                 us     Captured waveform length
+  double TRACE_DELAY[NCHANNELS]; //                  us     Pre-trigger delay
   unsigned int BINFACTOR[NCHANNELS]; //                   MCA binning factor: divide by 2^N)
   unsigned int INTEGRATOR[NCHANNELS]; //                  Filter mode: 0-trapezoidal, 1-gap sum integral NYI, 2-ignore gap sum, NYI. 
     unsigned int BLCUT[NCHANNELS]; //                     Threshold for bad baseline measurements
   double BASELINE_PERCENT[NCHANNELS]; //                  Target offset for baseline, nominally in percent, NYI
   unsigned int BLAVG[NCHANNELS]; //                       Baseline averaging
-  double TAU[NCHANNELS]; //                               Preamplifier decay time
-  double XDT[NCHANNELS]; //                               Sampling interval in untriggered traces, NYI
+  double TAU[NCHANNELS]; //                          us     Preamplifier decay time
+  double XDT[NCHANNELS]; //                          us     Sampling interval in untriggered traces, NYI
   unsigned int MULTIPLICITY_MASKL[NCHANNELS]; //          Mask multiplicity contribution group - low 16-bit
   unsigned int MULTIPLICITY_MASKM[NCHANNELS]; //          Mask multiplicity contribution group - medium 16-bit
   unsigned int MULTIPLICITY_MASKH[NCHANNELS]; //          Mask multiplicity contribution group - high 16-bit
   unsigned int MULTIPLICITY_MASKX[NCHANNELS]; //          Mask multiplicity contribution group - extra 16-bit
-  unsigned int FASTTRIG_BACKLEN;              //             Length of fast rigger signal on the backplane
-  unsigned int CFD_DELAY ;                    //              iThemba CFD delay
-  unsigned int CFD_SCALE;                     //              iThemba CFD scale; 0(div2), 1(div4), 2(div8), 3(div16)
-  unsigned int EXTTRIG_STRETCH;               //              iThemba external trigger stretch
-  unsigned int VETO_STRETCH ;                 //              iThemba veto signal (channel gate or module gate) stretch
-  unsigned int CHANTRIG_STRETCH;              //
-  unsigned int TRIGOUT_LENGTH ;               //
-  unsigned int EXTERN_DELAYLEN ;              //               Delay length for each channel's input signal
-  unsigned int FTRIGOUT_DELAY;                //               Fast trigger output delay for system synchronization; delay = (FtrigoutDelay + 4)*10ns 
-  unsigned int QDCLen0[NCHANNELS];                // iThemba QDC length #0 
-  unsigned int QDCLen1[NCHANNELS];                // iThemba QDC length #1 
-  unsigned int QDCLen2[NCHANNELS];                // iThemba QDC length #2 
-  unsigned int QDCLen3[NCHANNELS];                // iThemba QDC length #3 
-  unsigned int QDCLen4[NCHANNELS];                // iThemba QDC length #4 
-  unsigned int QDCLen5[NCHANNELS];                // iThemba QDC length #5 
-  unsigned int QDCLen6[NCHANNELS];                // iThemba QDC length #6 
-  unsigned int QDCLen7[NCHANNELS];                // iThemba QDC length #7 
+  unsigned int FASTTRIG_BACKLEN[NCHANNELS];   //    us    //             Length of fast rigger signal on the backplane
+  unsigned int CFD_DELAY[NCHANNELS] ;         //    ticks    //              iThemba CFD delay
+  unsigned int CFD_SCALE[NCHANNELS];                     //              iThemba CFD scale; 0(div2), 1(div4), 2(div8), 3(div16)
+  unsigned int EXTTRIG_STRETCH[NCHANNELS];     //          //              iThemba external trigger stretch
+  unsigned int VETO_STRETCH[NCHANNELS] ;       //          //              iThemba veto signal (channel gate or module gate) stretch
+  unsigned int CHANTRIG_STRETCH[NCHANNELS];    //          //
+  unsigned int TRIGOUT_LENGTH[NCHANNELS] ;     //          //
+  unsigned int EXTERN_DELAYLEN[NCHANNELS] ;    //          //               Delay length for each channel's input signal
+  unsigned int FTRIGOUT_DELAY[NCHANNELS];      //          //               Fast trigger output delay for system synchronization; delay = (FtrigoutDelay + 4)*10ns 
+  unsigned int QDCLen0[NCHANNELS];             //  ticks      iThemba QDC length #0 
+  unsigned int QDCLen1[NCHANNELS];             //  ticks      iThemba QDC length #1 
+  unsigned int QDCLen2[NCHANNELS];             //  ticks      iThemba QDC length #2 
+  unsigned int QDCLen3[NCHANNELS];             //  ticks      iThemba QDC length #3 
+  unsigned int QDCLen4[NCHANNELS];             //  ticks      iThemba QDC length #4 
+  unsigned int QDCLen5[NCHANNELS];             //  ticks      iThemba QDC length #5 
+  unsigned int QDCLen6[NCHANNELS];             //  ticks      iThemba QDC length #6 
+  unsigned int QDCLen7[NCHANNELS];             //  ticks      iThemba QDC length #7 
 
 } PixieNetFippiConfig;
 

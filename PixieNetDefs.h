@@ -58,21 +58,26 @@
 
 
 // Limits for settings
+#define MAX_CRATE_ID 15
+#define MAX_SLOT_ID 15
+#define MAX_MODULE_ID 15
 #define MIN_CW 5             // Coinc Window limits
 #define MAX_CW 511
-#define MIN_FR 1             // FR limits
-#define MAX_FR 6
+#define MIN_SFR 1             // FR limits
+#define MAX_SFR 6
+#define MIN_FFR 0             // FR limits
+#define MAX_FFR 0
 #define MIN_SL 2             // energy filter limits
 #define MIN_SG 3
-#define MAX_SLSG 126
+#define MAX_SLSG 127
 #define MIN_FL 2             // trigger filter limits
-#define MIN_FG 3
-#define MAX_FLFG 63
-#define MAX_TH 1023
+#define MIN_FG 0
+#define MAX_FLFG 127
+#define MAX_TH 65536
 #define GAIN_HIGH 5          // gain limits
 #define GAIN_LOW 2
 #define MAX_TL 4092           // max length of captured waveform and pre-trigger delay
-#define TWEAK_UD 28           // adjustment to pre-trigger delay for internal pipelining
+#define TWEAK_UD 0           // adjustment to pre-trigger delay for internal pipelining
 #define MAX_BFACT 16
 #define MAX_PSATH 2044
 #define MAX_GW 255
@@ -80,10 +85,37 @@
 #define MAX_CD 255
 #define MAX_QDCL  60          // length of QDC sum samples
 #define MAX_QDCLD 250         // length plus delay of QDC sum, in samples
-#define MAX_BLAVG 10
+#define MAX_BLAVG 16
 #define MAX_BADBL 20
 
-
+// maxima for P16 style parameters
+#define FASTTRIGBACKLEN_MAX 4095
+#define FASTTRIGBACKLEN_MIN_100MHZFIPCLK 1
+#define FASTTRIGBACKLEN_MIN_125MHZFIPCLK 2
+#define CFDDELAY_MAX 63
+#define CFDDELAY_MIN 1
+#define CFDSCALE_MAX 7
+#define CFDTHRESH_MAX 65535
+#define CFDTHRESH_MIN 1
+#define EXTTRIGSTRETCH_MAX 4095
+#define EXTTRIGSTRETCH_MIN 1
+#define VETOSTRETCH_MAX 4095
+#define VETOSTRETCH_MIN 1
+#define EXTDELAYLEN_MAX_REVBCD 255
+#define EXTDELAYLEN_MAX_REVF 511
+#define EXTDELAYLEN_MIN 0
+#define FASTTRIGBACKDELAY_MAX_REVBCD 255
+#define FASTTRIGBACKDELAY_MAX_REVF 511
+#define FASTTRIGBACKDELAY_MIN 0
+#define QDCLEN_MAX 32767
+#define QDCLEN_MIN 1
+#define TRACELEN_MIN_500MHZADC		10
+#define TRACELEN_MIN_250OR100MHZADC	4
+#define TRACEDELAY_MAX 1023
+#define CHANTRIGSTRETCH_MAX 4095
+#define CHANTRIGSTRETCH_MIN 1
+#define MIN_XDT_MOST 6
+#define MIN_XDT_250 8
 
 // system reg addr defines
 // block 0
@@ -164,8 +196,16 @@
 #define AMZCSROUTL  0x20
 #define AMZCSROUTH  0x21
 #define AMZBRDINFO  0x22
-
-
+#define AK7_CHANNEL 0x03
+#define AK7_P16REG00 0x40
+#define AK7_P16REG01 0x44
+#define AK7_P16REG02 0x48
+#define AK7_P16REG03 0x4C
+#define AK7_P16REG05 0x4E
+#define AK7_P16REG06 0x52
+#define AK7_P16REG07 0x56
+#define AK7_P16REG13 0x5A
+#define AK7_P16REG17 0x5C
 
 
 
@@ -195,4 +235,44 @@
 #define HIT_LOCALHIT          20    //  set if this channel has a hit
 #define HIT_OOR               22    //  set if this channel had the out of range flag set
 
+// P16 CSR bits
+#define CCSRA_FTRIGSEL     0  // fast trigger selection - 1: select external fast trigger; 0: select local fast trigger
+#define CCSRA_EXTTRIGSEL   1  // module validation signal selection - 1: select module gate signal; 0: select global validation signal (RevD & RevF only)
+#define CCSRA_GOOD         2  // good-channel bit - 1: channel data will be read out; 0: channel data will not be read out
+#define CCSRA_CHANTRIGSEL  3  // channel validation signal selection - 1: select channel gate signal; 0: select channel validation signal (RevD & RevF only)
+#define CCSRA_SYNCDATAACQ  4  // block data acquisition if trace or header DPMs are full - 1: enable; 0: disable
+#define CCSRA_POLARITY     5  // input signal polarity control
+#define CCSRA_VETOENA      6  // veto channel trigger - 1: enable; 0: disable
+#define CCSRA_HISTOE       7  // histogram energy in the on-board MCA
+#define CCSRA_TRACEENA     8  // trace capture and associated header data - 1: enable; 0: disable
+#define CCSRA_QDCENA       9  // QDC summing and associated header data - 1: enable; 0: dsiable
+#define CCSRA_CFDMODE     10  // CFD for real time, trace capture and QDC capture - 1: enable; 0: disable 
+#define CCSRA_GLOBTRIG    11  // global trigger for validation - 1: enable; 0: disable
+#define CCSRA_ESUMSENA    12  // raw energy sums and baseline in event header - 1: enable; 0: disable
+#define CCSRA_CHANTRIG    13  // channel trigger for validation - 1: enable; 0: disable
+#define CCSRA_ENARELAY    14  // Control input relay: 1: connect, 0: disconnect
+
+#define CCSRA_PILEUPCTRL    15	
+#define CCSRC_INVERSEPILEUP 0
+
+#define CCSRC_ENAENERGYCUT  1  // Enable "no trace for large pulses" feature - 1: enable; 0: disable
+#define CCSRC_GROUPTRIGSEL  2  // Group trigger selection - 1: external group trigger; 0: local fast trigger
+#define CCSRC_CHANVETOSEL   3  // Channel veto selection - 1: channel validation trigger; 0: front panel channel veto
+#define CCSRC_MODVETOSEL    4  // Module veto selection - 1: module validation trigger; 0: front panel module veto
+#define CCSRC_EXTTSENA      5  // External timestamps in event header - 1: enable; 0: disable
+
+// P16 Fippi register bits
+#define FiPPI_HALT          0   // Halt Fippi (lower 32-bit word)
+#define FiPPI_INVRT         1   // Polarity (lower 32-bit word)
+#define FiPPI_VETOENA       2   // Enable Veto (lower 32-bit word)
+#define FiPPI_EXTTRIGSEL    3   // Select external validation trigger source (lower 32-bit word)
+#define FiPPI_CHANTRIGSEL  21   // Select channel validation trigger source (lower 32-bit word)
+#define FiPPI_SYNCDATAACQ  22   // Enable SYNC data DAQ (lower 32-bit word)
+#define FiPPI_GROUPTRIGSEL 23   // Select group trigger source (lower 32-bit word)
+#define FiPPI_CHANVETOSEL  29   // Select channel veto source (upper 32-bit word)
+#define FiPPI_MODVETOSEL   30   // Select module veto source (upper 32-bit word)
+#define FiPPI_ENARELAY     31   // Enable front end relay (upper 32-bit word)
+#define FiPPI_GROUP			8	// Group trigger
+#define FiPPI_LIVE			9	// Individual live time measurement
+#define SelExtFastTrig		12	// Select external trigger to record event, instead of local fast trigger
 

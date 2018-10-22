@@ -84,11 +84,10 @@ int main(void) {
     return rval;
   }
 
-  unsigned int  mval, dac;
-  unsigned int CW, FR, SL[NCHANNELS], SG[NCHANNELS], FL[NCHANNELS], FG[NCHANNELS], TH[NCHANNELS];
-  unsigned int PSAM, PSEP, TL[NCHANNELS], TD[NCHANNELS], GW[NCHANNELS], GD[NCHANNELS];
-  unsigned int QDCL0[NCHANNELS], QDCL1[NCHANNELS], QDCD0[NCHANNELS], QDCD1[NCHANNELS];
-  unsigned int gain[NCHANNELS*2], saveR2[NCHANNELS], i2cdata[8];
+  unsigned int  mval, dac, reglo, reghi;
+  unsigned int CW, SFR, FFR, SL[NCHANNELS], SG[NCHANNELS], FL[NCHANNELS], FG[NCHANNELS], TH[NCHANNELS];
+  unsigned int PSAM, PSEP, TL[NCHANNELS], TD[NCHANNELS];
+  unsigned int gain[NCHANNELS*2], i2cdata[8];
 
 
   // *************** PS/PL IO initialization *********************
@@ -147,111 +146,23 @@ int main(void) {
       printf("Invalid POLL_TIME = %d, please increase to more than %d\n",fippiconfig.POLL_TIME,MIN_POLL_TIME);
       return -400;
     }
-  
-  // ********** MODULE PARAMETERS ******************
 
-    //MODULE_CSRA
-    if(fippiconfig.MODULE_CSRA > 65535) {
-      printf("Invalid MODULE_CSRA = 0x%x\n",fippiconfig.MODULE_CSRA);
-      return -1700;
+   if(fippiconfig.CRATE_ID > MAX_CRATE_ID) {
+      printf("Invalid CRATE_ID = %d, must be < %d\n",fippiconfig.CRATE_ID,MAX_CRATE_ID);
+      return -400;
     }
 
-    //MODULE_CSRB
-    if(fippiconfig.MODULE_CSRB > 65535) {
-      printf("Invalid MODULE_CSRB = 0x%x\n",fippiconfig.MODULE_CSRB);
-      return -1800;
+       if(fippiconfig.SLOT_ID > MAX_SLOT_ID) {
+      printf("Invalid SLOT_ID = %d, must be < %d\n",fippiconfig.SLOT_ID,MAX_SLOT_ID);
+      return -400;
     }
 
-    // COINCIDENCE_PATTERN
-    if(fippiconfig.COINCIDENCE_PATTERN > 65535) {
-      printf("Invalid COINCIDENCE_PATTERN = 0x%x\n",fippiconfig.COINCIDENCE_PATTERN);
-      return -1900;
+       if(fippiconfig.MODULE_ID > MAX_MODULE_ID) {
+      printf("Invalid CRATE_ID = %d, must be < %d\n",fippiconfig.MODULE_ID,MAX_MODULE_ID);
+      return -400;
     }
 
-
-    // COINCIDENCE_WINDOW
-    CW = (int)floorf(fippiconfig.COINCIDENCE_WINDOW*SYSTEM_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
-    if( (CW > MAX_CW) | (CW < MIN_CW) ) {
-      printf("Invalid COINCIDENCE_WINDOW = %f, must be between %f and %f us\n",fippiconfig.COINCIDENCE_WINDOW, (double)MIN_CW/SYSTEM_CLOCK_MHZ, (double)MAX_CW/SYSTEM_CLOCK_MHZ);
-      return -2000;
-    }
-
-    // RUN_TYPE
-    if( !( (fippiconfig.RUN_TYPE == 0x301)  ||
-           (fippiconfig.RUN_TYPE == 0x400)  ||
-           (fippiconfig.RUN_TYPE == 0x402)  ||
-           (fippiconfig.RUN_TYPE == 0x500)  ||
-           (fippiconfig.RUN_TYPE == 0x501)  ||
-           (fippiconfig.RUN_TYPE == 0x502)  ||
-           (fippiconfig.RUN_TYPE == 0x503)   ) ) {
-      printf("Invalid RUN_TYPE = 0x%x, please check manual for a list of supported run types\n",fippiconfig.RUN_TYPE);
-      return -2100;
-    }
-
-    mval = fippiconfig.COINCIDENCE_PATTERN;
-     
-     if( (fippiconfig.RUN_TYPE == 0x503)  || 
-         (fippiconfig.RUN_TYPE == 0x402)   )     // set LM402 bit
-         mval = mval | 0x10000;
-
-     if( (fippiconfig.RUN_TYPE == 0x501)  || 
-         (fippiconfig.RUN_TYPE == 0x502)  ||
-         (fippiconfig.RUN_TYPE == 0x503)  || 
-         (fippiconfig.RUN_TYPE == 0x301)   )     // set MCA/notrace bit
-         mval = mval | 0x20000;
-
-    if(fippiconfig.MODULE_CSRA & 0x0001)   // test bit 0 (CWGROUP)
-        mval = mval | 0x40000;             // set CWGROUP bit
-         
-
-     mapped[ACOINCPATTERN] = mval;
-     if(mapped[ACOINCPATTERN] != mval) printf("Error writing value COINCIDENCE_PATTERN register\n");
-
-    //  printf("CoincPattern = 0x%x, \n",mval);
-
-    // FILTER_RANGE
-    FR = fippiconfig.FILTER_RANGE;
-    if( (FR > MAX_FR) | (FR < MIN_FR) ) {
-      printf("Invalid FILTER_RANGE = %d, must be between %d and %d\n",FR,MIN_FR, MAX_FR);
-      return -2200;
-    }
-
-    // ACCEPT_PATTERN
-    if(fippiconfig.ACCEPT_PATTERN != 0x0020 ) {
-      printf("Invalid ACCEPT_PATTERN = 0x%x, currently fixed to 0x20\n",fippiconfig.ACCEPT_PATTERN);
-      return -2300;
-    }
-
-    // SYNC_AT_START
-    if(fippiconfig.SYNC_AT_START >1) {
-      printf("Invalid SYNC_AT_START = %d, can only be 0 and 1\n",fippiconfig.SYNC_AT_START);
-      return -2400;
-    }
-
-    // HV DAC
-    mval = (int)floor( (fippiconfig.HV_DAC/5.0) * 65535);		// map 0..5V range to 0..64K	
-    if(mval > 65535) {
-         printf("Invalid HV_DAC = %f, can only be between 0 and 5V\n",fippiconfig.HV_DAC);
-         return -2500;
-    }
-    mapped[AHVDAC] = mval;
-    if(mapped[AHVDAC] != mval) printf("Error writing to HV_DAC register\n");
-    usleep(DACWAIT);		// wait for programming
-    mapped[AHVDAC] = mval;     // repeat, sometimes doesn't take?
-    if(mapped[AHVDAC] != mval) printf("Error writing to HV_DAC register\n");
-    usleep(DACWAIT);
-  
-  
-  // Offboard serial:
-    if(fippiconfig.SERIAL_IO > 65535) {
-      printf("Invalid SERIAL_IO = 0x%x\n",fippiconfig.SERIAL_IO);
-      return -2600;
-    }
-    mapped[ASERIALIO] = fippiconfig.SERIAL_IO;
-    if(mapped[ASERIALIO] != fippiconfig.SERIAL_IO) printf("Error writing to SERIAL_IO register\n");
-    usleep(DACWAIT);		// wait for programming
-
-  // AUX CTRL:
+   // AUX CTRL:
     if(fippiconfig.AUX_CTRL > 65535) {
       printf("Invalid AUX_CTRL = 0x%x\n",fippiconfig.AUX_CTRL);
       return -2700;
@@ -259,12 +170,91 @@ int main(void) {
     mapped[AAUXCTRL] = fippiconfig.AUX_CTRL;
     if(mapped[AAUXCTRL] != fippiconfig.AUX_CTRL) printf("Error writing AUX_CTRL register\n");
 
+  
+  // ********** MODULE PARAMETERS ******************
+
+    //MODULE_CSRA     -- P16 trigger backplane functions: unused for now
+    if(fippiconfig.MODULE_CSRA > 65535) {
+      printf("Invalid MODULE_CSRA = 0x%x\n",fippiconfig.MODULE_CSRA);
+      return -1700;
+    }
+
+    //MODULE_CSRB     -- P16 trigger backplane functions: unused for now
+    if(fippiconfig.MODULE_CSRB > 65535) {
+      printf("Invalid MODULE_CSRB = 0x%x\n",fippiconfig.MODULE_CSRB);
+      return -1800;
+    }
+
+    // RUN_TYPE
+    if( !( (fippiconfig.RUN_TYPE == 0x301)  ||
+           (fippiconfig.RUN_TYPE == 0x100)  ||
+           (fippiconfig.RUN_TYPE == 0x101)  ||
+           (fippiconfig.RUN_TYPE == 0x102)  ||
+           (fippiconfig.RUN_TYPE == 0x103)  ||  ) ) {
+      printf("Invalid RUN_TYPE = 0x%x, please check manual for a list of supported run types\n",fippiconfig.RUN_TYPE);
+      return -2100;
+    }
+
+    //MAX_EVENTS     
+    if(fippiconfig.MAX_EVENTS > 65535) {
+      printf("Invalid MAX_EVENTS = 0x%x\n",fippiconfig.MAX_EVENTS);
+      return -1700;
+    }
+
+    // COINCIDENCE_PATTERN -- unused P16
+    if(fippiconfig.COINCIDENCE_PATTERN > 65535) {
+      printf("Invalid COINCIDENCE_PATTERN = 0x%x\n",fippiconfig.COINCIDENCE_PATTERN);
+      return -1700;
+    }
+
+ 
+    // COINCIDENCE_WINDOW   -- unused P16?
+    CW = (int)floorf(fippiconfig.COINCIDENCE_WINDOW*SYSTEM_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
+    if( (CW > MAX_CW) | (CW < MIN_CW) ) {
+      printf("Invalid COINCIDENCE_WINDOW = %f, must be between %f and %f us\n",fippiconfig.COINCIDENCE_WINDOW, (double)MIN_CW/SYSTEM_CLOCK_MHZ, (double)MAX_CW/SYSTEM_CLOCK_MHZ);
+      return -2000;
+    }
+
+
+     // SYNC_AT_START
+    if(fippiconfig.SYNC_AT_START >1) {
+      printf("Invalid SYNC_AT_START = %d, can only be 0 and 1\n",fippiconfig.SYNC_AT_START);
+      return -2400;
+    }
+
+     // RESUME
+    if(fippiconfig.RESUME >1) {
+      printf("Invalid RESUME = %d, can only be 0 and 1\n",fippiconfig.RESUME);
+      return -2400;
+    }
+ 
+
+    // SLOW_FILTER_RANGE
+    SFR = fippiconfig.SLOW_FILTER_RANGE;
+    if( (FR > MAX_SFR) | (FR < MIN_SFR) ) {
+      printf("Invalid SLOW_FILTER_RANGE = %d, must be between %d and %d\n",FR,MIN_SFR, MAX_SFR);
+      return -2200;
+    }
+
+     // FAST_FILTER_RANGE
+    FFR = fippiconfig.FAST_FILTER_RANGE;
+    if( (FR > MAX_FFR) | (FR < MIN_FFR) ) {
+      printf("Invalid FAST_FILTER_RANGE = %d, must be between %d and %d\n",FR,MIN_FFR, MAX_FFR);
+      return -2200;
+    }
+
+     // FASTTRIG_BACKPLANEENA -- not implemented for now
+
+
 
   // ********** CHANNEL PARAMETERS ******************
    
-  // CCSRA-C :  R0
-  for( k = 0; k < NCHANNELS; k ++ )
+
+  // ----- first, check limits -----------------
+  
+  for( k = 0; k < NCHANNELS_PRESENT; k ++ )
   {
+      // CCSRA-C (B not used in P16)
       if(fippiconfig.CHANNEL_CSRA[k] > 65535) {
          printf("Invalid CHANNEL_CSRA = 0x%x\n",fippiconfig.CHANNEL_CSRA[k]);
          return -3300-k;
@@ -273,74 +263,330 @@ int main(void) {
          printf("Invalid CHANNEL_CSRC = 0x%x\n",fippiconfig.CHANNEL_CSRC[k]);
          return -3500-k;
       }  
-      addr = N_PL_IN_PAR+k*N_PL_IN_PAR;   // channel registers begin after NPLPAR system registers, NPLPAR each
-      mval = (fippiconfig.CHANNEL_CSRA[k] + (fippiconfig.CHANNEL_CSRC[k] << 16));
-      mapped[addr+0] = mval;
-      if(mapped[addr+0] != mval) printf("Error writing to CHANNEL_CSR register\n");
 
-   //   printf("CHANNEL_CSRA[%d] = 0x%x, addr %d\n",k,mval & 0xFFFF, addr);
-  }
-
-  // energy filter : R1
-    for( k = 0; k < NCHANNELS; k ++ )
-    {
+      // energy filter
       SL[k] = (int)floorf(fippiconfig.ENERGY_RISETIME[k] * FILTER_CLOCK_MHZ);
-      SL[k] = SL[k] >> FR;
+      SL[k] = SL[k] >> SFR;
       if(SL[k] <MIN_SL) {
-         printf("Invalid ENERGY_RISETIME = %f, minimum %f us at this filter range\n",fippiconfig.ENERGY_RISETIME[k],(double)((MIN_SL<<FR)/FILTER_CLOCK_MHZ));
+         printf("Invalid ENERGY_RISETIME = %f, minimum %f us at this filter range\n",fippiconfig.ENERGY_RISETIME[k],(double)((MIN_SL<<SFR)/FILTER_CLOCK_MHZ));
          return -3600-k;
       } 
       SG[k] = (int)floorf(fippiconfig.ENERGY_FLATTOP[k] * FILTER_CLOCK_MHZ);
-      SG[k] = SG[k] >> FR;
+      SG[k] = SG[k] >> SFR;
       if(SG[k] <MIN_SG) {
-         printf("Invalid ENERGY_FLATTOP = %f, minimum %f us at this filter range\n",fippiconfig.ENERGY_FLATTOP[k],(double)((MIN_SG<<FR)/FILTER_CLOCK_MHZ));
+         printf("Invalid ENERGY_FLATTOP = %f, minimum %f us at this filter range\n",fippiconfig.ENERGY_FLATTOP[k],(double)((MIN_SG<<SFR)/FILTER_CLOCK_MHZ));
          return -3700-k;
       } 
       if( (SL[k]+SG[k]) >MAX_SLSG) {
-         printf("Invalid combined energy filter, maximum %f us at this filter range\n",(double)((MAX_SLSG<<FR)/FILTER_CLOCK_MHZ));
+         printf("Invalid combined energy filter, maximum %f us at this filter range\n",(double)((MAX_SLSG<<SFR)/FILTER_CLOCK_MHZ));
          return -3700-k;
       } 
-      mval = SL[k]-1;
-      mval = mval + ((SL[k]+SG[k]-1)     <<  8);
-      mval = mval + ((SG[k]-1)           << 16);
-      mval = mval + (((2*SL[k]+SG[k])/4) << 24);
-      addr = N_PL_IN_PAR+k*N_PL_IN_PAR;   // channel registers begin after NPLPAR system registers, NPLPAR each
-      mapped[addr+1] = mval;
-      if(mapped[addr+1] != mval) printf("Error writing parameters to ENERGY_FILTER register\n");
-    }
 
-  // trigger filter : R2
-    for( k = 0; k < NCHANNELS; k ++ )
-    {
+  // trigger filter 
       FL[k] = (int)floorf(fippiconfig.TRIGGER_RISETIME[k] * FILTER_CLOCK_MHZ);
+      FL[k] = FL[k] >> FFR;
       if(FL[k] <MIN_FL) {
-         printf("Invalid TRIGGER_RISETIME = %f, minimum %f us\n",fippiconfig.TRIGGER_RISETIME[k],(double)(MIN_FL/FILTER_CLOCK_MHZ));
+         printf("Invalid TRIGGER_RISETIME = %f, minimum %f us\n",fippiconfig.TRIGGER_RISETIME[k],(double)(MIN_FL<<FFR/FILTER_CLOCK_MHZ));
          return -3800-k;
       } 
       FG[k] = (int)floorf(fippiconfig.TRIGGER_FLATTOP[k] * FILTER_CLOCK_MHZ);
+      FG[k] = FG[k] >> FFR;
       if(FG[k] <MIN_FL) {
-         printf("Invalid TRIGGER_FLATTOP = %f, minimum %f us\n",fippiconfig.TRIGGER_FLATTOP[k],(double)(MIN_FG/FILTER_CLOCK_MHZ));
+         printf("Invalid TRIGGER_FLATTOP = %f, minimum %f us\n",fippiconfig.TRIGGER_FLATTOP[k],(double)(MIN_FG/<<FFRFILTER_CLOCK_MHZ));
          return -3900-k;
       } 
       if( (FL[k]+FG[k]) >MAX_FLFG) {
-         printf("Invalid combined trigger filter, maximum %f us\n",(double)(MAX_FLFG/FILTER_CLOCK_MHZ));
+         printf("Invalid combined trigger filter, maximum %f us\n",(double)(MAX_FLFG<FFR/FILTER_CLOCK_MHZ));
          return -3900-k;
       } 
-      TH[k] = (int)floor(fippiconfig.TRIGGER_THRESHOLD[k]*FL[k]/8.0);
+      
+      TH[k] = (int)floor(fippiconfig.TRIGGER_THRESHOLD[k]*FL[k]);
       if(TH[k] > MAX_TH)     {
          printf("Invalid TRIGGER_THRESHOLD = %f, maximum %f at this trigger filter rise time\n",fippiconfig.TRIGGER_THRESHOLD[k],MAX_TH*8.0/(double)FL[k]);
          return -4000-k;
       } 
-      mval = FL[k]-1;
-      mval = mval + ((FL[k]+FG[k]-1) <<  8);
-      mval = mval + ((TH[k])         << 16);
-      mval = mval + ((FR)            << 26);
-      saveR2[k] = mval;
-      mval = mval + ( 1              << 31); 
-      addr = N_PL_IN_PAR+k*N_PL_IN_PAR;   // channel registers begin after NPLPAR system registers, NPLPAR each
-      mapped[addr+2] = mval;
-      if(mapped[addr+2] != mval) printf("Error writing parameters to trigger filter register\n");
-    }
+
+      // waveforms
+      TL[k] = 2*(int)floor(fippiconfig.TRACE_LENGTH[k]*ADC_CLK_MHZ/2/(1<<FFR) );       // multiply time in us *  # ticks per us = time in ticks; multiple of 2
+      if(TL[k] > MAX_TL || TL[k] < TRACELEN_MIN_250OR100MHZADC)  {
+         printf("Invalid TRACE_LENGTH = %f, must be between %f and %f us\n",fippiconfig.TRACE_LENGTH[k],(double)TRACELEN_MIN_250OR100MHZADC/ADC_CLK_MHZ,(double)MAX_TL/ADC_CLK_MHZ);
+         return -4400-k;
+      }
+
+      if(TL[k] <fippiconfig.TRACE_LENGTH[k]*ADC_CLK_MHZ(1<<FFR))  {
+         printf("TRACE_LENGTH[%d] will be rounded off to = %f us, %d samples\n",k,(double)TL[k]/ADC_CLK_MHZ,TL[k]);
+      }
+      TD[k] = (int)floor(fippiconfig.TRACE_DELAY[k]*ADC_CLK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
+      if(TD[k] > MAX_TL-TWEAK_UD)  {
+         printf("Invalid TRACE_DELAY = %f, maximum %f us\n",fippiconfig.TRACE_DELAY[k],(double)(MAX_TL-TWEAK_UD)/ADC_CLK_MHZ);
+         return -4500-k;
+      }
+      if(TD[k] > TRACEDELAY_MAX)  {
+         printf("Invalid TRACE_DELAY = %f, maximum %f us\n",fippiconfig.TRACE_DELAY[k],(double)(TRACEDELAY_MAX)/ADC_CLK_MHZ);
+         return -4500-k;
+      }
+
+      // other parameters
+      if(fippiconfig.BINFACTOR[k] > MAX_BFACT)     {
+         printf("Invalid BINFACTOR = %d, maximum %d\n",fippiconfig.BINFACTOR[k],MAX_BFACT);
+         return -4800-k;
+      } 
+
+          if(fippiconfig.INTEGRATOR[k] > 0)     {
+         printf("Invalid INTEGRATOR = %d, currently not implemented\n",fippiconfig.INTEGRATOR[k]);
+         return -5400-k;
+      } 
+           // no limit on BLCUT
+      if(fippiconfig.XDT[k] <0)  {
+         printf("Invalid XDT = %f, must be positive\n",fippiconfig.XDT[k]);
+         return -5000-k;
+      }
+      if(fippiconfig.BASELINE_PERCENT[k] <1 || fippiconfig.BASELINE_PERCENT[k] >99 )  {
+         printf("Invalid BASELINE_PERCENT = %f, must be between 1 and 99\n",fippiconfig.BASELINE_PERCENT[k]);
+         return -5100-k;
+      }
+
+      if(fippiconfig.BLAVG[k] > 65535)     {
+         printf("Invalid BLAVG = %d, maximum %d\n",fippiconfig.BLAVG[k],65535);
+         return -5800-k;
+      } 
+      if( (fippiconfig.BLAVG[k] >0) && (fippiconfig.BLAVG[k] < 65535-MAX_BLAVG ) )     {
+         printf("Invalid BLAVG = %d, minimum %d (or zero to turn off)\n",fippiconfig.BLAVG[k],65535-MAX_BLAVG);
+         return -5800-k;
+      } 
+
+      if(fippiconfig.TAU[k] <0)  {
+         printf("Invalid TAU = %f, must be positive\n",fippiconfig.TAU[k]);
+         return -4900-k;
+      }
+
+      if(fippiconfig.XDT[k] < (MIN_XDT_MOST/ADC_CLK_MHZ)  {
+         printf("Invalid XDT = %f, must be at least %f \n",fippiconfig.XDT[k],MIN_XDT_MOST/ADC_CLK_MHZ );
+         return -4900-k;
+      }
+      mval = (int)floor( fippiconfig.XDT[k]*ADC_CLK_MHZ/MIN_XDT_MOST) *MIN_XDT_MOST;
+      if(fippiconfig.XDT[k] > mval)     {
+         printf("XDT = %f, will be rounded to %f \n",fippiconfig.XDT[k],mval );
+         //return -4900-k;
+      }
+ 
+   }    // end for channels present
+
+ 
+
+
+   // -------------- now package  and write -------------------
+
+    
+   mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
+
+    for( k = 0; k < NCHANNEL_PER_K7 ; k ++ )
+    {
+
+       mapped[AMZ_EXAFWR] = AK7_CHANNEL;     // write to  k7's addr to select CHANNEL register
+       mapped[AMZ_EXDWR]  = k;               // write selected channel      
+
+
+     // ......... P16 Reg 0  .......................            
+
+      // package
+      reglo = 0;     // halt bit 0
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_POLARITY,   FiPPI_INVRT   );     
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_VETOENA,    FiPPI_VETOENA   );     
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_EXTTRIGSEL,    FiPPI_EXTTRIGSEL   );     
+      reglo = reglo + SFR<<4;                  //Store SlowFilterRange in bits [6:4] 
+      reglo = reglo + (129-SL[k])<<7;          //  SlowLength in bits [13:7]
+      reglo = reglo + (129-SL[k]-SG[k])<<14;   // SlowLength + SlowGap in bits [20:14]
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_CHANTRIGSEL,   FiPPI_CHANTRIGSEL   );     
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_SYNCDATAACQ,    FiPPI_SYNCDATAACQ   );     
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRC,CCSRC_GROUPTRIGSEL,    FiPPI_GROUPTRIGSEL   );     
+      reglo = reglo + (129-FL[k]-FG[k])<<25 ;      // 128 - (FastLength - 1) in bits [31:25] 
+          
+      reghi = 0;
+      reghi = 129 - FL[k] - FG[k];      // 128 - (FastLength + FastGap - 1)
+      reghi = reghi & 0x7F;            // Keep only bits [6:0]
+      reghi = reghi + TH[k]<<7;        // Threshold in [22:7]   
+      reghi = reghi + fippiconfig.CFD_DELAY[k] <<23;  //  CFDDelay in [28:23]       // check units!
+      reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC,CCSRC_CHANVETOSEL,FiPPI_CHANVETOSEL);     
+      reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC,CCSRC_MODVETOSEL, FiPPI_MODVETOSEL );     
+      reghi = reghi + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_ENARELAY,   FiPPI_ENARELAY   );     
+
+      // now write 
+       mapped[AMZ_EXAFWR] = AK7_P16REG00+0;     // write to  k7's addr to select channel's register N
+       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;     // write lower 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG00+1;     // write to  k7's addr to select channel's register N+1
+       mapped[AMZ_EXDWR]  = reglo >> 16;        // write next 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG00+2;     // write to  k7's addr to select channel's register N+2
+       mapped[AMZ_EXDWR]  = reghi & 0xFFFF;     // write next 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG00+3;     // write to  k7's addr to select channel's register N+3
+       mapped[AMZ_EXDWR]  = reghi >> 16;        // write highest 16 bit
+
+
+       // ......... P16 Reg 1  .......................    
+        
+      // package
+      reglo = 129 - SG[k]);          //  SlowGap in bits [6:0]
+      reglo = reglo + (2*SL[k]+SG[k]+1)<<7;   // Store RBDEL_SF = (SlowLength + SlowGap + SlowLength + 1) in bits [18:7] of Fipreg1 lo
+      reglo = reglo + ( 8192 - ((SL[k]+SG[k])<<SFR) ) <<19;   // Peaksep= SL+SG; store 8192 - PeakSep * 2^SlowFilterRange  in bits [31:19] of Fipreg1 lo
+         
+      if(SFR==1) PSAM = SL[k]+SG[k] -3;
+      if(SFR==2) PSAM = SL[k]+SG[k] -2;
+      if(SFR==3) PSAM = SL[k]+SG[k] -2;
+      if(SFR==4) PSAM = SL[k]+SG[k] -1;
+      if(SFR==5) PSAM = SL[k]+SG[k] -0;
+      if(SFR==6) PSAM = SL[k]+SG[k] +1;
+      reghi = 0;
+      reghi = 8192 - PSAM<<SFR;      // Peaksample = SL+SG - a bit ; store 8192 - Peaksample * 2^SlowFilterRange  in bits [44:32] of Fipreg1 
+      reghi = reghi + (2*FL[k]+FG[k]+2)<<13;   // Store RBDEL_TF = (FastLength + FastGap + FastLength + 2) in bits [56:45] of Fipreg1
+      reghi = reghi + fippiconfig.CFD_SCALE[k] <<25;  //  Store CFDScale[3:0] in bits [60:57] of Fipreg1
+  
+      // now write 
+       mapped[AMZ_EXAFWR] = AK7_P16REG01+0;     // write to  k7's addr to select channel's register N
+       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;     // write lower 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG01+1;     // write to  k7's addr to select channel's register N+1
+       mapped[AMZ_EXDWR]  = reglo >> 16;        // write next 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG01+2;     // write to  k7's addr to select channel's register N+2
+       mapped[AMZ_EXDWR]  = reghi & 0xFFFF;     // write next 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG01+3;     // write to  k7's addr to select channel's register N+3
+       mapped[AMZ_EXDWR]  = reghi >> 16;        // write highest 16 bit
+
+
+       // ......... P16 Reg 2  .......................    
+        
+      // package
+      reglo = 4096 - fippiconfig.CHANTRIG_STRETCH[k]);          //  ChanTrigStretch goes into [11:0] of FipReg2   // check units!
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_FTRIGSEL,   SelExtFastTrig   );     
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_TRACEENA,    13   );     
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_CFDMODE,     14   );   
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_QDCENA,      15   );  
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_GLOBTRIG,    16   );     
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_CHANTRIG,    17   );     
+      reglo = reglo + (4096-fippiconfig.VETO_STRETCH[k]) <<20;             //Store VetoStretch in bits [31:20] of Fipreg2   // check units!
+      
+      reghi = 4096 - fippiconfig.FASTTRIG_BACKLEN[k] <<8;  //  FastTrigBackLen goes into [19:8] ([51:40] in 64 bit)               // check units!
+      reghi = reghi +  4096 - fippiconfig.EXTTRIG_STRETCH[k] <<20;  //  ExtTrigStretch goes into [31:20] ([63:52] in 64 bit)      // check units!
+ 
+      // now write 
+       mapped[AMZ_EXAFWR] = AK7_P16REG02+0;     // write to  k7's addr to select channel's register N
+       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;     // write lower 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG02+1;     // write to  k7's addr to select channel's register N+1
+       mapped[AMZ_EXDWR]  = reglo >> 16;        // write next 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG02+2;     // write to  k7's addr to select channel's register N+2
+       mapped[AMZ_EXDWR]  = reghi & 0xFFFF;     // write next 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG02+3;     // write to  k7's addr to select channel's register N+3
+       mapped[AMZ_EXDWR]  = reghi >> 16;        // write highest 16 bit
+
+         // ......... P16 Reg 5  .......................    
+        
+      // package
+      reglo = fippiconfig.FTRIGOUT_DELAY[k];          //  FtrigoutDelay goes into [8:0] of FipReg5                // check units!
+                                                                                                 
+      reghi = fippiconfig.EXTERN_DELAYLEN[k];             //Store EXTERN_DELAYLEN in bits [8:0] of FipReg5 hi      // check units!
+     
+      mval = SL[k]+SG[k];     // psep
+      mval = (mval-1) << SFR;     // trigger delay
+      pafl = mval>> SFR + TD[k]; // paf length   // check units!
+      mavl = pafl - mval);   //delay from DSP computation
+      if( fippiconfig.CHANNEL_CSRA  & (1<<CCSRA_CFDMODE) )
+         mval = mval + FL[k] + FG[k];     // add CFD delay if necessary
+      reghi = reghi +  mval<<9;                 // trace delay (Capture_FIFOdelaylen )
+   
+      // now write 
+       mapped[AMZ_EXAFWR] = AK7_P16REG05+0;     // write to  k7's addr to select channel's register N
+       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;     // write lower 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG05+1;     // write to  k7's addr to select channel's register N+1
+       mapped[AMZ_EXDWR]  = reglo >> 16;        // write next 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG05+2;     // write to  k7's addr to select channel's register N+2
+       mapped[AMZ_EXDWR]  = reghi & 0xFFFF;     // write next 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG05+3;     // write to  k7's addr to select channel's register N+3
+       mapped[AMZ_EXDWR]  = reghi >> 16;        // write highest 16 bit
+
+
+      // ......... P16 Reg 6  .......................    
+        
+      reglo = fippiconfig.QDCLen0[k];                    //  QDC       // check units! 
+      reglo = reglo + fippiconfig.QDCLen1[k]<<16;        //  QDC       // check units!                                                                                 
+      reghi = fippiconfig.QDCLen2[k];                    //  QDC       // check units! 
+      reghi = reghi + fippiconfig.QDCLen3[k]<<16;        //  QDC       // check units!      
+      
+         // now write 
+       mapped[AMZ_EXAFWR] = AK7_P16REG06+0;     // write to  k7's addr to select channel's register N
+       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;     // write lower 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG06+1;     // write to  k7's addr to select channel's register N+1
+       mapped[AMZ_EXDWR]  = reglo >> 16;        // write next 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG06+2;     // write to  k7's addr to select channel's register N+2
+       mapped[AMZ_EXDWR]  = reghi & 0xFFFF;     // write next 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG06+3;     // write to  k7's addr to select channel's register N+3
+       mapped[AMZ_EXDWR]  = reghi >> 16;        // write highest 16 bit
+
+    
+       // ......... P16 Reg 7  .......................    
+        
+       reglo = fippiconfig.QDCLen4[k];                    //  QDC       // check units! 
+       reglo = reglo + fippiconfig.QDCLen5[k]<<16;        //  QDC       // check units!                                                                                 
+       reghi = fippiconfig.QDCLen6[k];                    //  QDC       // check units! 
+       reghi = reghi + fippiconfig.QDCLen7[k]<<16;        //  QDC       // check units!      
+      
+         // now write 
+       mapped[AMZ_EXAFWR] = AK7_P16REG07+0;     // write to  k7's addr to select channel's register N
+       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;     // write lower 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG07+1;     // write to  k7's addr to select channel's register N+1
+       mapped[AMZ_EXDWR]  = reglo >> 16;        // write next 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG07+2;     // write to  k7's addr to select channel's register N+2
+       mapped[AMZ_EXDWR]  = reghi & 0xFFFF;     // write next 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG07+3;     // write to  k7's addr to select channel's register N+3
+       mapped[AMZ_EXDWR]  = reghi >> 16;        // write highest 16 bit
+
+       // ......... P16 Reg 13  .......................    
+        
+       reglo = fippiconfig.CFD_THRESHOLD[k];                    //  CFDThresh       // check units! 
+        
+         // now write 
+       mapped[AMZ_EXAFWR] = AK7_P16REG13+0;     // write to  k7's addr to select channel's register N
+       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;     // write lower 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG13+1;     // write to  k7's addr to select channel's register N+1
+       mapped[AMZ_EXDWR]  = reglo >> 16;        // write next 16 bit
+
+
+       // ......... P16 Reg 17 (Info)  .......................    
+        
+       reglo = k;                                        // channel
+       reglo = reglo + fippiconfig.SLOT_ID<<4;           // slot     // use for K7 0/1
+       reglo = reglo + fippiconfig.CRATE_ID<<8;          // crate
+       reglo = reglo + fippiconfig.MODULE_ID<<12;        // module type 
+                                                         // reserved for mod address (always 0?)                                           
+       reghi = TL[k];                 
+
+       // now write 
+       mapped[AMZ_EXAFWR] = AK7_P16REG17+0;     // write to  k7's addr to select channel's register N
+       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;     // write lower 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG17+1;     // write to  k7's addr to select channel's register N+1
+       mapped[AMZ_EXDWR]  = reglo >> 16;        // write next 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG17+2;     // write to  k7's addr to select channel's register N+2
+       mapped[AMZ_EXDWR]  = reghi & 0xFFFF;     // write next 16 bit
+       mapped[AMZ_EXAFWR] = AK7_P16REG17+3;     // write to  k7's addr to select channel's register N+3
+       mapped[AMZ_EXDWR]  = reghi >> 16;        // write highest 16 bit
+
+
+
+                                                    
+
+      /*
+      setbit (par,bitc, bitf) {
+      unsigned int ret;
+        ret = par & (1 << bitc);
+        ret >> bitc;
+        ret << bitf;
+        return ret 
+        }
+        */
+
+
+
+    }  // end for NCHANNEL_PER_K7
+
+
+
 
    // gain, Efilter2: R3
    // current version only has 2 gains: 2 and 5. applied via I2C below, only save bit pattern here
@@ -359,17 +605,7 @@ int main(void) {
         gain[2*k+1] = 0;      
         gain[2*k]   = 1;      // 2'b01 = gain 2
       }
-      PSAM = SL[k]+SG[k]-5;       
-      PSEP = (PSAM+6) * (1 << FR);
-      PSEP = 8192 - PSEP;
-      mval = PSAM;
-      mval = mval + (PSEP        << 13);
-      mval = mval + (gain[2*k]   << 26);
-      mval = mval + (gain[2*k+1] << 27);
-      addr = N_PL_IN_PAR+k*N_PL_IN_PAR;   // channel registers begin after NPLPAR system registers, NPLPAR each
-      mapped[addr+3] = mval;
-      if(mapped[addr+3] != mval) printf("Error writing parameters to gain register\n");
-      // no limits for DIG_GAIN
+        // no limits for DIG_GAIN
    }
 
    // DAC : R4 
@@ -392,108 +628,9 @@ int main(void) {
    }
 
 
-   // waveforms: R5, R6
-   for( k = 0; k < NCHANNELS; k ++ )
-   {
-      TL[k] = BLOCKSIZE_400*(int)floor(fippiconfig.TRACE_LENGTH[k]*ADC_CLK_MHZ/BLOCKSIZE_400);       // multiply time in us *  # ticks per us = time in ticks; must be multiple of BLOCKSIZE_400
-      if(TL[k] > MAX_TL)  {
-         printf("Invalid TRACE_LENGTH = %f, maximum %f us\n",fippiconfig.TRACE_LENGTH[k],(double)MAX_TL/ADC_CLK_MHZ);
-         return -4400-k;
-      }
-      if(TL[k] <fippiconfig.TRACE_LENGTH[k]*ADC_CLK_MHZ)  {
-         printf("TRACE_LENGTH[%d] will be rounded off to = %f us, %d samples\n",k,(double)TL[k]/ADC_CLK_MHZ,TL[k]);
-      }
-      TD[k] = (int)floor(fippiconfig.TRACE_DELAY[k]*ADC_CLK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
-      if(TD[k] > MAX_TL-TWEAK_UD)  {
-         printf("Invalid TRACE_DELAY = %f, maximum %f us\n",fippiconfig.TRACE_DELAY[k],(double)(MAX_TL-TWEAK_UD)/ADC_CLK_MHZ);
-         return -4500-k;
-      }
-    }
 
-    if( (fippiconfig.RUN_TYPE == 0x500)  || 
-        (fippiconfig.RUN_TYPE == 0x400)  ||
-        (fippiconfig.RUN_TYPE == 0x402)   )     // issue warning if TL not same 
-    {
-        mval = 1;
-        for( k = 1; k < NCHANNELS; k ++ )
-        { 
-            if(TL[k] != TL[0]) mval =0;
-        }
-        if(mval==0) printf("WARNING: TRACE_LENGTHs must be the same for all channels for current LM file parser to work");      
-    }
+ 
 
-   // check limits on a few parameters that are not part of R5,6 but traditionally in this order in the settings file
-   for( k = 0; k < NCHANNELS; k ++ )
-   {
-      if(fippiconfig.BINFACTOR[k] > MAX_BFACT)     {
-         printf("Invalid BINFACTOR = %d, maximum %d\n",fippiconfig.BINFACTOR[k],MAX_BFACT);
-         return -4800-k;
-      } 
-      if(fippiconfig.TAU[k] <0)  {
-         printf("Invalid TAU = %f, must be positive\n",fippiconfig.TAU[k]);
-         return -4900-k;
-      }
-      // no limit on BLCUT
-      if(fippiconfig.XDT[k] <0)  {
-         printf("Invalid XDT = %f, must be positive\n",fippiconfig.XDT[k]);
-         return -5000-k;
-      }
-      if(fippiconfig.BASELINE_PERCENT[k] <0)  {
-         printf("Invalid BASELINE_PERCENT = %f, must be positive\n",fippiconfig.BASELINE_PERCENT[k]);
-         return -5100-k;
-      }
-   }
-
-   for( k = 0; k < NCHANNELS; k ++ )
-   {
-      if(fippiconfig.PSA_THRESHOLD[k] > MAX_PSATH) {
-         printf("Invalid PSA_THRESHOLD = %d, maximum %d\n",fippiconfig.PSA_THRESHOLD[k],MAX_PSATH);
-         return -5300-k;                                                       
-      }
-      mval = (TD[k]+TWEAK_UD)/4;           // add tweak to accomodate trigger pipelining delay
-      mval = mval + (TL[k]>0)*(1<<29);     // set bit 29 if TL is not zero
-      addr = N_PL_IN_PAR+k*N_PL_IN_PAR;   // channel registers begin after NPLPAR system registers, NPLPAR each
-      mapped[addr+5] = mval;
-      if(mapped[addr+5] != mval) printf("Error writing parameters to TRACE1 register");
-   
-      mval = TL[k]/4;
-      mval = mval + (CW       <<  16);
-      mval = mval + (fippiconfig.PSA_THRESHOLD[k]  <<  24);  // 
-      mapped[addr+6] = mval;
-      if(mapped[addr+6] != mval) printf("Error writing parameters to TRACE2 register");
-   }
-
-   // INTEGRATOR: check only
-   for( k = 0; k < NCHANNELS; k ++ )
-   {
-      if(fippiconfig.INTEGRATOR[k] > 2)     {
-         printf("Invalid INTEGRATOR = %d, maximum %d\n",fippiconfig.INTEGRATOR[k],2);
-         return -5400-k;
-      } 
-   }
-
-    // gate: R7
-   for( k = 0; k < NCHANNELS; k ++ )
-   {
-      GW[k] = (int)floor( fippiconfig.GATE_WINDOW[k] * FILTER_CLOCK_MHZ);
-      if(GW[k] > MAX_GW) {
-         printf("Invalid GATE_WINDOW = %f, maximum %d us\n",fippiconfig.GATE_WINDOW[k],MAX_GW/FILTER_CLOCK_MHZ);
-         return -5500-k;
-      }
-      GD[k] = (int)floor( fippiconfig.GATE_DELAY[k] * FILTER_CLOCK_MHZ);
-      if(GD[k] > MAX_GD) {
-         printf("Invalid GATE_DELAY = %f, maximum %d us\n",fippiconfig.GATE_DELAY[k],MAX_GD/FILTER_CLOCK_MHZ);
-         return -5600-k;
-      }
-      mval = GW[k];
-      mval = mval + (GD[k]    <<  8);
-      addr = N_PL_IN_PAR+k*N_PL_IN_PAR;   // channel registers begin after NPLPAR system registers, NPLPAR each     
-      mapped[addr+7] = mval;
-      if(mapped[addr+7] != mval) printf("Error writing parameters to GATE register");
-   }
-
-   // ADC serial I/O: R8
-   // currently not used
 
    // coincdelay: R9
    for( k = 0; k < NCHANNELS; k ++ )
@@ -509,18 +646,7 @@ int main(void) {
       if(mapped[addr+9] != mval) printf("Error writing parameters to COINC_DELAY register");
    }
 
-    // BLAVG: check only
-   for( k = 0; k < NCHANNELS; k ++ )
-   {
-      if(fippiconfig.BLAVG[k] > 65535)     {
-         printf("Invalid BLAVG = %d, maximum %d\n",fippiconfig.BLAVG[k],65535);
-         return -5800-k;
-      } 
-      if( (fippiconfig.BLAVG[k] >0) && (fippiconfig.BLAVG[k] < 65535-MAX_BLAVG ) )     {
-         printf("Invalid BLAVG = %d, minimum %d (or zero to turn off)\n",fippiconfig.BLAVG[k],65535-MAX_BLAVG);
-         return -5800-k;
-      } 
-   }
+
 
    // PSA: R10
    for( k = 0; k < NCHANNELS; k ++ )

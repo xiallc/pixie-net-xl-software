@@ -644,6 +644,9 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
 //   printf("COINCIDENCE_PATTERN = 0x%x\n",config->COINCIDENCE_PATTERN);
 
   // --------------- Other module parameters -------------------------------------
+
+    ret = parse_single_int_val( label_to_values, "MAX_EVENTS", config->MAX_EVENTS, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -8;
   
   ret = parse_single_dbl_val( label_to_values, "COINCIDENCE_WINDOW", config->COINCIDENCE_WINDOW, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -7;
