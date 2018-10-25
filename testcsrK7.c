@@ -114,9 +114,9 @@ int main( int argc, char *argv[] ) {
   printf( "MZ CP read: 0x%x\n", mval );
 */
   mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
-  mval = mapped[AMZSYSREV];	    
+  mval = mapped[AMZ_SYSREV];	    
   printf( "MZ SYSREV low read: 0x%x\n", mval );
-   mval = mapped[AMZCSROUTH];	     
+   mval = mapped[AMZ_CSROUTH];	     
   printf( "MZ CSRout high read: 0x%x\n\n", mval );
  //    mval = mapped[0x0010];	     
  // printf( "MZ sysrevision read: 0x%x\n", mval );

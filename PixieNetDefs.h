@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------
- * Copyright (c) 2017 XIA LLC
+ * Copyright (c) 2018 XIA LLC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, 
@@ -88,6 +88,14 @@
 #define MAX_QDCLD 250         // length plus delay of QDC sum, in samples
 #define MAX_BLAVG 16
 #define MAX_BADBL 20
+#define DB01_GAIN0  1.6
+#define DB01_GAIN1  2.4
+#define DB01_GAIN2  3.5
+#define DB01_GAIN3  5.4
+#define DB01_GAIN4  6.7
+#define DB01_GAIN5  9.9
+#define DB01_GAIN6  14.7
+#define DB01_GAIN7  22.6
 
 // maxima for P16 style parameters
 #define FASTTRIGBACKLEN_MAX 4095
@@ -195,9 +203,15 @@
 #define CS_MZ   0x00
 #define CS_K0   0x08
 #define CS_K1   0x10
-#define AMZCSROUTL  0x20
-#define AMZCSROUTH  0x21
-#define AMZBRDINFO  0x22
+#define AMZ_FIRSTDAC  0x10
+#define AMZ_EXAFWR 0x18
+#define AMZ_EXDWR  0x19
+#define AMZ_EXAFRD 0x1A
+#define AMZ_EXDRD  0x1B
+#define AMZ_CSROUTL  0x20
+#define AMZ_CSROUTH  0x21
+#define AMZ_BRDINFO  0x22
+#define AMZ_SYSREV  0x28
 #define AK7_CHANNEL 0x03
 #define AK7_P16REG00 0x40
 #define AK7_P16REG01 0x44

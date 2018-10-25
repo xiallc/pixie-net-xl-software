@@ -155,7 +155,7 @@ void I2Cbytereceive(volatile unsigned int *mapped, unsigned int *data) {
       mapped[AI2CREG] = mval; 
       usleep(I2CWAIT);
    //   mapped[AOUTBLOCK] = OB_EVREG;          
-      mval = mapped[AMZCSROUTL];
+      mval = mapped[AMZ_CSROUTL];
    //   printf("CSRout %x I2Cwait %d \n",mval,I2CWAIT);
       if(mval & 0x4)          // test for SDA out bit
          data[7-k] = 1;            
@@ -179,7 +179,7 @@ int hwinfo( volatile unsigned int *mapped )
 
   // ---------------- read EEPROM ---------------------------
    mapped[AOUTBLOCK] = CS_MZ;     // read from event registers
-   mval = mapped[AMZBRDINFO];
+   mval = mapped[AMZ_BRDINFO];
    //printf("ABRDINGFO 0x%04X\n",mval);
 //   mapped[AOUTBLOCK] = OB_IOREG;     // read from i/o registers
 

@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------
- * Copyright (c) 2017 XIA LLC
+ * Copyright (c) 2018 XIA LLC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, 
@@ -61,7 +61,7 @@ int main(void) {
   void *map_addr;
   int size = 4096;
   volatile unsigned int *mapped;
-  int k, addr;
+  int k, m, addr;
 
 
   // ******************* read ini file and fill struct with values ********************
@@ -84,10 +84,14 @@ int main(void) {
     return rval;
   }
 
-  unsigned int  mval, dac, reglo, reghi;
+  unsigned int  mval, dac, reglo, reghi, Vgain;
   unsigned int CW, SFR, FFR, SL[NCHANNELS], SG[NCHANNELS], FL[NCHANNELS], FG[NCHANNELS], TH[NCHANNELS];
   unsigned int PSAM, PSEP, TL[NCHANNELS], TD[NCHANNELS];
-  unsigned int gain[NCHANNELS*2], i2cdata[8];
+  unsigned int i2cdata[8];
+  unsigned int sw0bit[NCHANNEL_PER_K7] = {6, 11, 4, 0};       // these arrays encode the mapping of gain bits to I2C signals
+  unsigned int sw1bit[NCHANNEL_PER_K7] = {8, 2, 5, 10};
+  unsigned int gnbit[NCHANNEL_PER_K7] = {9, 12, 1, 3};
+  unsigned int i2cgain[16] = {0}; 
 
 
   // *************** PS/PL IO initialization *********************
@@ -710,52 +714,257 @@ int main(void) {
         }
         */
 
+   // --------------------------- DACs -----------------------------------
 
+    mapped[AOUTBLOCK] = CS_MZ;	  // select MZ controller
 
-   // gain, Efilter2: R3
-   // current version only has 2 gains: 2 and 5. applied via I2C below, only save bit pattern here
-   for( k = 0; k < NCHANNELS; k ++ )
-   {
-        if( !( (fippiconfig.ANALOG_GAIN[k] == GAIN_HIGH)  ||
-               (fippiconfig.ANALOG_GAIN[k] == GAIN_LOW)   ) ) {
-        printf("ANALOG_GAIN = %f not matching available gains exactly, rounding to nearest\n",fippiconfig.ANALOG_GAIN[k]);
-    }
-
-      if(fippiconfig.ANALOG_GAIN[k] > (GAIN_HIGH+GAIN_LOW)/2 ) {
-         gain[2*k+1] = 1;      // 2'b10 = gain 5
-         gain[2*k]   = 0;   
-      }
-      else  {
-        gain[2*k+1] = 0;      
-        gain[2*k]   = 1;      // 2'b01 = gain 2
-      }
-        // no limits for DIG_GAIN
-   }
-
-   // DAC : R4 
-   for( k = 0; k < NCHANNELS; k ++ )
+   for( k = 0; k < NCHANNELS_PRESENT; k ++ )
    {
       dac = (int)floor( (1 - fippiconfig.VOFFSET[k]/ V_OFFSET_MAX) * 32768);	
       if(dac > 65535)  {
          printf("Invalid VOFFSET = %f, must be between %f and -%f\n",fippiconfig.VOFFSET[k], V_OFFSET_MAX-0.05, V_OFFSET_MAX-0.05);
          return -4300-k;
       }
-      mval=dac;
-      addr = N_PL_IN_PAR+k*N_PL_IN_PAR;   // channel registers begin after NPLPAR system registers, NPLPAR each
-      mapped[addr+4] = mval;
-      if(mapped[addr+4] != mval) printf("Error writing parameters to DAC register\n");
+      mapped[AMZ_FIRSTDAC+k] = dac;
+      if(mapped[AMZ_FIRSTDAC+k] != dac) printf("Error writing parameters to DAC register\n");
       usleep(DACWAIT);		// wait for programming
-      mapped[addr+4] = mval;     // repeat, sometimes doesn't take?
-      if(mapped[addr+4] != mval) printf("Error writing parameters to DAC register\n");
+      mapped[AMZ_FIRSTDAC+k] = dac;     // repeat, sometimes doesn't take?
+      if(mapped[AMZ_FIRSTDAC+k] != dac) printf("Error writing parameters to DAC register\n");
       usleep(DACWAIT);     
  //     printf("DAC %d, value 0x%x (%d), [%f V] \n",k, dac, dac,fippiconfig.VOFFSET[k]);
-   }
+   }           // end for channels DAC
 
 
 
- 
+   // --------------------------- Gains ----------------------------------
+   // DB01 has 4 gains. Applied via I2C specific to each DB
+   // no limits for DIG_GAIN
+   // bit mapping
    
+  
+   for( k = 0; k < NCHANNELS_PRESENT; k ++ )
+   {
+        if( !( (fippiconfig.ANALOG_GAIN[k] == DB01_GAIN0)  ||
+               (fippiconfig.ANALOG_GAIN[k] == DB01_GAIN1)  ||
+               (fippiconfig.ANALOG_GAIN[k] == DB01_GAIN2)  ||
+               (fippiconfig.ANALOG_GAIN[k] == DB01_GAIN3)  ||
+               (fippiconfig.ANALOG_GAIN[k] == DB01_GAIN4)  ||
+               (fippiconfig.ANALOG_GAIN[k] == DB01_GAIN5)  ||
+               (fippiconfig.ANALOG_GAIN[k] == DB01_GAIN6)  ||
+               (fippiconfig.ANALOG_GAIN[k] == DB01_GAIN7)   ) ) {
+        printf("ANALOG_GAIN = %f not matching available gains exactly, please choose from this list:\n",fippiconfig.ANALOG_GAIN[k]);
+        printf("    %f \n",DB01_GAIN0);
+        printf("    %f \n",DB01_GAIN1);
+        printf("    %f \n",DB01_GAIN2);
+        printf("    %f \n",DB01_GAIN3);
+        printf("    %f \n",DB01_GAIN4);
+        printf("    %f \n",DB01_GAIN5);
+        printf("    %f \n",DB01_GAIN6);
+        printf("    %f \n",DB01_GAIN7);
+        return -4300-k;
+      }  // end if
+    }    // end for
+    /*     (SGA = SW1/SW0/relay)	            gain
+					    (0/0/0)                           1.6             // relay off = low gain    (matching P500e)
+					    (0/1/0)                           2.4
+					    (1/0/0)                           3.5
+					    (1/1/0)                           5.4
 
+					    (0/0/1)                           6.7              // relay on = high gain    (matching P500e)
+					    (0/1/1)                           9.9
+					    (1/0/1)                           14.7
+					    (1/1/1)                           22.6	*/
+
+           /* gain bit map for PXdesk+DB01
+        I2C bit   PXdesk DB signal      DB01 gain
+         0        IO_DB_5                SW0_D (CMOS)
+         1        Gain_C                 Gain_C (relay)
+         2        IO_DB_2                SW1_B (CMOS)
+         3        Gain_D                 Gain_D (relay)
+         4        IO_DB_3                SW0_C (CMOS)
+         5        IO_DB_4                SW1_C (CMOS)
+         6        IO_DB_N                SW0_A (CMOS)
+         7        IO_DB_P                unused
+         8        IO_DB_0                SW1_A (CMOS)
+         9        Gain_A                 Gain_A (relay)
+         10       IO_DB_6                SW1_D (CMOS)
+         11       IO_DB_1                SW0_B (CMOS)
+         12       Gain_B                 Gain_B (relay)
+         13       unused                 unused
+         14       unused                 unused
+         15       unused                 unused
+         
+         =>  unsigned int sw0bit[NCHANNEL_PER_K7] = {6, 11, 4, 0};       // these arrays encode the mapping of gain bits to I2C signals
+             unsigned int sw1bit[NCHANNEL_PER_K7] = {8, 2, 5, 10};
+             unsigned int gnbit[NCHANNEL_PER_K7] = {9, 12, 1, 3};
+       */
+
+       // ............. set the bits for 4 channels  ................. 
+       for( k = 0; k < NCHANNEL_PER_K7; k ++ )            // XXXXXX
+      {
+         m = k;                                         // XXXXXX
+         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN0)  { i2cgain[sw1bit[m]] = 0; i2cgain[sw0bit[m]] = 0; i2cgain[gnbit[m]] = 0;  }
+         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN1)  { i2cgain[sw1bit[m]] = 0; i2cgain[sw0bit[m]] = 1; i2cgain[gnbit[m]] = 0;  }
+         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN2)  { i2cgain[sw1bit[m]] = 1; i2cgain[sw0bit[m]] = 0; i2cgain[gnbit[m]] = 0;  }
+         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN3)  { i2cgain[sw1bit[m]] = 1; i2cgain[sw0bit[m]] = 1; i2cgain[gnbit[m]] = 0;  }
+         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN4)  { i2cgain[sw1bit[m]] = 0; i2cgain[sw0bit[m]] = 0; i2cgain[gnbit[m]] = 1;  }
+         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN5)  { i2cgain[sw1bit[m]] = 0; i2cgain[sw0bit[m]] = 1; i2cgain[gnbit[m]] = 1;  }
+         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN6)  { i2cgain[sw1bit[m]] = 1; i2cgain[sw0bit[m]] = 0; i2cgain[gnbit[m]] = 1;  }
+         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN7)  { i2cgain[sw1bit[m]] = 1; i2cgain[sw0bit[m]] = 1; i2cgain[gnbit[m]] = 1;  }
+   
+      }    // end for
+
+      // I2C write for 4 channels
+       mapped[AOUTBLOCK] = CS_MZ;	  // select MZ controller
+       mapped[AAUXCTRL] = 0x0020;	  // select bit 5 -> DB0 I2C        // XXXXXX
+
+       // first 8 bits
+       I2Cstart(mapped);
+
+      // I2C addr byte
+      i2cdata[7] = 0;
+      i2cdata[6] = 1;
+      i2cdata[5] = 0;
+      i2cdata[4] = 0;
+      i2cdata[3] = 0;   // A2
+      i2cdata[2] = 1;   // A1
+      i2cdata[1] = 0;   // A0
+      i2cdata[0] = 0;   // R/W*
+      I2Cbytesend(mapped, i2cdata);
+      I2Cslaveack(mapped);
+   
+      // I2C data byte
+      for( k = 0; k <8; k++ )     // NCHANNELS*2 gains, but 8 I2C bits
+      {
+         i2cdata[k] = i2cgain[k];
+      }
+      I2Cbytesend(mapped, i2cdata);
+      I2Cslaveack(mapped);
+   
+      // I2C data byte
+      I2Cbytesend(mapped, i2cdata);      // send same bits again for enable?
+      I2Cslaveack(mapped);
+   
+      I2Cstop(mapped);
+
+       
+      
+      // second 8 bits
+       I2Cstart(mapped);
+
+      // I2C addr byte
+      i2cdata[7] = 0;
+      i2cdata[6] = 1;
+      i2cdata[5] = 0;
+      i2cdata[4] = 0;
+      i2cdata[3] = 1;   // A2
+      i2cdata[2] = 0;   // A1
+      i2cdata[1] = 0;   // A0
+      i2cdata[0] = 0;   // R/W*
+      I2Cbytesend(mapped, i2cdata);
+      I2Cslaveack(mapped);
+   
+      // I2C data byte
+      for( k = 0; k <8; k++ )     // NCHANNELS*2 gains, but 8 I2C bits
+      {
+         i2cdata[k] = i2cgain[k+8];
+      }
+      I2Cbytesend(mapped, i2cdata);
+      I2Cslaveack(mapped);
+   
+      // I2C data byte
+      I2Cbytesend(mapped, i2cdata);      // send same bits again for enable?
+      I2Cslaveack(mapped);
+   
+      I2Cstop(mapped);
+
+             // ............. set the bits for 4 more  channels  ................. 
+       for( k = NCHANNEL_PER_K7; k < 2*NCHANNEL_PER_K7; k ++ )          // XXXXXX
+      {
+         m = k - NCHANNEL_PER_K7;                                         // XXXXXX
+         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN0)  { i2cgain[sw1bit[m]] = 0; i2cgain[sw0bit[m]] = 0; i2cgain[gnbit[m]] = 0;  }
+         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN1)  { i2cgain[sw1bit[m]] = 0; i2cgain[sw0bit[m]] = 1; i2cgain[gnbit[m]] = 0;  }
+         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN2)  { i2cgain[sw1bit[m]] = 1; i2cgain[sw0bit[m]] = 0; i2cgain[gnbit[m]] = 0;  }
+         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN3)  { i2cgain[sw1bit[m]] = 1; i2cgain[sw0bit[m]] = 1; i2cgain[gnbit[m]] = 0;  }
+         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN4)  { i2cgain[sw1bit[m]] = 0; i2cgain[sw0bit[m]] = 0; i2cgain[gnbit[m]] = 1;  }
+         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN5)  { i2cgain[sw1bit[m]] = 0; i2cgain[sw0bit[m]] = 1; i2cgain[gnbit[m]] = 1;  }
+         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN6)  { i2cgain[sw1bit[m]] = 1; i2cgain[sw0bit[m]] = 0; i2cgain[gnbit[m]] = 1;  }
+         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN7)  { i2cgain[sw1bit[m]] = 1; i2cgain[sw0bit[m]] = 1; i2cgain[gnbit[m]] = 1;  }
+   
+      }    // end for
+
+      // I2C write for 4 channels
+       mapped[AOUTBLOCK] = CS_MZ;	  // select MZ controller
+       mapped[AAUXCTRL] = 0x0040;	  // select bit 6 -> DB1 I2C        // XXXXXX
+
+       // first 8 bits
+       I2Cstart(mapped);
+
+      // I2C addr byte
+      i2cdata[7] = 0;
+      i2cdata[6] = 1;
+      i2cdata[5] = 0;
+      i2cdata[4] = 0;
+      i2cdata[3] = 0;   // A2
+      i2cdata[2] = 1;   // A1
+      i2cdata[1] = 0;   // A0
+      i2cdata[0] = 0;   // R/W*
+      I2Cbytesend(mapped, i2cdata);
+      I2Cslaveack(mapped);
+   
+      // I2C data byte
+      for( k = 0; k <8; k++ )     // prepare I2C bits
+      {
+         i2cdata[k] = i2cgain[k];
+      }
+      I2Cbytesend(mapped, i2cdata);
+      I2Cslaveack(mapped);
+   
+      // I2C data byte
+      I2Cbytesend(mapped, i2cdata);      // send same bits again for enable?
+      I2Cslaveack(mapped);
+   
+      I2Cstop(mapped);
+
+       
+      
+      // second 8 bits
+       I2Cstart(mapped);
+
+      // I2C addr byte
+      i2cdata[7] = 0;
+      i2cdata[6] = 1;
+      i2cdata[5] = 0;
+      i2cdata[4] = 0;
+      i2cdata[3] = 1;   // A2
+      i2cdata[2] = 0;   // A1
+      i2cdata[1] = 0;   // A0
+      i2cdata[0] = 0;   // R/W*
+      I2Cbytesend(mapped, i2cdata);
+      I2Cslaveack(mapped);
+   
+      // I2C data byte
+      for( k = 0; k <8; k++ )     // prepare I2C bits 
+      {
+         i2cdata[k] = i2cgain[k+8];
+      }
+      I2Cbytesend(mapped, i2cdata);
+      I2Cslaveack(mapped);
+   
+      // I2C data byte
+      I2Cbytesend(mapped, i2cdata);      // send same bits again for enable?
+      I2Cslaveack(mapped);
+   
+      I2Cstop(mapped);
+
+  
+
+
+
+     // --------------------------- finish up ----------------------------------
+
+       /*
+     // TODO
    // restart/initialize filters 
    usleep(100);      // wait for filter FIFOs to clear, really should be longest SL+SG
    for( k = 0; k < NCHANNELS; k ++ )
@@ -767,90 +976,20 @@ int main(void) {
    mapped[ADSP_CLR] = 1;
    mapped[ARTC_CLR] = 1;
 
+       */ 
+    // --------------------------- HW info ----------------------------------
 
-   // ************************ I2C programming *********************************
-   // gain and termination applied across all channels via FPGA's I2C
-   // TODO
-   // I2C connects to gain enables, termination relays, thermometer, PROM (with s/n etc), optional external
-
-    // ---------------------- program gains -----------------------
-
-   I2Cstart(mapped);
-
-   // I2C addr byte
-   i2cdata[7] = 0;
-   i2cdata[6] = 1;
-   i2cdata[5] = 0;
-   i2cdata[4] = 0;
-   i2cdata[3] = 0;   // A2
-   i2cdata[2] = 1;   // A1
-   i2cdata[1] = 0;   // A0
-   i2cdata[0] = 0;   // R/W*
-   I2Cbytesend(mapped, i2cdata);
-   I2Cslaveack(mapped);
-
-   // I2C data byte
-   for( k = 0; k <8; k++ )     // NCHANNELS*2 gains, but 8 I2C bits
-   {
-      i2cdata[k] = gain[k];
-   }
-   I2Cbytesend(mapped, i2cdata);
-   I2Cslaveack(mapped);
-
-   // I2C data byte
-   I2Cbytesend(mapped, i2cdata);      // send same bits again for enable?
-   I2Cslaveack(mapped);
-
-   I2Cstop(mapped);
-
-      // ---------------------- program termination -----------------------
-
-   I2Cstart(mapped);
-
-   // I2C addr byte
-   i2cdata[7] = 0;
-   i2cdata[6] = 1;
-   i2cdata[5] = 0;
-   i2cdata[4] = 0;
-   i2cdata[3] = 0;   // A2
-   i2cdata[2] = 0;   // A1
-   i2cdata[1] = 1;   // A0
-   i2cdata[0] = 0;   // R/W*
-   I2Cbytesend(mapped, i2cdata);
-   I2Cslaveack(mapped);
-
-   // I2C data byte
-   // settings taken from MCSRB
-   i2cdata[7] = (fippiconfig.MODULE_CSRB & 0x0080) >> 7 ;    // power down ADC driver D, NYI
-   i2cdata[6] = (fippiconfig.MODULE_CSRB & 0x0040) >> 6 ;    // power down ADC driver C, NYI
-   i2cdata[5] = (fippiconfig.MODULE_CSRB & 0x0020) >> 5 ;    // power down ADC driver B, NYI
-   i2cdata[4] = (fippiconfig.MODULE_CSRB & 0x0010) >> 4 ;    // power down ADC driver A, NYI
-   i2cdata[3] = (fippiconfig.MODULE_CSRB & 0x0008) >> 3 ;    //unused
-   i2cdata[2] = (fippiconfig.MODULE_CSRB & 0x0004) >> 2 ;    // term. CD
-   i2cdata[1] = (fippiconfig.MODULE_CSRB & 0x0002) >> 1 ;    // term. AB
-   i2cdata[0] = (fippiconfig.MODULE_CSRB & 0x0001)      ;    //unused
-   I2Cbytesend(mapped, i2cdata);
-   I2Cslaveack(mapped);
-
-   // I2C data byte
-   I2Cbytesend(mapped, i2cdata);      // send same bits again for enable?
-   I2Cslaveack(mapped);
-
-   I2Cstop(mapped);
-
-  
-   // ************************ end I2C *****************************************
-
+ 
    // ADC board temperature
-    printf("ADC board temperature: %d C \n",(int)board_temperature(mapped) );
+ //   printf("ADC board temperature: %d C \n",(int)board_temperature(mapped) );
 
    // ***** ZYNQ temperature
-     printf("Zynq temperature: %d C \n",(int)zynq_temperature() );
+ //    printf("Zynq temperature: %d C \n",(int)zynq_temperature() );
 
    // ***** check HW info *********
-   k = hwinfo(mapped);
-   printf("Revision %04X, Serial Number %d \n",(k>>16) & 0xFFFF, k & 0xFFFF);
-   if(k==0) printf("WARNING: HW may be incompatible with this SW/FW \n");
+//   k = hwinfo(mapped);
+//   printf("Revision %04X, Serial Number %d \n",(k>>16) & 0xFFFF, k & 0xFFFF);
+//   if(k==0) printf("WARNING: HW may be incompatible with this SW/FW \n");
 
  
  // clean up  

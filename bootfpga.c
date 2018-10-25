@@ -119,7 +119,7 @@ int main( void ) {
   printf("0x1 read: 0x%x\n",mval);
   mval = 0x0;
   mapped[0x6] = mval;	
-  mval = mapped[AMZCSROUTH];	
+  mval = mapped[AMZ_CSROUTH];	
   printf("0x1 read: 0x%x\n\n",mval);
 
   */
@@ -144,12 +144,12 @@ int main( void ) {
   // check INIT, continue when high
   // Initialize counter1 to 0. If mval.15==0, finished clearing communication FPGA 
   //mapped[AOUTBLOCK] = OB_MZ_EVREG;	  // read/write from/to MZ event block
-  mval = mapped[AMZCSROUTL];	
+  mval = mapped[AMZ_CSROUTL];	
   printf("ACSROUT read: 0x%x\n",mval);
   counter1 = 0;
   while ((mval& 0x8000) == 0x0000 && counter1 < 100) {
       usleep(I2CWAIT);
-      mval = mapped[AMZCSROUTL];
+      mval = mapped[AMZ_CSROUTL];
    //   printf("ACSROUT read: 0x%x\n",mval);
       counter1++;
   }
@@ -189,7 +189,7 @@ int main( void ) {
   // check DONE, ok when high
   // If mval.14==0, configuration ok
 //  mapped[AOUTBLOCK] = OB_MZ_EVREG;	  // read/write from/to MZ event block
-  mval = mapped[AMZCSROUTL];	
+  mval = mapped[AMZ_CSROUTL];	
   if( (mval& 0x4000) != 0x4000) {
          printf("ERROR: Programming FPGA not successful.\n");
           flock( fd, LOCK_UN );
