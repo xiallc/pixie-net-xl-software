@@ -90,14 +90,12 @@ typedef struct PixieNetFippiConfig {
    /** Number of ADC channels on the ADC carrier board.
       Typical value of 4. May be overwritten by EEPROM value.
    */
-
-  unsigned int NUMBER_CHANNELS;
+    unsigned int NUMBER_CHANNELS;
 
     /** Reserved for options in the C code, e.g printing errors.
       Currently unused
    */
-
-  unsigned int C_CONTROL;
+    unsigned int C_CONTROL;
 
     /** The clock/real time to aquire data for, in seconds.  This will be an
       approximation for list mode data collection.
@@ -111,10 +109,13 @@ typedef struct PixieNetFippiConfig {
   unsigned int POLL_TIME;
 
   /* ID numbers to be compatible with P16 data format      */
-
   unsigned int  CRATE_ID;
   unsigned int  SLOT_ID;
   unsigned int  MODULE_ID;
+
+    /** Typical value of 1 
+  Bit0 : pulser enabled   */
+  unsigned int AUX_CTRL;
 
   /* SYS_U## : reserved parameters  */
 
@@ -141,7 +142,10 @@ typedef struct PixieNetFippiConfig {
        768 (0x301) Histogram only, do not save listmode data (I assume?)
    */
   unsigned int RUN_TYPE;
-  
+
+   /** The module ends its spill when this number of events has been acquired. 
+   */
+   unsigned int MAX_EVENTS;
   
   /** Coincidence pattern for accepted between channels.
       0x0008 require channels 0 and 1 to be in coincidence.
@@ -149,26 +153,18 @@ typedef struct PixieNetFippiConfig {
       0xFFFE = 65534 lets any hit pattern through.
    */
   unsigned int COINCIDENCE_PATTERN;
-
-    /** The module ends its spill when this number of events has been acquired. 
-   */
-
-   unsigned int MAX_EVENTS;
-  
+ 
   /** Time between triggers, in micro-seconds, to consider the two hits to be a
       coincidence. 
       Typical value would be 0.040
    */
   double COINCIDENCE_WINDOW;
-
-              
-
+           
   
   /** If set to true, resets FPGA/DAC timers. */
   unsigned int SYNC_AT_START;
   
    /* reseved for daq resume */
-
    unsigned int RESUME;
 
      /** The clock decimation factor for calculating trigger and energy values.
@@ -183,9 +179,6 @@ typedef struct PixieNetFippiConfig {
     probably unused */
  unsigned int FASTTRIG_BACKPLANEENA;
   
-  /** Typical value of 1 
-  Bit0 : pulser enabled   */
-  unsigned int AUX_CTRL;
 
   /* General trigger configuration */ 
   unsigned int TRIG_CONFIG0;
@@ -241,13 +234,12 @@ typedef struct PixieNetFippiConfig {
   double TRIGGER_RISETIME[NCHANNELS]; //             us     Trigger filter rise time
   double TRIGGER_FLATTOP[NCHANNELS]; //              us     Trigger filter flat top
   double TRIGGER_THRESHOLD[NCHANNELS]; //                 Trigger threshold 
-  unsigned int CFD_THRESHOLD[NCHANNELS]; //               CFD trigger threshold
   unsigned int THRESH_WIDTH[NCHANNELS]; //           us     Width for trigger above threshold
   double TRACE_LENGTH[NCHANNELS]; //                 us     Captured waveform length
   double TRACE_DELAY[NCHANNELS]; //                  us     Pre-trigger delay
   unsigned int BINFACTOR[NCHANNELS]; //                   MCA binning factor: divide by 2^N)
   unsigned int INTEGRATOR[NCHANNELS]; //                  Filter mode: 0-trapezoidal, 1-gap sum integral NYI, 2-ignore gap sum, NYI. 
-    unsigned int BLCUT[NCHANNELS]; //                     Threshold for bad baseline measurements
+  unsigned int BLCUT[NCHANNELS]; //                     Threshold for bad baseline measurements
   double BASELINE_PERCENT[NCHANNELS]; //                  Target offset for baseline, nominally in percent, NYI
   unsigned int BLAVG[NCHANNELS]; //                       Baseline averaging
   double TAU[NCHANNELS]; //                          us     Preamplifier decay time
@@ -257,12 +249,12 @@ typedef struct PixieNetFippiConfig {
   unsigned int MULTIPLICITY_MASKH[NCHANNELS]; //          Mask multiplicity contribution group - high 16-bit
   unsigned int MULTIPLICITY_MASKX[NCHANNELS]; //          Mask multiplicity contribution group - extra 16-bit
   unsigned int FASTTRIG_BACKLEN[NCHANNELS];   //    us    //             Length of fast rigger signal on the backplane
+  unsigned int CFD_THRESHOLD[NCHANNELS]; //               CFD trigger threshold
   unsigned int CFD_DELAY[NCHANNELS] ;         //    ticks    //              iThemba CFD delay
   unsigned int CFD_SCALE[NCHANNELS];                     //              iThemba CFD scale; 0(div2), 1(div4), 2(div8), 3(div16)
   unsigned int EXTTRIG_STRETCH[NCHANNELS];     //          //              iThemba external trigger stretch
   unsigned int VETO_STRETCH[NCHANNELS] ;       //          //              iThemba veto signal (channel gate or module gate) stretch
   unsigned int CHANTRIG_STRETCH[NCHANNELS];    //          //
-  unsigned int TRIGOUT_LENGTH[NCHANNELS] ;     //          //
   unsigned int EXTERN_DELAYLEN[NCHANNELS] ;    //          //               Delay length for each channel's input signal
   unsigned int FTRIGOUT_DELAY[NCHANNELS];      //          //               Fast trigger output delay for system synchronization; delay = (FtrigoutDelay + 4)*10ns 
   unsigned int QDCLen0[NCHANNELS];             //  ticks      iThemba QDC length #0 
