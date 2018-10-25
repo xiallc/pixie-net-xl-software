@@ -201,8 +201,8 @@
 
 // PN XL specific
 #define CS_MZ   0x00
-#define CS_K0   0x08
-#define CS_K1   0x10
+#define CS_K0   0x04
+#define CS_K1   0x08
 #define AMZ_FIRSTDAC  0x10
 #define AMZ_EXAFWR 0x18
 #define AMZ_EXDWR  0x19

@@ -159,6 +159,40 @@ int main( int argc, char *argv[] ) {
   }
 
 
+   // select ch registers
+        mapped[AMZ_EXAFWR] = 3;     // write to  k7's addr
+      mapped[AMZ_EXDWR] = 0x100;
+ 
+  // write into ext ch I/O regs
+  for(k=0;k<16;k++) {
+     if(k!=3) {
+      mapped[AMZ_EXAFWR] = k+0x40;     // write to  k7's addr
+      mapped[AMZ_EXDWR] = k+100;
+     //   usleep(5);
+        }
+ //        printf( "K7 0 write to 0x%x: %d\n", k, k*val );
+
+  }
+
+   // read from ext ch I/O regs
+  for(k=0;k<16;k++) {
+      mapped[AMZ_EXAFRD] = k+0x40;     // write to  k7's addr
+        usleep(1);
+      mval = mapped[AMZ_EXDRD]; 
+     printf( "K7 0 read from 0x%x: %d\n", k, mval );
+     //   usleep(5);
+  }
+
+     // read from ext ch O regs
+  for(k=0;k<16;k++) {
+      mapped[AMZ_EXAFRD] = k+0xC0;     // write to  k7's addr
+        usleep(1);
+      mval = mapped[AMZ_EXDRD]; 
+     printf( "K7 0 read from 0x%x: %d\n", k+0x80, mval );
+    //    usleep(5);
+  }
+
+
   mapped[AMZ_EXAFWR] = addr;     // write to  k7's addr
   mapped[AMZ_EXDWR] = val;
 //  usleep(2);
