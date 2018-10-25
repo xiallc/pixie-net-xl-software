@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------
- * Copyright (c) 2017 XIA LLC
+ * Copyright (c) 2018 XIA LLC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, 
@@ -168,6 +168,16 @@ void I2Cbytereceive(volatile unsigned int *mapped, unsigned int *data) {
 
 
 
+
+ unsigned int setbit( unsigned int par, unsigned int bitc, unsigned int bitf)
+ // returns 2^bitf if bit bitc of par is 1 
+ { 
+   unsigned int ret;
+        ret = par & (1 << bitc);     // bitwise and or parameter with ccsra bit
+        ret >> bitc;                 // shift down to bit 0 
+        ret << bitf;                 // shift up to fippi bit
+        return (ret);
+  }
 
 
 int hwinfo( volatile unsigned int *mapped )

@@ -654,25 +654,25 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
   ret = parse_single_int_val( label_to_values, "SYNC_AT_START", config->SYNC_AT_START, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -11;
 
-  ret = parse_single_int_val( label_to_values, "SLOW_FILTER_RANGE", config->FILTER_RANGE, ignore_missing ) ;
+  ret = parse_single_int_val( label_to_values, "SLOW_FILTER_RANGE", config->SLOW_FILTER_RANGE, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -9;
   
-  ret = parse_single_int_val( label_to_values, "FAST_FILTER_RANGE", config->FILTER_RANGE, ignore_missing ) ;
+  ret = parse_single_int_val( label_to_values, "FAST_FILTER_RANGE", config->FAST_FILTER_RANGE, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -9;
   
-   ret = parse_single_int_val( label_to_values, "FASTTRIG_BACKPLANEENA", config->SYNC_AT_START, ignore_missing ) ;
+   ret = parse_single_int_val( label_to_values, "FASTTRIG_BACKPLANEENA", config->FASTTRIG_BACKPLANEENA, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -11;
 
-  ret = parse_single_int_val( label_to_values, "TRIG_CONFIG0", config->FILTER_RANGE, ignore_missing ) ;
+  ret = parse_single_int_val( label_to_values, "TRIG_CONFIG0", config->TRIG_CONFIG0, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -9;
   
-  ret = parse_single_int_val( label_to_values, "TRIG_CONFIG1", config->FILTER_RANGE, ignore_missing ) ;
+  ret = parse_single_int_val( label_to_values, "TRIG_CONFIG1", config->TRIG_CONFIG1, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -9;
 
-   ret = parse_single_int_val( label_to_values, "TRIG_CONFIG2", config->SYNC_AT_START, ignore_missing ) ;
+   ret = parse_single_int_val( label_to_values, "TRIG_CONFIG2", config->TRIG_CONFIG2, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -11;
 
-  ret = parse_single_int_val( label_to_values, "TRIG_CONFIG3", config->FILTER_RANGE, ignore_missing ) ;
+  ret = parse_single_int_val( label_to_values, "TRIG_CONFIG3", config->TRIG_CONFIG3, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -9;
    
   //unsigned int MOD_U4, MOD_U3, MOD_U2, MOD_U1, MOD_U0;
@@ -852,10 +852,7 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
   ret = parse_multiple_dbl_val( label_to_values, "TRIGGER_THRESHOLD", config->TRIGGER_THRESHOLD, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -19;
   
-  ret = parse_multiple_int_val( label_to_values, "CFD_THRESHOLD", config->BINFACTOR, ignore_missing ) ;
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -27;
-
-  ret = parse_multiple_int_val( label_to_values, "THRESH_WIDTH", config->BINFACTOR, ignore_missing ) ;
+  ret = parse_multiple_dbl_val( label_to_values, "THRESH_WIDTH", config->THRESH_WIDTH, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -27;
     
   ret = parse_multiple_dbl_val( label_to_values, "TRACE_LENGTH", config->TRACE_LENGTH, ignore_missing );
@@ -885,67 +882,67 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
   ret = parse_multiple_dbl_val( label_to_values, "XDT", config->XDT, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -30;
   
-    ret = parse_multiple_int_val( label_to_values, "MULTIPLICITY_MASKL", config->BLCUT, ignore_missing );
+    ret = parse_multiple_int_val( label_to_values, "MULTIPLICITY_MASKL", config->MULTIPLICITY_MASKL, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
 
-    ret = parse_multiple_int_val( label_to_values, "MULTIPLICITY_MASKM", config->BLCUT, ignore_missing );
+    ret = parse_multiple_int_val( label_to_values, "MULTIPLICITY_MASKM", config->MULTIPLICITY_MASKM, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
 
-    ret = parse_multiple_int_val( label_to_values, "MULTIPLICITY_MASKH", config->BLCUT, ignore_missing );
+    ret = parse_multiple_int_val( label_to_values, "MULTIPLICITY_MASKH", config->MULTIPLICITY_MASKH, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
 
-    ret = parse_multiple_int_val( label_to_values, "MULTIPLICITY_MASKX", config->BLCUT, ignore_missing );
+    ret = parse_multiple_int_val( label_to_values, "MULTIPLICITY_MASKX", config->MULTIPLICITY_MASKX, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
 
-    ret = parse_multiple_int_val( label_to_values, "FASTTRIG_BACKLEN", config->BLCUT, ignore_missing );
+    ret = parse_multiple_dbl_val( label_to_values, "FASTTRIG_BACKLEN", config->FASTTRIG_BACKLEN, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
 
-    ret = parse_multiple_int_val( label_to_values, "CFD_DELAY", config->BLCUT, ignore_missing );
+    ret = parse_multiple_int_val( label_to_values, "CFD_THRESHOLD", config->CFD_THRESHOLD, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -27;
+
+    ret = parse_multiple_int_val( label_to_values, "CFD_DELAY", config->CFD_DELAY, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
 
-    ret = parse_multiple_int_val( label_to_values, "CFD_SCALE", config->BLCUT, ignore_missing );
+    ret = parse_multiple_int_val( label_to_values, "CFD_SCALE", config->CFD_SCALE, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
 
-    ret = parse_multiple_int_val( label_to_values, "EXTTRIG_STRETCH", config->BLCUT, ignore_missing );
+    ret = parse_multiple_dbl_val( label_to_values, "EXTTRIG_STRETCH", config->EXTTRIG_STRETCH, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
 
-      ret = parse_multiple_int_val( label_to_values, "VETO_STRETCH", config->BLCUT, ignore_missing );
+      ret = parse_multiple_dbl_val( label_to_values, "VETO_STRETCH", config->VETO_STRETCH, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
 
-    ret = parse_multiple_int_val( label_to_values, "CHANTRIG_STRETCH", config->BLCUT, ignore_missing );
+    ret = parse_multiple_dbl_val( label_to_values, "CHANTRIG_STRETCH", config->CHANTRIG_STRETCH, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
 
-    ret = parse_multiple_int_val( label_to_values, "TRIGOUT_LENGTH", config->BLCUT, ignore_missing );
+    ret = parse_multiple_dbl_val( label_to_values, "EXTERN_DELAYLEN", config->EXTERN_DELAYLEN, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
 
-    ret = parse_multiple_int_val( label_to_values, "EXTERN_DELAYLEN", config->BLCUT, ignore_missing );
+      ret = parse_multiple_dbl_val( label_to_values, "FTRIGOUT_DELAY", config->FTRIGOUT_DELAY, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
 
-      ret = parse_multiple_int_val( label_to_values, "FTRIGOUT_DELAY", config->BLCUT, ignore_missing );
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -29;
-
-  ret = parse_multiple_int_val( label_to_values, "QDC0_LENGTH", config->QDC0_LENGTH, ignore_missing ) ;
+  ret = parse_multiple_int_val( label_to_values, "QDCLen0", config->QDCLen0, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -38;
   
-  ret = parse_multiple_int_val( label_to_values, "QDC1_LENGTH", config->QDC1_LENGTH, ignore_missing );
+  ret = parse_multiple_int_val( label_to_values, "QDCLen1", config->QDCLen1, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -39;
  
-    ret = parse_multiple_int_val( label_to_values, "QDC2_LENGTH", config->QDC0_LENGTH, ignore_missing ) ;
+    ret = parse_multiple_int_val( label_to_values, "QDCLen2", config->QDCLen2, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -38;
   
-  ret = parse_multiple_int_val( label_to_values, "QDC3_LENGTH", config->QDC1_LENGTH, ignore_missing );
+  ret = parse_multiple_int_val( label_to_values, "QDCLen3", config->QDCLen3, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -39;
   
-    ret = parse_multiple_int_val( label_to_values, "QDC4_LENGTH", config->QDC0_LENGTH, ignore_missing ) ;
+    ret = parse_multiple_int_val( label_to_values, "QDCLen4", config->QDCLen4, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -38;
   
-  ret = parse_multiple_int_val( label_to_values, "QDC5_LENGTH", config->QDC1_LENGTH, ignore_missing );
+  ret = parse_multiple_int_val( label_to_values, "QDCLen5", config->QDCLen5, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -39;
   
-    ret = parse_multiple_int_val( label_to_values, "QDC6_LENGTH", config->QDC0_LENGTH, ignore_missing ) ;
+    ret = parse_multiple_int_val( label_to_values, "QDCLen6", config->QDCLen6, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -38;
   
-  ret = parse_multiple_int_val( label_to_values, "QDC7_LENGTH", config->QDC1_LENGTH, ignore_missing );
+  ret = parse_multiple_int_val( label_to_values, "QDCLen7", config->QDCLen7, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -39;
   
 

@@ -234,7 +234,7 @@ typedef struct PixieNetFippiConfig {
   double TRIGGER_RISETIME[NCHANNELS]; //             us     Trigger filter rise time
   double TRIGGER_FLATTOP[NCHANNELS]; //              us     Trigger filter flat top
   double TRIGGER_THRESHOLD[NCHANNELS]; //                 Trigger threshold 
-  unsigned int THRESH_WIDTH[NCHANNELS]; //           us     Width for trigger above threshold
+  double THRESH_WIDTH[NCHANNELS]; //           us     Width for trigger above threshold
   double TRACE_LENGTH[NCHANNELS]; //                 us     Captured waveform length
   double TRACE_DELAY[NCHANNELS]; //                  us     Pre-trigger delay
   unsigned int BINFACTOR[NCHANNELS]; //                   MCA binning factor: divide by 2^N)
@@ -248,15 +248,15 @@ typedef struct PixieNetFippiConfig {
   unsigned int MULTIPLICITY_MASKM[NCHANNELS]; //          Mask multiplicity contribution group - medium 16-bit
   unsigned int MULTIPLICITY_MASKH[NCHANNELS]; //          Mask multiplicity contribution group - high 16-bit
   unsigned int MULTIPLICITY_MASKX[NCHANNELS]; //          Mask multiplicity contribution group - extra 16-bit
-  unsigned int FASTTRIG_BACKLEN[NCHANNELS];   //    us    //             Length of fast rigger signal on the backplane
+  double FASTTRIG_BACKLEN[NCHANNELS];   //    us    //             Length of fast rigger signal on the backplane
   unsigned int CFD_THRESHOLD[NCHANNELS]; //               CFD trigger threshold
   unsigned int CFD_DELAY[NCHANNELS] ;         //    ticks    //              iThemba CFD delay
   unsigned int CFD_SCALE[NCHANNELS];                     //              iThemba CFD scale; 0(div2), 1(div4), 2(div8), 3(div16)
-  unsigned int EXTTRIG_STRETCH[NCHANNELS];     //          //              iThemba external trigger stretch
-  unsigned int VETO_STRETCH[NCHANNELS] ;       //          //              iThemba veto signal (channel gate or module gate) stretch
-  unsigned int CHANTRIG_STRETCH[NCHANNELS];    //          //
-  unsigned int EXTERN_DELAYLEN[NCHANNELS] ;    //          //               Delay length for each channel's input signal
-  unsigned int FTRIGOUT_DELAY[NCHANNELS];      //          //               Fast trigger output delay for system synchronization; delay = (FtrigoutDelay + 4)*10ns 
+  double EXTTRIG_STRETCH[NCHANNELS];     //          //              iThemba external trigger stretch
+  double VETO_STRETCH[NCHANNELS] ;       //          //              iThemba veto signal (channel gate or module gate) stretch
+  double CHANTRIG_STRETCH[NCHANNELS];    //          //
+  double EXTERN_DELAYLEN[NCHANNELS] ;    //          //               Delay length for each channel's input signal
+  double FTRIGOUT_DELAY[NCHANNELS];      //          //               Fast trigger output delay for system synchronization; delay = (FtrigoutDelay + 4)*10ns 
   unsigned int QDCLen0[NCHANNELS];             //  ticks      iThemba QDC length #0 
   unsigned int QDCLen1[NCHANNELS];             //  ticks      iThemba QDC length #1 
   unsigned int QDCLen2[NCHANNELS];             //  ticks      iThemba QDC length #2 

@@ -61,7 +61,7 @@ int main(void) {
   void *map_addr;
   int size = 4096;
   volatile unsigned int *mapped;
-  int k, m, addr;
+  int k, m;
 
 
   // ******************* read ini file and fill struct with values ********************
@@ -84,9 +84,9 @@ int main(void) {
     return rval;
   }
 
-  unsigned int  mval, dac, reglo, reghi, Vgain;
+  unsigned int  mval, dac, reglo, reghi, pafl;
   unsigned int CW, SFR, FFR, SL[NCHANNELS], SG[NCHANNELS], FL[NCHANNELS], FG[NCHANNELS], TH[NCHANNELS];
-  unsigned int PSAM, PSEP, TL[NCHANNELS], TD[NCHANNELS];
+  unsigned int PSAM, TL[NCHANNELS], TD[NCHANNELS];
   unsigned int i2cdata[8];
   unsigned int sw0bit[NCHANNEL_PER_K7] = {6, 11, 4, 0};       // these arrays encode the mapping of gain bits to I2C signals
   unsigned int sw1bit[NCHANNEL_PER_K7] = {8, 2, 5, 10};
@@ -195,7 +195,7 @@ int main(void) {
            (fippiconfig.RUN_TYPE == 0x100)  ||
            (fippiconfig.RUN_TYPE == 0x101)  ||
            (fippiconfig.RUN_TYPE == 0x102)  ||
-           (fippiconfig.RUN_TYPE == 0x103)  ||  ) ) {
+           (fippiconfig.RUN_TYPE == 0x103)   ) ) {
       printf("Invalid RUN_TYPE = 0x%x, please check manual for a list of supported run types\n",fippiconfig.RUN_TYPE);
       return -2100;
     }
@@ -215,7 +215,7 @@ int main(void) {
     // COINCIDENCE_WINDOW   -- unused P16?
     CW = (int)floorf(fippiconfig.COINCIDENCE_WINDOW*SYSTEM_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
     if( (CW > MAX_CW) | (CW < MIN_CW) ) {
-      printf("Invalid COINCIDENCE_WINDOW = %f, must be between %f and %f us\n",fippiconfig.COINCIDENCE_WINDOW, (double)MIN_CW/SYSTEM_CLOCK_MHZ, (double)MAX_CW/SYSTEM_CLOCK_MHZ);
+      printf("Invalid COINCIDENCE_WINDOW = %f, must be between %f and %f us\n",fippiconfig.COINCIDENCE_WINDOW, (double)(MIN_CW/SYSTEM_CLOCK_MHZ), (double)(MAX_CW/SYSTEM_CLOCK_MHZ));
       return -2000;
     }
 
@@ -299,7 +299,7 @@ int main(void) {
       FG[k] = (int)floorf(fippiconfig.TRIGGER_FLATTOP[k] * FILTER_CLOCK_MHZ);
       FG[k] = FG[k] >> FFR;
       if(FG[k] < MIN_FL) {
-         printf("Invalid TRIGGER_FLATTOP = %f, minimum %f us\n",fippiconfig.TRIGGER_FLATTOP[k],(double)(MIN_FG/<<FFRFILTER_CLOCK_MHZ));
+         printf("Invalid TRIGGER_FLATTOP = %f, minimum %f us\n",fippiconfig.TRIGGER_FLATTOP[k],(double)(MIN_FG<<FFR/FILTER_CLOCK_MHZ));
          return -3900-k;
       } 
       if( (FL[k]+FG[k]) > MAX_FLFG) {
@@ -322,7 +322,7 @@ int main(void) {
          return -4400-k;
       }
 
-      if(TL[k] <fippiconfig.TRACE_LENGTH[k]*ADC_CLK_MHZ(1<<FFR))  {
+      if(TL[k] <fippiconfig.TRACE_LENGTH[k]*ADC_CLK_MHZ/(1<<FFR))  {
          printf("TRACE_LENGTH[%d] will be rounded off to = %f us, %d samples\n",k,(double)TL[k]/ADC_CLK_MHZ,TL[k]);
       }
       TD[k] = (int)floor(fippiconfig.TRACE_DELAY[k]*ADC_CLK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
@@ -367,13 +367,13 @@ int main(void) {
          return -4900-k;
       }
 
-      if(fippiconfig.XDT[k] < (MIN_XDT_MOST/ADC_CLK_MHZ)  {
-         printf("Invalid XDT = %f us, must be at least %f us\n",fippiconfig.XDT[k],MIN_XDT_MOST/ADC_CLK_MHZ );
+      if(fippiconfig.XDT[k] < (MIN_XDT_MOST/ADC_CLK_MHZ) ) {
+         printf("Invalid XDT = %f us, must be at least %f us\n",fippiconfig.XDT[k],(double)MIN_XDT_MOST/ADC_CLK_MHZ );
          return -4900-k;
       }
       mval = (int)floor( fippiconfig.XDT[k]*ADC_CLK_MHZ/MIN_XDT_MOST) *MIN_XDT_MOST;
       if(fippiconfig.XDT[k] > mval)     {
-         printf("XDT = %f, will be rounded to %f \n",fippiconfig.XDT[k],mval );
+         printf("XDT = %f, will be rounded to %d \n",fippiconfig.XDT[k],mval );
          //return -4900-k;
       }
 
@@ -381,11 +381,11 @@ int main(void) {
 
 
       if(fippiconfig.FASTTRIG_BACKLEN[k] < FASTTRIGBACKLEN_MIN_100MHZFIPCLK/FILTER_CLOCK_MHZ)  {
-         printf("Invalid FASTTRIG_BACKLEN = %f, must be at least %f us\n",fippiconfig.FASTTRIG_BACKLEN[k], FASTTRIGBACKLEN_MIN_100MHZFIPCLK/FILTER_CLOCK_MHZ);
+         printf("Invalid FASTTRIG_BACKLEN = %f, must be at least %f us\n",fippiconfig.FASTTRIG_BACKLEN[k], (double)FASTTRIGBACKLEN_MIN_100MHZFIPCLK/FILTER_CLOCK_MHZ);
          return -4900-k;
       }
       if(fippiconfig.FASTTRIG_BACKLEN[k] > FASTTRIGBACKLEN_MAX/FILTER_CLOCK_MHZ)  {
-         printf("Invalid FASTTRIG_BACKLEN = %f, must be less than %f us\n",fippiconfig.FASTTRIG_BACKLEN[k], FASTTRIGBACKLEN_MAX/FILTER_CLOCK_MHZ);
+         printf("Invalid FASTTRIG_BACKLEN = %f, must be less than %f us\n",fippiconfig.FASTTRIG_BACKLEN[k], (double)FASTTRIGBACKLEN_MAX/FILTER_CLOCK_MHZ);
          return -4900-k;
       }
 
@@ -419,81 +419,81 @@ int main(void) {
 
       // stretches and delays ...
       if(fippiconfig.EXTTRIG_STRETCH[k] < EXTTRIGSTRETCH_MIN/FILTER_CLOCK_MHZ)  {
-         printf("Invalid EXTTRIG_STRETCH = %f, must be at least %f us\n",fippiconfig.EXTTRIG_STRETCH[k], EXTTRIGSTRETCH_MIN/FILTER_CLOCK_MHZ);
+         printf("Invalid EXTTRIG_STRETCH = %f, must be at least %f us\n",fippiconfig.EXTTRIG_STRETCH[k], (double)EXTTRIGSTRETCH_MIN/FILTER_CLOCK_MHZ);
          return -4900-k;
       }
       if(fippiconfig.EXTTRIG_STRETCH[k] > EXTTRIGSTRETCH_MAX/FILTER_CLOCK_MHZ)  {
-         printf("Invalid EXTTRIG_STRETCH = %f, must be less than %f us\n",fippiconfig.EXTTRIG_STRETCH[k], EXTTRIGSTRETCH_MAX/FILTER_CLOCK_MHZ);
+         printf("Invalid EXTTRIG_STRETCH = %f, must be less than %f us\n",fippiconfig.EXTTRIG_STRETCH[k], (double)EXTTRIGSTRETCH_MAX/FILTER_CLOCK_MHZ);
          return -4900-k;
       }
 
       if(fippiconfig.VETO_STRETCH[k] < VETOSTRETCH_MIN/FILTER_CLOCK_MHZ)  {
-         printf("Invalid VETO_STRETCH = %f, must be at least %f us\n",fippiconfig.VETO_STRETCH[k], VETOSTRETCH_MIN/FILTER_CLOCK_MHZ);
+         printf("Invalid VETO_STRETCH = %f, must be at least %f us\n",fippiconfig.VETO_STRETCH[k], (double)VETOSTRETCH_MIN/FILTER_CLOCK_MHZ);
          return -4900-k;
       }
       if(fippiconfig.VETO_STRETCH[k] > VETOSTRETCH_MAX/FILTER_CLOCK_MHZ)  {
-         printf("Invalid VETO_STRETCH = %f, must be less than %f us\n",fippiconfig.VETO_STRETCH[k], VETOSTRETCH_MAX/FILTER_CLOCK_MHZ);
+         printf("Invalid VETO_STRETCH = %f, must be less than %f us\n",fippiconfig.VETO_STRETCH[k], (double)VETOSTRETCH_MAX/FILTER_CLOCK_MHZ);
          return -4900-k;
       }
 
-      if(fippiconfig.EXTERN_DELAYLEN[k] < EXTDELAYLEN_MIN/FILTER_CLOCK_MHZ)  {
-         printf("Invalid EXTERN_DELAYLEN = %f, must be at least %f us\n",fippiconfig.EXTERN_DELAYLEN[k], EXTDELAYLEN_MIN/FILTER_CLOCK_MHZ);
+      if(fippiconfig.EXTERN_DELAYLEN[k] < EXTDELAYLEN_MIN/FILTER_CLOCK_MHZ)  {                           
+         printf("Invalid EXTERN_DELAYLEN = %f, must be at least %f us\n",fippiconfig.EXTERN_DELAYLEN[k], (double)EXTDELAYLEN_MIN/FILTER_CLOCK_MHZ);
          return -4900-k;
       }
       if(fippiconfig.EXTERN_DELAYLEN[k] > EXTDELAYLEN_MAX_REVF/FILTER_CLOCK_MHZ)  {
-         printf("Invalid EXTERN_DELAYLEN = %f, must be less than %f us\n",fippiconfig.EXTERN_DELAYLEN[k], EXTDELAYLEN_MAX_REVF/FILTER_CLOCK_MHZ);
+         printf("Invalid EXTERN_DELAYLEN = %f, must be less than %f us\n",fippiconfig.EXTERN_DELAYLEN[k], (double)EXTDELAYLEN_MAX_REVF/FILTER_CLOCK_MHZ);
          return -4900-k;
       }  
     
       if(fippiconfig.FTRIGOUT_DELAY[k] < FASTTRIGBACKDELAY_MIN/FILTER_CLOCK_MHZ)  {
-         printf("Invalid FTRIGOUT_DELAY = %f, must be at least %f us\n",fippiconfig.FTRIGOUT_DELAY[k], FASTTRIGBACKDELAY_MIN/FILTER_CLOCK_MHZ);
+         printf("Invalid FTRIGOUT_DELAY = %f, must be at least %f us\n",fippiconfig.FTRIGOUT_DELAY[k], (double)FASTTRIGBACKDELAY_MIN/FILTER_CLOCK_MHZ);
          return -4900-k;
       }
       if(fippiconfig.FTRIGOUT_DELAY[k] > FASTTRIGBACKDELAY_MAX_REVF/FILTER_CLOCK_MHZ)  {
-         printf("Invalid FTRIGOUT_DELAY = %f, must be less than %f us\n",fippiconfig.FTRIGOUT_DELAY[k], FASTTRIGBACKDELAY_MAX_REVF/FILTER_CLOCK_MHZ);
+         printf("Invalid FTRIGOUT_DELAY = %f, must be less than %f us\n",fippiconfig.FTRIGOUT_DELAY[k], (double)FASTTRIGBACKDELAY_MAX_REVF/FILTER_CLOCK_MHZ);
          return -4900-k;
       }      
 
       if(fippiconfig.CHANTRIG_STRETCH[k] < CHANTRIGSTRETCH_MIN/FILTER_CLOCK_MHZ)  {
-         printf("Invalid CHANTRIG_STRETCH = %f, must be at least %f us\n",fippiconfig.CHANTRIG_STRETCH[k], CHANTRIGSTRETCH_MIN/FILTER_CLOCK_MHZ);
+         printf("Invalid CHANTRIG_STRETCH = %f, must be at least %f us\n",fippiconfig.CHANTRIG_STRETCH[k], (double)CHANTRIGSTRETCH_MIN/FILTER_CLOCK_MHZ);
          return -4900-k;
       }
       if(fippiconfig.CHANTRIG_STRETCH[k] > CHANTRIGSTRETCH_MAX/FILTER_CLOCK_MHZ)  {
-         printf("Invalid CHANTRIG_STRETCH = %f, must be less than %f us\n",fippiconfig.CHANTRIG_STRETCH[k], CHANTRIGSTRETCH_MAX/FILTER_CLOCK_MHZ);
+         printf("Invalid CHANTRIG_STRETCH = %f, must be less than %f us\n",fippiconfig.CHANTRIG_STRETCH[k], (double)CHANTRIGSTRETCH_MAX/FILTER_CLOCK_MHZ);
          return -4900-k;
       } 
 
 
       // QDC parameters specified in samples, not us as in P16!
-      if( (fippiconfig.QDCLen0[k] > QDCLEN_MAX) || fippiconfig.QDCLen0[k] < QDCLEN_MIN)  )  {
+      if( (fippiconfig.QDCLen0[k] > QDCLEN_MAX) || (fippiconfig.QDCLen0[k] < QDCLEN_MIN)  )  {
          printf("Invalid QDCLen0 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen0[k], QDCLEN_MIN, QDCLEN_MAX);
          return -4900-k;
       }
-      if( (fippiconfig.QDCLen1[k] > QDCLEN_MAX) || fippiconfig.QDCLen1[k] < QDCLEN_MIN)  )  {
+      if( (fippiconfig.QDCLen1[k] > QDCLEN_MAX) || (fippiconfig.QDCLen1[k] < QDCLEN_MIN)  )  {
          printf("Invalid QDCLen1 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen1[k], QDCLEN_MIN, QDCLEN_MAX);
          return -4900-k;
       }
-      if( (fippiconfig.QDCLen2[k] > QDCLEN_MAX) || fippiconfig.QDCLen2[k] < QDCLEN_MIN)  )  {
+      if( (fippiconfig.QDCLen2[k] > QDCLEN_MAX) || (fippiconfig.QDCLen2[k] < QDCLEN_MIN)  )  {
          printf("Invalid QDCLen2 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen2[k], QDCLEN_MIN, QDCLEN_MAX);
          return -4900-k;
       }
-      if( (fippiconfig.QDCLen3[k] > QDCLEN_MAX) || fippiconfig.QDCLen3[k] < QDCLEN_MIN)  )  {
+      if( (fippiconfig.QDCLen3[k] > QDCLEN_MAX) || (fippiconfig.QDCLen3[k] < QDCLEN_MIN)  )  {
          printf("Invalid QDCLen3 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen3[k], QDCLEN_MIN, QDCLEN_MAX);
          return -4900-k;
       }
-      if( (fippiconfig.QDCLen4[k] > QDCLEN_MAX) || fippiconfig.QDCLen4[k] < QDCLEN_MIN)  )  {
+      if( (fippiconfig.QDCLen4[k] > QDCLEN_MAX) || (fippiconfig.QDCLen4[k] < QDCLEN_MIN)  )  {
          printf("Invalid QDCLen4 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen4[k], QDCLEN_MIN, QDCLEN_MAX);
          return -4900-k;
       }
-      if( (fippiconfig.QDCLen5[k] > QDCLEN_MAX) || fippiconfig.QDCLen5[k] < QDCLEN_MIN)  )  {
+      if( (fippiconfig.QDCLen5[k] > QDCLEN_MAX) || (fippiconfig.QDCLen5[k] < QDCLEN_MIN)  )  {
          printf("Invalid QDCLen5 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen5[k], QDCLEN_MIN, QDCLEN_MAX);
          return -4900-k;
       }
-      if( (fippiconfig.QDCLen6[k] > QDCLEN_MAX) || fippiconfig.QDCLen6[k] < QDCLEN_MIN)  )  {
+      if( (fippiconfig.QDCLen6[k] > QDCLEN_MAX) || (fippiconfig.QDCLen6[k] < QDCLEN_MIN)  )  {
          printf("Invalid QDCLen6 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen6[k], QDCLEN_MIN, QDCLEN_MAX);
          return -4900-k;
       }
-      if( (fippiconfig.QDCLen7[k] > QDCLEN_MAX) || fippiconfig.QDCLen7[k] < QDCLEN_MIN)  )  {
+      if( (fippiconfig.QDCLen7[k] > QDCLEN_MAX) || (fippiconfig.QDCLen7[k] < QDCLEN_MIN)  )  {
          printf("Invalid QDCLen7 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen7[k], QDCLEN_MIN, QDCLEN_MAX);
          return -4900-k;
       }
@@ -521,25 +521,28 @@ int main(void) {
 
       // package
       reglo = 0;     // halt bit 0
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_POLARITY,      FiPPI_INVRT   );     
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_VETOENA,       FiPPI_VETOENA   );     
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_EXTTRIGSEL,    FiPPI_EXTTRIGSEL   );     
-      reglo = reglo + SFR<<4;                               //  Store SlowFilterRange in bits [6:4] 
-      reglo = reglo + (129-SL[k])<<7;                       //  SlowLength in bits [13:7]
-      reglo = reglo + (129-SL[k]-SG[k])<<14;                //  SlowLength + SlowGap in bits [20:14]
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_CHANTRIGSEL,   FiPPI_CHANTRIGSEL   );     
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_SYNCDATAACQ,   FiPPI_SYNCDATAACQ   );     
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRC,CCSRC_GROUPTRIGSEL,  FiPPI_GROUPTRIGSEL   );     
-      reglo = reglo + (129-FL[k]-FG[k])<<25 ;               // 128 - (FastLength - 1) in bits [31:25] 
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_POLARITY,      FiPPI_INVRT   );     
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_VETOENA,       FiPPI_VETOENA   );     
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_EXTTRIGSEL,    FiPPI_EXTTRIGSEL   );     
+      reglo = reglo + (SFR<<4);                               //  Store SlowFilterRange in bits [6:4] 
+      mval = 129-SL[k];
+      reglo = reglo + (mval<<7);                       //  SlowLength in bits [13:7]
+      mval = 129-SL[k]-SG[k];
+      reglo = reglo + (mval<<14);                //  SlowLength + SlowGap in bits [20:14]
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_CHANTRIGSEL,   FiPPI_CHANTRIGSEL   );     
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_SYNCDATAACQ,   FiPPI_SYNCDATAACQ   );     
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRC[k],CCSRC_GROUPTRIGSEL,  FiPPI_GROUPTRIGSEL   );    
+      mval = 129-FL[k]-FG[k];
+      reglo = reglo +( mval<<25) ;               // 128 - (FastLength - 1) in bits [31:25] 
           
       reghi = 0;
       reghi = 129 - FL[k] - FG[k];                          // 128 - (FastLength + FastGap - 1)
       reghi = reghi & 0x7F;                                 // Keep only bits [6:0]
-      reghi = reghi + TH[k]<<7;                             // Threshold in [22:7]   
-      reghi = reghi + fippiconfig.CFD_DELAY[k] <<23;        //  CFDDelay in [28:23]       // in samples!
-      reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC,CCSRC_CHANVETOSEL,   FiPPI_CHANVETOSEL);     
-      reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC,CCSRC_MODVETOSEL,    FiPPI_MODVETOSEL );     
-      reghi = reghi + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_ENARELAY,      FiPPI_ENARELAY   );     
+      reghi = reghi + (TH[k]<<7);                             // Threshold in [22:7]   
+      reghi = reghi + (fippiconfig.CFD_DELAY[k] <<23);        //  CFDDelay in [28:23]       // in samples!
+      reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[k],CCSRC_CHANVETOSEL,   FiPPI_CHANVETOSEL);     
+      reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[k],CCSRC_MODVETOSEL,    FiPPI_MODVETOSEL );     
+      reghi = reghi + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_ENARELAY,      FiPPI_ENARELAY   );     
 
       // now write 
       mapped[AMZ_EXAFWR] = AK7_P16REG00+0;                  // write to  k7's addr to select channel's register N
@@ -555,9 +558,11 @@ int main(void) {
        // ......... P16 Reg 1  .......................    
         
       // package
-      reglo = 129 - SG[k]);                                 //  SlowGap in bits [6:0]
-      reglo = reglo + (2*SL[k]+SG[k]+1)<<7;                 // Store RBDEL_SF = (SlowLength + SlowGap + SlowLength + 1) in bits [18:7] of Fipreg1 lo
-      reglo = reglo + ( 8192 - ((SL[k]+SG[k])<<SFR) ) <<19; // Peaksep= SL+SG; store 8192 - PeakSep * 2^SlowFilterRange  in bits [31:19] of Fipreg1 lo
+      reglo = 129 - SG[k];                                 //  SlowGap in bits [6:0]
+      mval = (2*SL[k]+SG[k]+1);
+      reglo = reglo + (mval<<7);                 // Store RBDEL_SF = (SlowLength + SlowGap + SlowLength + 1) in bits [18:7] of Fipreg1 lo
+      mval =  8192 - ((SL[k]+SG[k])<<SFR); 
+      reglo = reglo + (mval <<19); // Peaksep= SL+SG; store 8192 - PeakSep * 2^SlowFilterRange  in bits [31:19] of Fipreg1 lo
          
       if(SFR==1) PSAM = SL[k]+SG[k] -3;
       if(SFR==2) PSAM = SL[k]+SG[k] -2;
@@ -566,9 +571,10 @@ int main(void) {
       if(SFR==5) PSAM = SL[k]+SG[k] -0;
       if(SFR==6) PSAM = SL[k]+SG[k] +1;
       reghi = 0;
-      reghi = 8192 - PSAM<<SFR;                             // Peaksample = SL+SG - a bit ; store 8192 - Peaksample * 2^SlowFilterRange  in bits [44:32] of Fipreg1 
-      reghi = reghi + (2*FL[k]+FG[k]+2)<<13;                // Store RBDEL_TF = (FastLength + FastGap + FastLength + 2) in bits [56:45] of Fipreg1
-      reghi = reghi + fippiconfig.CFD_SCALE[k] <<25;        //  Store CFDScale[3:0] in bits [60:57] of Fipreg1
+      reghi = 8192 - (PSAM<<SFR);                             // Peaksample = SL+SG - a bit ; store 8192 - Peaksample * 2^SlowFilterRange  in bits [44:32] of Fipreg1 
+      mval = 2*FL[k]+FG[k]+2;
+      reghi = reghi + ( mval<<13 );                // Store RBDEL_TF = (FastLength + FastGap + FastLength + 2) in bits [56:45] of Fipreg1
+      reghi = reghi + ( fippiconfig.CFD_SCALE[k] <<25 );        //  Store CFDScale[3:0] in bits [60:57] of Fipreg1
   
       // now write 
        mapped[AMZ_EXAFWR] = AK7_P16REG01+0;                 // write to  k7's addr to select channel's register N    
@@ -584,17 +590,18 @@ int main(void) {
        // ......... P16 Reg 2  .......................    
         
       // package
-      reglo = 4096 - fippiconfig.CHANTRIG_STRETCH[k]*FILTER_CLOCK_MHZ);               //  ChanTrigStretch goes into [11:0] of FipReg2   // in us
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_FTRIGSEL,   SelExtFastTrig   );     
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_TRACEENA,    13   );     
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_CFDMODE,     14   );   
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_QDCENA,      15   );  
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_GLOBTRIG,    16   );     
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA,CCSRA_CHANTRIG,    17   );     
-      reglo = reglo + (4096-fippiconfig.VETO_STRETCH[k]*FILTER_CLOCK_MHZ) <<20;       //Store VetoStretch in bits [31:20] of Fipreg2   // in us
+      reglo = 4096 - (int)(fippiconfig.CHANTRIG_STRETCH[k]*FILTER_CLOCK_MHZ);               //  ChanTrigStretch goes into [11:0] of FipReg2   // in us
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_FTRIGSEL,   SelExtFastTrig   );     
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_TRACEENA,    13   );     
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_CFDMODE,     14   );   
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_QDCENA,      15   );  
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_GLOBTRIG,    16   );     
+      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_CHANTRIG,    17   );     
+      mval = 4096 - (int)(fippiconfig.VETO_STRETCH[k]*FILTER_CLOCK_MHZ);
+      reglo = reglo + (mval <<20);       //Store VetoStretch in bits [31:20] of Fipreg2   // in us
       
-      reghi = 4096 - fippiconfig.FASTTRIG_BACKLEN[k]*FILTER_CLOCK_MHZ <<8;            //  FastTrigBackLen goes into [19:8] ([51:40] in 64 bit)   // in us
-      reghi = reghi +  4096 - fippiconfig.EXTTRIG_STRETCH[k]*FILTER_CLOCK_MHZ <<20;   //  ExtTrigStretch goes into [31:20] ([63:52] in 64 bit)   // in us
+      reghi = (4096 - (int)(fippiconfig.FASTTRIG_BACKLEN[k]*FILTER_CLOCK_MHZ)) <<8;            //  FastTrigBackLen goes into [19:8] ([51:40] in 64 bit)   // in us
+      reghi = reghi + ( (4096 - (int)(fippiconfig.EXTTRIG_STRETCH[k]*FILTER_CLOCK_MHZ)) <<20);   //  ExtTrigStretch goes into [31:20] ([63:52] in 64 bit)   // in us
  
       // now write 
        mapped[AMZ_EXAFWR] = AK7_P16REG02+0;                          // write to  k7's addr to select channel's register N    
@@ -609,17 +616,17 @@ int main(void) {
          // ......... P16 Reg 5  .......................    
         
       // package
-      reglo = fippiconfig.FTRIGOUT_DELAY[k]*FILTER_CLOCK_MHZ;        //  FtrigoutDelay goes into [8:0] of FipReg5             // in us
+      reglo = (int)(fippiconfig.FTRIGOUT_DELAY[k]*FILTER_CLOCK_MHZ);        //  FtrigoutDelay goes into [8:0] of FipReg5             // in us
                                                                                                  
-      reghi = fippiconfig.EXTERN_DELAYLEN[k]*FILTER_CLOCK_MHZ;       //Store EXTERN_DELAYLEN in bits [8:0] of FipReg5 hi      // in us
+      reghi = (int)(fippiconfig.EXTERN_DELAYLEN[k]*FILTER_CLOCK_MHZ);       //Store EXTERN_DELAYLEN in bits [8:0] of FipReg5 hi      // in us
      
       mval = SL[k]+SG[k];                                            // psep       TODO: check trace related delays. 
       mval = (mval-1) << SFR;                                        // trigger delay
-      pafl = mval>> SFR + TD[k];                                     // paf length   // check units!
-      mavl = pafl - mval);                                           //delay from DSP computation
-      if( fippiconfig.CHANNEL_CSRA  & (1<<CCSRA_CFDMODE) )
+      pafl = (mval>> SFR) + TD[k];                                     // paf length   // check units!
+      mval = pafl - mval;                                           //delay from DSP computation
+      if( (fippiconfig.CHANNEL_CSRA[k]  & 0x0400) >0 )  //(1<<CCSRA_CFDMODE) >0  )      
          mval = mval + FL[k] + FG[k];                                // add CFD delay if necessary
-      reghi = reghi +  mval<<9;                                      // trace delay (Capture_FIFOdelaylen )
+      reghi = reghi +  (mval<<9);                                      // trace delay (Capture_FIFOdelaylen )
    
       // now write 
        mapped[AMZ_EXAFWR] = AK7_P16REG05+0;                          // write to  k7's addr to select channel's register N        
@@ -635,9 +642,9 @@ int main(void) {
       // ......... P16 Reg 6  .......................    
         
       reglo = fippiconfig.QDCLen0[k];                    //  QDC       // in samples
-      reglo = reglo + fippiconfig.QDCLen1[k]<<16;        //  QDC       // in samples                                                                                 
+      reglo = reglo + (fippiconfig.QDCLen1[k]<<16);        //  QDC       // in samples                                                                                 
       reghi = fippiconfig.QDCLen2[k];                    //  QDC       // in samples
-      reghi = reghi + fippiconfig.QDCLen3[k]<<16;        //  QDC       // in samples      
+      reghi = reghi + (fippiconfig.QDCLen3[k]<<16);        //  QDC       // in samples      
       
          // now write 
        mapped[AMZ_EXAFWR] = AK7_P16REG06+0;              // write to  k7's addr to select channel's register N        
@@ -653,9 +660,9 @@ int main(void) {
        // ......... P16 Reg 7  .......................    
         
        reglo = fippiconfig.QDCLen4[k];                    //  QDC       // in samples
-       reglo = reglo + fippiconfig.QDCLen5[k]<<16;        //  QDC       // in samples                                                                               
+       reglo = reglo + (fippiconfig.QDCLen5[k]<<16);        //  QDC       // in samples                                                                               
        reghi = fippiconfig.QDCLen6[k];                    //  QDC       // in samples
-       reghi = reghi + fippiconfig.QDCLen7[k]<<16;        //  QDC       // in samples     
+       reghi = reghi + (fippiconfig.QDCLen7[k]<<16);        //  QDC       // in samples     
       
          // now write 
        mapped[AMZ_EXAFWR] = AK7_P16REG07+0;              // write to  k7's addr to select channel's register N        
@@ -681,9 +688,9 @@ int main(void) {
        // ......... P16 Reg 17 (Info)  .......................    
         
        reglo = k;                                        // channel
-       reglo = reglo + fippiconfig.SLOT_ID<<4;           // slot     // use for K7 0/1
-       reglo = reglo + fippiconfig.CRATE_ID<<8;          // crate
-       reglo = reglo + fippiconfig.MODULE_ID<<12;        // module type 
+       reglo = reglo + (fippiconfig.SLOT_ID<<4);           // slot     // use for K7 0/1
+       reglo = reglo + (fippiconfig.CRATE_ID<<8);          // crate
+       reglo = reglo + (fippiconfig.MODULE_ID<<12);        // module type 
                                                          // [15:20] reserved for mod address (always 0?)                                           
        reghi = TL[k];                 
 
@@ -704,15 +711,6 @@ int main(void) {
 
 
 
-          /*
-      setbit (par,bitc, bitf) {
-      unsigned int ret;
-        ret = par & (1 << bitc);
-        ret >> bitc;
-        ret << bitf;
-        return ret 
-        }
-        */
 
    // --------------------------- DACs -----------------------------------
 

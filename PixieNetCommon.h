@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------
- * Copyright (c) 2017 XIA LLC
+ * Copyright (c) 2018 XIA LLC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, 
@@ -43,6 +43,7 @@ void I2Cmasterack(volatile unsigned int *mapped);
 void I2Cmasternoack(volatile unsigned int *mapped);
 void I2Cbytesend(volatile unsigned int *mapped, unsigned int *data);
 void I2Cbytereceive(volatile unsigned int *mapped, unsigned int *data);
+unsigned int setbit( unsigned int par, unsigned int bitc, unsigned int bitf);
 int hwinfo( volatile unsigned int *mapped );
 float board_temperature( volatile unsigned int *mapped );
 float zynq_temperature();

@@ -205,8 +205,8 @@
 #define CS_K1   0x08
 #define AMZ_FIRSTDAC  0x10
 #define AMZ_EXAFWR 0x18
-#define AMZ_EXDWR  0x19
-#define AMZ_EXAFRD 0x1A
+#define AMZ_EXAFRD 0x19
+#define AMZ_EXDWR  0x1A
 #define AMZ_EXDRD  0x1B
 #define AMZ_CSROUTL  0x20
 #define AMZ_CSROUTH  0x21

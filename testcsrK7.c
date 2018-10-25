@@ -126,9 +126,9 @@ int main( int argc, char *argv[] ) {
   mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
 
   // select sys registers
-        mapped[AMZ_EXAFWR] = 3;     // write to  k7's addr
-      mapped[AMZ_EXDWR] = 0;
- 
+        mapped[AMZ_EXAFWR] = 3;     // write to  k7's addr     addr 3 = channel/syste, select
+      mapped[AMZ_EXDWR] = 0;                                 //  0x000  =system 
+ /*
   // write into ext sys I/O regs
   for(k=0;k<16;k++) {
      if(k!=3) {
@@ -149,6 +149,9 @@ int main( int argc, char *argv[] ) {
      //   usleep(5);
   }
 
+  */
+
+   
      // read from ext sys O regs
   for(k=0;k<16;k++) {
       mapped[AMZ_EXAFRD] = k+0x80;     // write to  k7's addr
@@ -160,8 +163,8 @@ int main( int argc, char *argv[] ) {
 
 
    // select ch registers
-        mapped[AMZ_EXAFWR] = 3;     // write to  k7's addr
-      mapped[AMZ_EXDWR] = 0x100;
+        mapped[AMZ_EXAFWR] = 3;     // write to  k7's addr        addr 3 = channel/syste, select    
+      mapped[AMZ_EXDWR] = 0x100;                                //  0x100  =channel 0                  
  
   // write into ext ch I/O regs
   for(k=0;k<16;k++) {
@@ -188,10 +191,11 @@ int main( int argc, char *argv[] ) {
       mapped[AMZ_EXAFRD] = k+0xC0;     // write to  k7's addr
         usleep(1);
       mval = mapped[AMZ_EXDRD]; 
-     printf( "K7 0 read from 0x%x: %d\n", k+0x80, mval );
+     printf( "K7 0 read from 0x%x: %d\n", k+0xC0, mval );
     //    usleep(5);
   }
 
+  
 
   mapped[AMZ_EXAFWR] = addr;     // write to  k7's addr
   mapped[AMZ_EXDWR] = val;
