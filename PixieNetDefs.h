@@ -136,6 +136,7 @@
 #define AHVDAC        0x004
 #define ASERIALIO     0x005
 #define AAUXCTRL      0x006
+#define AFPGAPROG     0x007
 #define AADCCTRL      0x007
 #define ADSP_CLR      0x008
 #define ACOUNTER_CLR  0x009

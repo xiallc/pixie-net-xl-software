@@ -174,8 +174,8 @@ void I2Cbytereceive(volatile unsigned int *mapped, unsigned int *data) {
  { 
    unsigned int ret;
         ret = par & (1 << bitc);     // bitwise and or parameter with ccsra bit
-        ret >> bitc;                 // shift down to bit 0 
-        ret << bitf;                 // shift up to fippi bit
+        ret = ret >> bitc;                 // shift down to bit 0 
+        ret = ret << bitf;                 // shift up to fippi bit
         return (ret);
   }
 
@@ -185,15 +185,16 @@ int hwinfo( volatile unsigned int *mapped )
 {
    unsigned int  mval, i2cdata[8];
    unsigned int revsn;
+   unsigned int ctrl[8];
    int k;
 
   // ---------------- read EEPROM ---------------------------
-   mapped[AOUTBLOCK] = CS_MZ;     // read from event registers
-   mval = mapped[AMZ_BRDINFO];
-   //printf("ABRDINGFO 0x%04X\n",mval);
-//   mapped[AOUTBLOCK] = OB_IOREG;     // read from i/o registers
+   mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
+  mval = mapped[AAUXCTRL];	
+  mval = mval | 0x0010;    // set bit 4 to select MZ I2C pins
+  mapped[AAUXCTRL] = mval;
 
-   unsigned int ctrl[8];
+ /*  mval = mapped[AMZ_BRDINFO];           TODO: ensure  AMZ_BRDINFO has the right address
    ctrl[7] = (mval & 0x800000) >> 23 ;    
    ctrl[6] = (mval & 0x400000) >> 22 ;    
    ctrl[5] = (mval & 0x200000) >> 21 ;    
@@ -201,24 +202,26 @@ int hwinfo( volatile unsigned int *mapped )
    ctrl[3] = (mval & 0x080000) >> 19 ;    
    ctrl[2] = (mval & 0x040000) >> 18 ;   
    ctrl[1] = (mval & 0x020000) >> 17 ;    
-   ctrl[0] = (mval & 0x010000) >> 16 ;  
+   ctrl[0] = (mval & 0x010000) >> 16 ;      */
 
+  ctrl[7] = 1;      // PN XL PROM  (TMP116)
+  ctrl[6] = 0;
+  ctrl[5] = 0;
+  ctrl[4] = 1;  
+  ctrl[3] = 0;
+  ctrl[2] = 0;
+  ctrl[1] = 0;
+  ctrl[0] = 0;    
+
+
+    // ------------- read serial number -------------------- 
+
+     // 2 bytes: ctrl, addr  write
    I2Cstart(mapped);
-   ctrl[0] = 0;   // R/W*
-   I2Cbytesend(mapped, ctrl);     // I2C control byte: write
-   I2Cslaveack(mapped);  
-
-   i2cdata[7] = (mval & 0x8000) >> 15 ;    
-   i2cdata[6] = (mval & 0x4000) >> 14 ;    
-   i2cdata[5] = (mval & 0x2000) >> 13 ;    
-   i2cdata[4] = (mval & 0x1000) >> 12 ; 
-   i2cdata[3] = (mval & 0x0800) >> 11 ;    
-   i2cdata[2] = (mval & 0x0400) >> 10 ;   
-   i2cdata[1] = (mval & 0x0200) >> 9 ;    
-   i2cdata[0] = (mval & 0x0100) >> 8 ; 
-   I2Cbytesend(mapped, i2cdata);
+   ctrl[0] = 0;   // R/W*         // write starting addr to read from
+   I2Cbytesend(mapped, ctrl);
    I2Cslaveack(mapped);
-  
+    mval = 0x07;   // addr 7 = serial number
    i2cdata[7] = (mval & 0x0080) >> 7 ;    
    i2cdata[6] = (mval & 0x0040) >> 6 ;    
    i2cdata[5] = (mval & 0x0020) >> 5 ;    
@@ -229,24 +232,14 @@ int hwinfo( volatile unsigned int *mapped )
    i2cdata[0] = (mval & 0x0001)      ;   
    I2Cbytesend(mapped, i2cdata);
    I2Cslaveack(mapped);
+     usleep(300);
 
-    // read data byte 0..1
+   // read data bytes 
    mval = 0;
-   ctrl[0] = 1;   // R/W*         // now read
-  
+   ctrl[0] = 1;   // R/W*         // now read 
    usleep(100);
    I2Cstart(mapped);               //restart
-   I2Cbytesend(mapped, ctrl);
-   I2Cslaveack(mapped);
-   I2Cbytereceive(mapped, i2cdata);
-   for( k = 0; k < 8; k ++ )
-      if(i2cdata[k])
-         mval = mval + (1<<(k+0));
-   I2Cmasterack(mapped);
-
-   usleep(100);
-   I2Cstart(mapped);               //restart
-   I2Cbytesend(mapped, ctrl);
+   I2Cbytesend(mapped, ctrl);      // device address
    I2Cslaveack(mapped);
    I2Cbytereceive(mapped, i2cdata);
    for( k = 0; k < 8; k ++ )
@@ -254,6 +247,23 @@ int hwinfo( volatile unsigned int *mapped )
          mval = mval + (1<<(k+8));
    I2Cmasterack(mapped);
 
+//   usleep(100);
+//   I2Cslaveack(mapped);
+   I2Cbytereceive(mapped, i2cdata);
+   for( k = 0; k < 8; k ++ )
+      if(i2cdata[k])
+         mval = mval + (1<<(k+0));
+   //I2Cmasterack(mapped);
+   I2Cmasternoack(mapped);
+   I2Cstop(mapped);
+
+//   printf("I2C read serial number %d\n",mval);
+
+   mapped[ABVAL] = mval;
+   revsn = (mval & 0xFFFF);
+   //printf("Revision %04X, Serial Number %d \n",(revsn>>16), revsn&0xFFFF);
+
+/*
    //printf("I2C read Revision 0x%04X\n",mval);
    if ( (mval == PN_BOARD_VERSION_12_250_A)     ||
         (mval == PN_BOARD_VERSION_12_250_B)     ||
@@ -267,38 +277,8 @@ int hwinfo( volatile unsigned int *mapped )
        return(0);
    }
 
-   // read data byte 1..2
-   mval = 0;
-   ctrl[0] = 1;   // R/W*         // now read
-  
-   usleep(100);
-   I2Cstart(mapped);               //restart
-   I2Cbytesend(mapped, ctrl);
-   I2Cslaveack(mapped);
-   I2Cbytereceive(mapped, i2cdata);
-   for( k = 0; k < 8; k ++ )
-      if(i2cdata[k])
-         mval = mval + (1<<(k+0));
-   I2Cmasterack(mapped);
+  */
 
-   usleep(100);
-   I2Cstart(mapped);               //restart
-   I2Cbytesend(mapped, ctrl);
-   I2Cslaveack(mapped);
-   I2Cbytereceive(mapped, i2cdata);
-   for( k = 0; k < 8; k ++ )
-      if(i2cdata[k])
-         mval = mval + (1<<(k+8));
-   I2Cmasterack(mapped);
-
-   //printf("I2C read Serial number %d \n",mval);
-
-   mapped[ABVAL] = mval;
-   revsn =revsn + (mval & 0xFFFF);
-   //printf("Revision %04X, Serial Number %d \n",(revsn>>16), revsn&0xFFFF);
-
- //  I2Cmasternoack(mapped);
-   I2Cstop(mapped);
    return(revsn);
 
 }
@@ -306,38 +286,84 @@ int hwinfo( volatile unsigned int *mapped )
 
 float board_temperature( volatile unsigned int *mapped )
 {
-  unsigned int i2cdata[8];
+    unsigned int  mval, i2cdata[8];
+   unsigned int ctrl[8];
+   int k;
+
+  // ---------------- read EEPROM ---------------------------
+   mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
+  mval = mapped[AAUXCTRL];	
+  mval = mval | 0x0010;    // set bit 4 to select MZ I2C pins
+  mapped[AAUXCTRL] = mval;
+
+ /*  mval = mapped[AMZ_BRDINFO];           TODO: ensure  AMZ_BRDINFO has the right address
+   ctrl[7] = (mval & 0x800000) >> 23 ;    
+   ctrl[6] = (mval & 0x400000) >> 22 ;    
+   ctrl[5] = (mval & 0x200000) >> 21 ;    
+   ctrl[4] = (mval & 0x100000) >> 20 ; 
+   ctrl[3] = (mval & 0x080000) >> 19 ;    
+   ctrl[2] = (mval & 0x040000) >> 18 ;   
+   ctrl[1] = (mval & 0x020000) >> 17 ;    
+   ctrl[0] = (mval & 0x010000) >> 16 ;      */
+
+  ctrl[7] = 1;      // PN XL PROM  (TMP116)
+  ctrl[6] = 0;
+  ctrl[5] = 0;
+  ctrl[4] = 1;  
+  ctrl[3] = 0;
+  ctrl[2] = 0;
+  ctrl[1] = 0;
+  ctrl[0] = 0;    
+
+
+    // ------------- read serial number -------------------- 
+
+     // 2 bytes: ctrl, addr  write
+   I2Cstart(mapped);
+   ctrl[0] = 0;   // R/W*         // write starting addr to read from
+   I2Cbytesend(mapped, ctrl);
+   I2Cslaveack(mapped);
+    mval = 0x00;   // addr 7 = serial number
+   i2cdata[7] = (mval & 0x0080) >> 7 ;    
+   i2cdata[6] = (mval & 0x0040) >> 6 ;    
+   i2cdata[5] = (mval & 0x0020) >> 5 ;    
+   i2cdata[4] = (mval & 0x0010) >> 4 ;
+   i2cdata[3] = (mval & 0x0008) >> 3 ;    
+   i2cdata[2] = (mval & 0x0004) >> 2 ;   
+   i2cdata[1] = (mval & 0x0002) >> 1 ;    
+   i2cdata[0] = (mval & 0x0001)      ;   
+   I2Cbytesend(mapped, i2cdata);
+   I2Cslaveack(mapped);
+     usleep(300);
+
+   // read data bytes 
+   mval = 0;
+   ctrl[0] = 1;   // R/W*         // now read 
+   usleep(100);
+   I2Cstart(mapped);               //restart
+   I2Cbytesend(mapped, ctrl);      // device address
+   I2Cslaveack(mapped);
+   I2Cbytereceive(mapped, i2cdata);
+   for( k = 0; k < 8; k ++ )
+      if(i2cdata[k])
+         mval = mval + (1<<(k+8));
+   I2Cmasterack(mapped);
+
+//   usleep(100);
+//   I2Cslaveack(mapped);
+   I2Cbytereceive(mapped, i2cdata);
+   for( k = 0; k < 8; k ++ )
+      if(i2cdata[k])
+         mval = mval + (1<<(k+0));
+   //I2Cmasterack(mapped);
+   I2Cmasternoack(mapped);
+   I2Cstop(mapped);
   
-  I2Cstart(mapped);
-  
-  // I2C addr byte
-  i2cdata[7] = 1;
-  i2cdata[6] = 0;
-  i2cdata[5] = 0;
-  i2cdata[4] = 1;
-  i2cdata[3] = 1;   // A2
-  i2cdata[2] = 0;   // A1
-  i2cdata[1] = 0;   // A0
-  i2cdata[0] = 1;   // R/W*
-  I2Cbytesend(mapped, i2cdata);
-  
-  I2Cslaveack(mapped);
-  
-  I2Cbytereceive(mapped, i2cdata);
-  unsigned int temperature_val = 0;
-  for( int k = 0; k < 7; k ++ )
-    if(i2cdata[k])
-      temperature_val = temperature_val + (1<<(k+8));
-  
-  unsigned int Tsign = i2cdata[7];
-  //printf("Temperature: bits 0x%x \n",mval >> 8);
-  
-  I2Cmasterack(mapped);
-  I2Cbytereceive(mapped, i2cdata);     // second byte has fractional portion, no use
-  I2Cmasternoack(mapped);
-  I2Cstop(mapped);
-  
-  return (Tsign ? -1.0 : 1.0) * temperature_val / 256.0f;
+//    printf("I2C read test 0x%04X\n",mval);
+//   printf("I2C (main) temperature (addr=0), temp (C) %f\n",mval*0.0078125);
+
+
+  return(mval*0.0078125);
 }//float board_temperature( volatile unsigned int *mapped )
 
 

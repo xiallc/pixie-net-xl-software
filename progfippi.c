@@ -509,9 +509,8 @@ int main(void) {
   // first, set CSR run control options   
   mapped[ACSRIN] = 0x0000; // all off
 
-  mval =  fippiconfig.AUX_CTRL  & 0x00FF;  // upper bits reserved for FPGA boot, do not toggle 
-  mval = mval + 0x0200;     // set bit 9  to keep FPGA configurured  // TODO: move this to another register
-  mval = mval + 0x0000;     // clear bit 8: yellow LED on
+  mval =  fippiconfig.AUX_CTRL  & 0x00FF;  // upper bits reserved (yellow LED)
+  mval = mval + 0x0100;     // set bit 8: yellow LED on
   mapped[AAUXCTRL] = mval;
   if(mapped[AAUXCTRL] != mval) printf("Error writing AUX_CTRL register\n");
 
@@ -990,9 +989,8 @@ int main(void) {
 
   mapped[AOUTBLOCK] = CS_MZ;	  // select MicroZed Controller
 
-  mval =  fippiconfig.AUX_CTRL  & 0x00FF;  // upper bits reserved for FPGA boot, do not toggle 
-  mval = mval + 0x0200;     // set bit 9  to keep FPGA configurured  // TODO: move this to another register
-  mval = mval + 0x0100;     // set bit 8: yellow LED off
+  mval =  fippiconfig.AUX_CTRL  & 0x00FF;  // upper bits reserved (yellow LED)
+  mval = mval + 0x0000;     // clr bit 8: yellow LED off
   mapped[AAUXCTRL] = mval;
   if(mapped[AAUXCTRL] != mval) printf("Error writing AUX_CTRL register\n");
  
@@ -1004,14 +1002,14 @@ int main(void) {
 
  
    // ADC board temperature
- //   printf("ADC board temperature: %d C \n",(int)board_temperature(mapped) );
+    printf("ADC board temperature: %d C \n",(int)board_temperature(mapped) );
 
    // ***** ZYNQ temperature
  //    printf("Zynq temperature: %d C \n",(int)zynq_temperature() );
 
    // ***** check HW info *********
-//   k = hwinfo(mapped);
-//   printf("Revision %04X, Serial Number %d \n",(k>>16) & 0xFFFF, k & 0xFFFF);
+   k = hwinfo(mapped);
+   printf("Revision %04X, Serial Number %d \n",(k>>16) & 0xFFFF, k & 0xFFFF);
 //   if(k==0) printf("WARNING: HW may be incompatible with this SW/FW \n");
 
  
