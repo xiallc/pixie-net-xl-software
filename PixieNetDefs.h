@@ -237,7 +237,7 @@
 #define N_USED_RS_PAR         20    // not all RS parapmeters are used, can save some readout and printout cycles
 #define MAX_PAR_NAME_LENGTH   65    // Maximum length of parameter names
 #define BLREADPERIOD          20
-#define MIN_POLL_TIME         100
+#define MIN_POLL_TIME         1000
 #define BLOCKSIZE_400         32    // waveform block size (# 16bit words) in run type 0x400
 #define FILE_HEAD_LENGTH_400  32    // file header size (# 16bit words) in run type 0x400
 #define CHAN_HEAD_LENGTH_400  32    // event/channel header size (# 16bit words) in run type 0x400

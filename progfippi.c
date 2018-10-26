@@ -76,13 +76,14 @@ int main(void) {
     printf( "Failed to parse FPGA settings from %s, rval=%d\n", defaults_file, rval );
     return rval;
   }
-  const char *settings_file = "settings.ini";
+  const char *settings_file = "defaults.ini";      // TODO restore to settings.ini
   rval = init_PixieNetFippiConfig_from_file( settings_file, 1, &fippiconfig );   // second override with user settings, do allow missing
   if( rval != 0 )
   {
     printf( "Failed to parse FPGA settings from %s, rval=%d\n", settings_file, rval );
     return rval;
   }
+  
 
   unsigned int  mval, dac, reglo, reghi, pafl;
   unsigned int CW, SFR, FFR, SL[NCHANNELS], SG[NCHANNELS], FL[NCHANNELS], FG[NCHANNELS], TH[NCHANNELS];
@@ -122,9 +123,7 @@ int main(void) {
 
 
   // ******************* XIA code begins ********************
-  // first, set CSR run control options   
-  mapped[ACSRIN] = 0x0000; // all off
-  mapped[AOUTBLOCK] = OB_IOREG;	  // read from IO block
+
 
 
   // take struct values, convert to FPGA units, write to register, one by one
@@ -148,7 +147,7 @@ int main(void) {
   
   if(fippiconfig.POLL_TIME < MIN_POLL_TIME) {
       printf("Invalid POLL_TIME = %d, please increase to more than %d\n",fippiconfig.POLL_TIME,MIN_POLL_TIME);
-      return -400;
+  //    return -400;
     }
 
    if(fippiconfig.CRATE_ID > MAX_CRATE_ID) {
@@ -172,8 +171,6 @@ int main(void) {
       printf("Invalid AUX_CTRL = 0x%x\n",fippiconfig.AUX_CTRL);
       return -2700;
     }
-    mapped[AAUXCTRL] = fippiconfig.AUX_CTRL;
-    if(mapped[AAUXCTRL] != fippiconfig.AUX_CTRL) printf("Error writing AUX_CTRL register\n");
 
   
   // ********** MODULE PARAMETERS ******************
@@ -215,7 +212,7 @@ int main(void) {
     // COINCIDENCE_WINDOW   -- unused P16?
     CW = (int)floorf(fippiconfig.COINCIDENCE_WINDOW*SYSTEM_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
     if( (CW > MAX_CW) | (CW < MIN_CW) ) {
-      printf("Invalid COINCIDENCE_WINDOW = %f, must be between %f and %f us\n",fippiconfig.COINCIDENCE_WINDOW, (double)(MIN_CW/SYSTEM_CLOCK_MHZ), (double)(MAX_CW/SYSTEM_CLOCK_MHZ));
+      printf("Invalid COINCIDENCE_WINDOW = %f, must be between %f and %f us\n",fippiconfig.COINCIDENCE_WINDOW, (double)MIN_CW/(double)SYSTEM_CLOCK_MHZ, (double)MAX_CW/(double)SYSTEM_CLOCK_MHZ);
       return -2000;
     }
 
@@ -464,7 +461,7 @@ int main(void) {
       } 
 
 
-      // QDC parameters specified in samples, not us as in P16!
+      // QDC parameters specified in samples, not as as in P16!
       if( (fippiconfig.QDCLen0[k] > QDCLEN_MAX) || (fippiconfig.QDCLen0[k] < QDCLEN_MIN)  )  {
          printf("Invalid QDCLen0 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen0[k], QDCLEN_MIN, QDCLEN_MAX);
          return -4900-k;
@@ -502,11 +499,25 @@ int main(void) {
  
    }    // end for channels present
 
- 
-
+  
 
    // -------------- now package  and write -------------------
 
+   mapped[AOUTBLOCK] = CS_MZ;	  // select MicroZed Controller
+
+  
+  // first, set CSR run control options   
+  mapped[ACSRIN] = 0x0000; // all off
+
+  mval =  fippiconfig.AUX_CTRL  & 0x00FF;  // upper bits reserved for FPGA boot, do not toggle 
+  mval = mval + 0x0200;     // set bit 9  to keep FPGA configurured  // TODO: move this to another register
+  mval = mval + 0x0000;     // clear bit 8: yellow LED on
+  mapped[AAUXCTRL] = mval;
+  if(mapped[AAUXCTRL] != mval) printf("Error writing AUX_CTRL register\n");
+
+
+
+   /*
     
    mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
 
@@ -708,7 +719,7 @@ int main(void) {
 
     }  // end for NCHANNEL_PER_K7
 
-
+  */
 
 
 
@@ -733,7 +744,7 @@ int main(void) {
    }           // end for channels DAC
 
 
-
+  if(0) {
    // --------------------------- Gains ----------------------------------
    // DB01 has 4 gains. Applied via I2C specific to each DB
    // no limits for DIG_GAIN
@@ -956,10 +967,11 @@ int main(void) {
       I2Cstop(mapped);
 
   
-
+     } // end gain turn off
 
 
      // --------------------------- finish up ----------------------------------
+
 
        /*
      // TODO
@@ -974,7 +986,20 @@ int main(void) {
    mapped[ADSP_CLR] = 1;
    mapped[ARTC_CLR] = 1;
 
-       */ 
+     */ 
+
+  mapped[AOUTBLOCK] = CS_MZ;	  // select MicroZed Controller
+
+  mval =  fippiconfig.AUX_CTRL  & 0x00FF;  // upper bits reserved for FPGA boot, do not toggle 
+  mval = mval + 0x0200;     // set bit 9  to keep FPGA configurured  // TODO: move this to another register
+  mval = mval + 0x0100;     // set bit 8: yellow LED off
+  mapped[AAUXCTRL] = mval;
+  if(mapped[AAUXCTRL] != mval) printf("Error writing AUX_CTRL register\n");
+ 
+
+
+
+     
     // --------------------------- HW info ----------------------------------
 
  

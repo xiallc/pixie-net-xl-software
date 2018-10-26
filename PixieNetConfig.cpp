@@ -527,13 +527,13 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
   ret = parse_single_int_val( label_to_values, "POLL_TIME", config->POLL_TIME, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -4;
 
-  ret = parse_single_int_val( label_to_values, "CRATE_ID", config->POLL_TIME, ignore_missing ) ;
+  ret = parse_single_int_val( label_to_values, "CRATE_ID", config->CRATE_ID, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -5;
 
-  ret = parse_single_int_val( label_to_values, "SLOT_ID", config->POLL_TIME, ignore_missing ) ;
+  ret = parse_single_int_val( label_to_values, "SLOT_ID", config->SLOT_ID, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -6;
 
-  ret = parse_single_int_val( label_to_values, "MODULE_ID", config->POLL_TIME, ignore_missing ) ;
+  ret = parse_single_int_val( label_to_values, "MODULE_ID", config->MODULE_ID, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -7;
 
   ret = parse_single_int_val( label_to_values, "AUX_CTRL", config->AUX_CTRL, ignore_missing ) ;
