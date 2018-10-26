@@ -284,7 +284,7 @@ int hwinfo( volatile unsigned int *mapped )
 }
 
 
-float board_temperature( volatile unsigned int *mapped )
+float board_temperature( volatile unsigned int *mapped, unsigned int I2Csel )
 {
     unsigned int  mval, i2cdata[8];
    unsigned int ctrl[8];
@@ -293,7 +293,7 @@ float board_temperature( volatile unsigned int *mapped )
   // ---------------- read EEPROM ---------------------------
    mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
   mval = mapped[AAUXCTRL];	
-  mval = mval | 0x0010;    // set bit 4 to select MZ I2C pins
+  mval = mval | I2Csel;    // set bit 4 to select MZ I2C pins
   mapped[AAUXCTRL] = mval;
 
  /*  mval = mapped[AMZ_BRDINFO];           TODO: ensure  AMZ_BRDINFO has the right address
@@ -314,8 +314,7 @@ float board_temperature( volatile unsigned int *mapped )
   ctrl[2] = 0;
   ctrl[1] = 0;
   ctrl[0] = 0;    
-
-
+ 
     // ------------- read serial number -------------------- 
 
      // 2 bytes: ctrl, addr  write
@@ -663,7 +662,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    {
      lastrs = N_USED_RS_PAR;
      // temperatures
-     m[14] = (int)board_temperature(mapped);
+     m[14] = (int)board_temperature(mapped,I2C_SELMAIN);
      m[15] = (int)zynq_temperature();
      m[16] = (int)(0xFFFF & (hwinfo(mapped) >> 16));          // this is a pretty slow I2C I/O
    }

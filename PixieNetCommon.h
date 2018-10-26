@@ -45,7 +45,7 @@ void I2Cbytesend(volatile unsigned int *mapped, unsigned int *data);
 void I2Cbytereceive(volatile unsigned int *mapped, unsigned int *data);
 unsigned int setbit( unsigned int par, unsigned int bitc, unsigned int bitf);
 int hwinfo( volatile unsigned int *mapped );
-float board_temperature( volatile unsigned int *mapped );
+float board_temperature( volatile unsigned int *mapped, unsigned int I2Csel  );
 float zynq_temperature();
 
 

@@ -233,6 +233,9 @@
 #define SDA                   1     // bit definitions for I2C I/O
 #define SCL                   2     // bit definitions for I2C I/O
 #define SDAENA                4     // bit definitions for I2C I/O
+#define I2C_SELMAIN           0x0010     // select bit for I2C I/O (write to AUX_CTRL), PX desk main I2C
+#define I2C_SELDB0            0x0020     // select bit for I2C I/O (write to AUX_CTRL), PX desk DB0 I2C
+#define I2C_SELDB1            0x0040     // select bit for I2C I/O (write to AUX_CTRL), PX desk DB1 I2C
 #define N_PL_IN_PAR           16    // number of input parameters for system and each channel
 #define N_PL_RS_PAR           32    // number of runstats parameters for system and each channel
 #define N_USED_RS_PAR         20    // not all RS parapmeters are used, can save some readout and printout cycles

@@ -516,7 +516,7 @@ int main(void) {
 
 
 
-   /*
+   
     
    mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
 
@@ -718,7 +718,7 @@ int main(void) {
 
     }  // end for NCHANNEL_PER_K7
 
-  */
+  
 
 
 
@@ -743,7 +743,7 @@ int main(void) {
    }           // end for channels DAC
 
 
-  if(0) {
+  if(1) {
    // --------------------------- Gains ----------------------------------
    // DB01 has 4 gains. Applied via I2C specific to each DB
    // no limits for DIG_GAIN
@@ -824,7 +824,7 @@ int main(void) {
 
       // I2C write for 4 channels
        mapped[AOUTBLOCK] = CS_MZ;	  // select MZ controller
-       mapped[AAUXCTRL] = 0x0020;	  // select bit 5 -> DB0 I2C        // XXXXXX
+       mapped[AAUXCTRL] = I2C_SELDB0;	  // select bit 5 -> DB0 I2C        // XXXXXX
 
        // first 8 bits
        I2Cstart(mapped);
@@ -903,7 +903,7 @@ int main(void) {
 
       // I2C write for 4 channels
        mapped[AOUTBLOCK] = CS_MZ;	  // select MZ controller
-       mapped[AAUXCTRL] = 0x0040;	  // select bit 6 -> DB1 I2C        // XXXXXX
+       mapped[AAUXCTRL] = I2C_SELDB1;	  // select bit 6 -> DB1 I2C        // XXXXXX
 
        // first 8 bits
        I2Cstart(mapped);
@@ -1002,10 +1002,12 @@ int main(void) {
 
  
    // ADC board temperature
-    printf("ADC board temperature: %d C \n",(int)board_temperature(mapped) );
+    printf("PXdesk board temperature: %d C \n",(int)board_temperature(mapped, I2C_SELMAIN) );
+    printf("DB0 board temperature: %d C \n",(int)board_temperature(mapped, I2C_SELDB0) );
+    printf("DB1 board temperature: %d C \n",(int)board_temperature(mapped, I2C_SELDB1) );
 
    // ***** ZYNQ temperature
- //    printf("Zynq temperature: %d C \n",(int)zynq_temperature() );
+     printf("MZ Zynq temperature: %d C \n",(int)zynq_temperature() );
 
    // ***** check HW info *********
    k = hwinfo(mapped);
