@@ -53,9 +53,10 @@ int main(void) {
   void *map_addr;
   int size = 4096;
   volatile unsigned int *mapped;
-  int k;
+  int k,ch;
   FILE * fil;
-  unsigned int adc0[NTRACE_SAMPLES], adc1[NTRACE_SAMPLES], adc2[NTRACE_SAMPLES], adc3[NTRACE_SAMPLES];
+  unsigned int adc[4][NTRACE_SAMPLES];
+  unsigned int chsel, regno;
 
 
   // *************** PS/PL IO initialization *********************
@@ -80,31 +81,36 @@ int main(void) {
 
    // read 8K samples from ADC register 
    // at this point, no guarantee that sampling is truly periodic
-   mapped[AOUTBLOCK] = OB_EVREG;		// switch reads to event data block of addresses
+    mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
+    chsel = 0x100;        // channel 0
+    regno = 4 ;               // register 4  = ADC
 
-   // dummy reads for sampling update
-   k = mapped[AADC0] & 0xFFFF;
-   k = mapped[AADC1] & 0xFFFF;
-   k = mapped[AADC2] & 0xFFFF;
-   k = mapped[AADC3] & 0xFFFF;
+    for(ch=0;ch<4;ch++) {
 
-   for( k = 0; k < NTRACE_SAMPLES; k ++ )
-      adc0[k] = mapped[AADC0] & 0xFFFF;
-   for( k = 0; k < NTRACE_SAMPLES; k ++ )
-      adc1[k] = mapped[AADC1] & 0xFFFF;
-   for( k = 0; k < NTRACE_SAMPLES; k ++ )
-      adc2[k] = mapped[AADC2] & 0xFFFF;
-   for( k = 0; k < NTRACE_SAMPLES; k ++ )
-      adc3[k] = mapped[AADC3] & 0xFFFF;
+   mapped[AMZ_EXAFWR] = 3;     // write to  k7's addr        addr 3 = channel/syste, select    
+   mapped[AMZ_EXDWR] = chsel+ch;                                //  0x100  =channel 0                  
+
+  for(k=0;k<NTRACE_SAMPLES;k++) {
+      mapped[AMZ_EXAFRD] = regno+0xC0;     // write to  k7's addr
+        usleep(1);
+      adc[ch][k] = mapped[AMZ_EXDRD]; 
+
+  }       //    edn for NTRACE_SAMPLES
+
+  } // end for channels
+
+
 
   // open the output file
   fil = fopen("ADC.csv","w");
   fprintf(fil,"sample,adc0,adc1,adc2,adc3\n");
 
   //  write to file
-  for( k = 0; k < 8192; k ++ )
+  for( k = 0; k < NTRACE_SAMPLES; k ++ )
   {
-       fprintf(fil,"%d,%d,%d,%d,%d\n ",k,adc0[k],adc1[k],adc2[k],adc3[k]);
+   //    fprintf(fil,"%d,%d,%d,%d,%d\n ",k,adc[0][k],adc[1][k],adc[2][k],adc[3][k]);
+       fprintf(fil,"%d,0x%x,0x%x,0x%x,0x%x\n ",k,adc[0][k],adc[1][k],adc[2][k],adc[3][k]);
+      // fprintf(fil,"%d,%d,%d,%d,%d\n ",k,adc[0][k],0,0,0);
   }
  
  

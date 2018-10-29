@@ -76,7 +76,7 @@ int main(void) {
     printf( "Failed to parse FPGA settings from %s, rval=%d\n", defaults_file, rval );
     return rval;
   }
-  const char *settings_file = "defaults.ini";      // TODO restore to settings.ini
+  const char *settings_file = "settings.ini";      // TODO restore to settings.ini
   rval = init_PixieNetFippiConfig_from_file( settings_file, 1, &fippiconfig );   // second override with user settings, do allow missing
   if( rval != 0 )
   {

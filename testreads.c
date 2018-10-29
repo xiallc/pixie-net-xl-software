@@ -108,8 +108,25 @@ int main( int argc, char *argv[] ) {
 
  
   mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
-  chsel = 0;
-  regno = 15 ;
+
+
+   mapped[AMZ_EXAFWR] = 5;     // write to  k7's addr     addr 5 = SPI
+   mval = 0 << 15;                  // SPI write (high bit=0)
+   mval = mval + (0x03 << 8);       // SPI reg address  (bit 14:8)
+   mval = mval + 0x00;              // test pattern on, pattern bits [13:8]  = 0A
+   mapped[AMZ_EXDWR] = mval;                                 //  write to ADC SPI
+         usleep(5);
+
+
+  mapped[AMZ_EXAFWR] = 5;     // write to  k7's addr     addr 5 = SPI
+   mval = 0 << 15;                  // SPI write (high bit=0)
+   mval = mval + (0x04 << 8);       // SPI reg address  (bit 14:8)
+   mval = mval + 0x01;              // test pattern on, pattern bits [7:0]  = BC
+   mapped[AMZ_EXDWR] = mval;                                 //  write to ADC SPI
+
+  
+  /*chsel = 0;
+  regno = 14 ;
 
   // select sys registers
   mapped[AMZ_EXAFWR] = 3;     // write to  k7's addr     addr 3 = channel/syste, select
@@ -126,11 +143,13 @@ int main( int argc, char *argv[] ) {
      printf( "K7 0 read from 0x%x (chsel=0x%x): %d\n", regno+0x80, chsel,mval );
     //    usleep(5);
   }
+    */
 
 
+   /*
    // select ch registers
-    chsel = 0x100;
-    regno = 0 ;
+    chsel = 0x101;
+    regno = 3 ;
    mapped[AMZ_EXAFWR] = 3;     // write to  k7's addr        addr 3 = channel/syste, select    
    mapped[AMZ_EXDWR] = chsel;                                //  0x100  =channel 0                  
  
@@ -143,7 +162,8 @@ int main( int argc, char *argv[] ) {
     //    usleep(5);
   }
 
-  
+    */
+
  
   mapped[AOUTBLOCK] = CS_MZ;	  // deselect FPGA 0  
  
