@@ -91,8 +91,9 @@ int main(void) {
    mapped[AMZ_EXDWR] = chsel+ch;                                //  0x100  =channel 0                  
 
   for(k=0;k<NTRACE_SAMPLES;k++) {
+//   for(k=0;k<100;k++) {
       mapped[AMZ_EXAFRD] = regno+0xC0;     // write to  k7's addr
-        usleep(1);
+  //      usleep(1);
       adc[ch][k] = mapped[AMZ_EXDRD]; 
 
   }       //    edn for NTRACE_SAMPLES
@@ -107,9 +108,10 @@ int main(void) {
 
   //  write to file
   for( k = 0; k < NTRACE_SAMPLES; k ++ )
+//   for( k = 0; k < 100; k ++ )
   {
-   //    fprintf(fil,"%d,%d,%d,%d,%d\n ",k,adc[0][k],adc[1][k],adc[2][k],adc[3][k]);
-       fprintf(fil,"%d,0x%x,0x%x,0x%x,0x%x\n ",k,adc[0][k],adc[1][k],adc[2][k],adc[3][k]);
+       fprintf(fil,"%d,%d,%d,%d,%d\n ",k,adc[0][k],adc[1][k],adc[2][k],adc[3][k]);
+   //    fprintf(fil,"%d,0x%x,0x%x,0x%x,0x%x\n ",k,adc[0][k],adc[1][k],adc[2][k],adc[3][k]);
       // fprintf(fil,"%d,%d,%d,%d,%d\n ",k,adc[0][k],0,0,0);
   }
  

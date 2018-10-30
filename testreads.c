@@ -64,7 +64,11 @@ int main( int argc, char *argv[] ) {
 //  unsigned int addr = 0;
   unsigned int mval = 0;
   unsigned int k;
+  unsigned int upper, lower;
   unsigned int chsel, regno;
+
+ unsigned int adc[4][14];
+ int ch;
 
 
   // *************** PS/PL IO initialization *********************
@@ -92,28 +96,41 @@ int main( int argc, char *argv[] ) {
   mapped = (unsigned int *) map_addr;
 
    // ************************ parse arguments *********************************
- /*
-   if( argc!=3)  {
-     printf( "please give arguments addr (0x###) for test read/write and value (decimal)  \n" );
-     return 2;
-   }
+ 
+ //  if( argc!=3)  {
+ //    printf( "please give arguments addr (0x###) for test read/write and value (decimal)  \n" );
+ //    return 2;
+ //  }
 
-   addr = strtol(argv[1], NULL, 16);
-   val = strtol(argv[2], NULL, 10);
+ //  addr = strtol(argv[1], NULL, 16);
+ //  val = strtol(argv[2], NULL, 10);
 
-   */
+   
 
    // ************************ set up controller registers for external R/W *********************************
 
 
+  // ======================= ADC SPI programming =======================
+ for(k=0;k<14;k++) {
  
   mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
+
+  if(k<8) {
+      upper = 0x0;
+      lower = (1<<k);
+   }
+   else
+   {
+        upper = (1<<(k-8));
+       lower = 0x0;
+       }
+   
 
 
    mapped[AMZ_EXAFWR] = 5;     // write to  k7's addr     addr 5 = SPI
    mval = 0 << 15;                  // SPI write (high bit=0)
-   mval = mval + (0x03 << 8);       // SPI reg address  (bit 14:8)
-   mval = mval + 0x00;              // test pattern on, pattern bits [13:8]  = 0A
+   mval = mval + (0x03 << 8);       // SPI reg address  (bit 13:8)
+   mval = mval + 0x80 +upper;              // test pattern on, pattern bits [13:8]  = 0A
    mapped[AMZ_EXDWR] = mval;                                 //  write to ADC SPI
          usleep(5);
 
@@ -121,11 +138,49 @@ int main( int argc, char *argv[] ) {
   mapped[AMZ_EXAFWR] = 5;     // write to  k7's addr     addr 5 = SPI
    mval = 0 << 15;                  // SPI write (high bit=0)
    mval = mval + (0x04 << 8);       // SPI reg address  (bit 14:8)
-   mval = mval + 0x01;              // test pattern on, pattern bits [7:0]  = BC
+   mval = mval + lower;              // test pattern on, pattern bits [7:0]  = BC
    mapped[AMZ_EXDWR] = mval;                                 //  write to ADC SPI
 
-  
-  /*chsel = 0;
+  //  printf( "test pattern is 0x%x \n", (addr<<8));
+      usleep(5);
+
+
+
+  // read ADC from FPGA
+
+
+     // read 1 samples from ADC register 
+
+    mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
+    chsel = 0x100;               // start with channel 0
+    regno = 4 ;                  // register 4  = ADC
+
+    for(ch=0;ch<4;ch++) {
+
+      mapped[AMZ_EXAFWR] = 3;     // write to  k7's addr        addr 3 = channel/syste, select    
+      mapped[AMZ_EXDWR] = chsel+ch;                                //  0x100  =channel 0                  
+   
+         mapped[AMZ_EXAFRD] = regno+0xC0;     // write register address to  K7
+           usleep(1);
+         adc[ch][k] = mapped[AMZ_EXDRD]; 
+     
+     } // end for channels
+
+       printf( "test pattern 0x%04x: adc0 0x%04x, adc1 0x%04x, adc2 0x%04x, adc3 0x%04x \n", (upper<<8)+lower, adc[0][k],adc[1][k],adc[2][k],adc[3][k] );
+    }
+
+
+   // turn testpattern off again
+   mapped[AMZ_EXAFWR] = 5;     // write to  k7's addr     addr 5 = SPI
+   mval = 0 << 15;                  // SPI write (high bit=0)
+   mval = mval + (0x03 << 8);       // SPI reg address  (bit 13:8)
+   mval = mval + 0;              // test pattern off
+   mapped[AMZ_EXDWR] = mval;                                 //  write to ADC SPI
+         usleep(5);
+                                      
+  /*
+
+  chsel = 0;
   regno = 14 ;
 
   // select sys registers
@@ -143,9 +198,9 @@ int main( int argc, char *argv[] ) {
      printf( "K7 0 read from 0x%x (chsel=0x%x): %d\n", regno+0x80, chsel,mval );
     //    usleep(5);
   }
-    */
+    
 
-
+     */
    /*
    // select ch registers
     chsel = 0x101;
