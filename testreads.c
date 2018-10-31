@@ -111,6 +111,37 @@ int main( int argc, char *argv[] ) {
 
 
   // ======================= ADC SPI programming =======================
+
+/*  // LVDS drive strength
+
+  mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
+
+   mapped[AMZ_EXAFWR] = 5;     // write to  k7's addr     addr 5 = SPI
+   mval = 0 << 15;                  // SPI write (high bit=0)
+   mval = mval + (0x02 << 8);       // SPI reg address  (bit 13:8)
+   mval = mval + 0x40;              // test pattern on, pattern bits [13:8]  = 0A
+   mapped[AMZ_EXDWR] = mval;                                 //  write to ADC SPI
+         usleep(5);
+ */
+
+ // read frame 
+   mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
+
+    chsel = 0x000;               // sys range
+    regno = 6 ;                  // register 6  = ADC frame
+
+    mapped[AMZ_EXAFWR] = 3;     // write to  k7's addr        addr 3 = channel/system, select    
+    mapped[AMZ_EXDWR] = chsel;                                //  0x100  =channel 0                  
+   
+     mapped[AMZ_EXAFRD] = regno+0x80;     // write register address to  K7
+     usleep(1);
+     mval = mapped[AMZ_EXDRD]; 
+      printf( "frame pattern is 0x%x \n", mval);
+
+
+
+  // test patterns
+
  for(k=0;k<14;k++) {
  
   mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
@@ -177,8 +208,31 @@ int main( int argc, char *argv[] ) {
    mval = mval + 0;              // test pattern off
    mapped[AMZ_EXDWR] = mval;                                 //  write to ADC SPI
          usleep(5);
+
+
+          // trigger a bitslip
+
+
+
+    mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
+
+    chsel = 0x000;               // sys range
+    regno = 6 ;                  // register 6  = ADC frame
+
+    mapped[AMZ_EXAFWR] = 3;     // write to  k7's addr        addr 3 = channel/system, select    
+    mapped[AMZ_EXDWR] = chsel;                                //  0x000  = system range                  
+   
+    mapped[AMZ_EXAFWR] = 0x6;     // write register address to  K7
+    mapped[AMZ_EXDWR] = chsel;    // any write will do
+
+
+
+
+
                                       
   /*
+    // ======================= test register I/O  =======================
+
 
   chsel = 0;
   regno = 14 ;
