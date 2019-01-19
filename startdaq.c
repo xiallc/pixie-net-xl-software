@@ -75,6 +75,8 @@ int main(void) {
   double cfdlev;
   time_t starttime, currenttime;
   unsigned int startTS, m, c0, c1, c2, c3, w0, w1, tmpI, revsn;
+  unsigned int tmp0, tmp1, tmp2, tmp3;
+  unsigned int out0, out1, out2, out3, trace_staddr;
   unsigned int evstats, R1, hit, timeL, timeH, psa0, psa1, cfd0;
   unsigned int psa_base, psa_Q0, psa_Q1, psa_ampl, psa_R;
   unsigned int cfdout, cfdlow, cfdhigh, cfdticks, cfdfrac, ts_max;
@@ -87,6 +89,8 @@ int main(void) {
   unsigned int chaddr, loopcount, eventcount, NumPrevTraceBlks, TraceBlks;
   unsigned short buffer1[FILE_HEAD_LENGTH_400] = {0};
   unsigned char buffer2[CHAN_HEAD_LENGTH_400*2] = {0};
+  unsigned int HMaddr[NCHANNELS] = {0};
+  unsigned int TMaddr[NCHANNELS] = {0};
   unsigned int wm = WATERMARK;
   unsigned int BLbad[NCHANNELS];
   onlinebin=MAX_MCA_BINS/WEB_MCA_BINS;
@@ -111,15 +115,15 @@ int main(void) {
   }
 
   // assign to local variables, including any rounding/discretization
-  Accept       = fippiconfig.ACCEPT_PATTERN;
+  //Accept       = fippiconfig.ACCEPT_PATTERN;
   RunType      = fippiconfig.RUN_TYPE;
   SyncT        = fippiconfig.SYNC_AT_START;
   ReqRunTime   = fippiconfig.REQ_RUNTIME;
   PollTime     = fippiconfig.POLL_TIME;
   CW           = (int)floor(fippiconfig.COINCIDENCE_WINDOW*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
 
-  if( (RunType==0x503) || (RunType==0x402) )  {      // grouped list mode run (equiv 0x402)
-      printf( "This function does not support LM runtypes 0x503 or 0x402, use coincdaq or acquire\n");
+  if( (RunType!=0x100)  {      // grouped list mode run (equiv 0x402)
+      printf( "This function only support runtype 0x100 (P16) \n");
       return(-1);
   }
 
@@ -190,62 +194,47 @@ int main(void) {
 
     // ********************** Run Start **********************
 
-   NumPrevTraceBlks = 0;
+
    loopcount =  0;
    eventcount = 0;
    starttime = time(NULL);                         // capture OS start time
-   if( (RunType==0x500) || (RunType==0x501)  || (RunType==0x502) || (RunType==0x400) )  {    // list mode runtypes    
+   if( (RunType==0x100)  )  {    // list mode runtypes    
       if(SyncT) mapped[ARTC_CLR] = 1;              // write to reset time counter
       mapped[AOUTBLOCK] = 2;
       startTS = mapped[AREALTIME];
-      if(RunType==0x500)   {                       // generic runtype is one value per line
-         fil = fopen("LMdata.txt","w");
-         fprintf(fil, "Module:\t%hu\n",0);
-         fprintf(fil, "Run Type:\t0x%x\n",RunType);
-         fprintf(fil,"Run Start Time Stamp (ticks) :\t%u\n", startTS);	//
-         fprintf(fil,"Run Start Time (s) :\t%lld\n", (long long)starttime);			// this is only precise to a second or so
-      } 
-      if(RunType==0x501){                                     // compressed runtype has columns
-         fil = fopen("LMdata.dat","w");
-         fprintf(fil,"Module,Run_Type,Run_Start_ticks,Run_Start_sec,Unused1,Unused2\n");
-         fprintf(fil,"%d,0x%x,%u,%lld,--,--\n",0,RunType,startTS,(long long)(starttime));
-         fprintf(fil,"No,Ch,Hit,Time_H,Time_L,Energy\n");
-      }
-      if(RunType==0x502){                                     // compressed PSA runtype has more columns
-         fil = fopen("LMdata.dt2","w");
-         fprintf(fil,"Module,Run_Type,Run_Start_ticks,Run_Start_sec,Unused1,Unused2\n");
-         fprintf(fil,"%d,0x%x,%u,%lld,--,--\n",0,RunType,startTS,(long long)(starttime));
-         fprintf(fil,"Event_No,Channel_No,Hit_Pattern,Event_Time_H,Event_Time_L,Energy,Amplitude,CFD,Base,Q0,Q1,PSAvalue\n");
-      } 
-      if(RunType==0x400){
-        // write a 0x400 header
-        // fwrite is slow so we will write to a buffer, and then to the file.
-        fil = fopen("LMdata.b00","wb");
-        buffer1[0] = BLOCKSIZE_400;
-        buffer1[1] = 0;                                       // module number (get from settings file?)
-        buffer1[2] = RunType;
-        buffer1[3] = CHAN_HEAD_LENGTH_400;
-        buffer1[4] = fippiconfig.COINCIDENCE_PATTERN;
-        buffer1[5] = fippiconfig.COINCIDENCE_WINDOW;
-        buffer1[7] = revsn>>16;               // HW revision from EEPROM
-        buffer1[12] = revsn & 0xFFFF;         // serial number from EEPROM
-        for( ch = 0; ch < NCHANNELS; ch++) {
-            buffer1[6]   +=(int)floor((TL[ch] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400);         // combined event length, in blocks
-            buffer1[8+ch] =(int)floor((TL[ch] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400);			// each channel's event length, in blocks
-        }
-        fwrite( buffer1, 2, FILE_HEAD_LENGTH_400, fil );     // write to file
-      }           
+
+      if(RunType==0x100){
+        // write a 0x100 header  -- actually there is no header, just events
+        fil = fopen("LMdata.bin","wb");
+        }           
     }
 
-   mapped[ADSP_CLR] = 1;             // write to reset DAQ buffers
-   mapped[ACOUNTER_CLR] = 1;         // write to reset RS counters
-   mapped[ACSRIN] = 1;               // set RunEnable bit to start run
-   mapped[AOUTBLOCK] = OB_EVREG;     // read from event registers
+    mapped[AOUTBLOCK] = CS_K0;	 // select FPGA 0 
+    mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
+    mapped[AMZ_EXDWR]  = 0;      //                         0x000  =system     -> now addressing system page of K7-0
+
+   //mapped[ADSP_CLR] = 1;             // write to reset DAQ buffers
+    mapped[AMZ_EXAFWR] = ADSP_CLR;     // specify   K7's addr 
+    mapped[AMZ_EXDWR]  = 0;      //  any write will do 
+
+   //mapped[ACOUNTER_CLR] = 1;         // write to reset RS counters
+    mapped[AMZ_EXAFWR] = ACOUNTER_CLR;     // specify   K7's addr 
+    mapped[AMZ_EXDWR]  = 0;      //  any write will do 
+
+    //mapped[ARTC_CLR] = 1;         // write to reset RS counters
+    mapped[AMZ_EXAFWR] = ARTC_CLR;     // specify   K7's addr 
+    mapped[AMZ_EXDWR]  = 0;      //  any write will do 
+
+   //mapped[ACSRIN] = 1;               // set RunEnable bit to start run
+   mapped[AMZ_EXAFWR] = ACSRIN;     // specify   K7's addr 
+   mapped[AMZ_EXDWR]  = 1;      //  set RunEnable bit to start run 
+   // TODO: this should be a bit in a MZ register tied to a line to both FPGAs
     
 
     // ********************** Run Loop **********************
    do {
 
+   /*  no baselines for now
       //----------- Periodically read BL and update average -----------
       // this will be moved into the FPGA soon
       if(loopcount % BLREADPERIOD == 0) {  //|| (loopcount ==0) ) {     // sometimes 0 mod N not zero and first few events have wrong E? watch
@@ -276,44 +265,141 @@ int main(void) {
             }       // end tsum >0 check
          }          // end for loop
       }             // end periodicity check
-
+     */ 
       
       // -----------poll for events -----------
       // if data ready. read out, compute E, increment MCA *********
-      
-      evstats = mapped[AEVSTATS];
-      //   printf("EVstats 0x%x\n",evstats);
+
+      // Read Header DPM status
+      mapped[AMZ_EXAFRD] = AK7_SYSSYTATUS;     // write to  k7's addr for read -> reading from 0x85 system status register
+      evstats = mapped[AMZ_EXDRD];   // bits set for every channel that has data in header memory
+      printf( "K7 0 read from 0x85: %x\n", evstats );
+        
+
+      // event readout compatible with P16 DSP code
+      // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
       if(evstats) {					  // if there are events in any channel
-         for( ch=0; ch < NCHANNELS; ch++)
+         for( ch=0; ch < NCHANNELS_PRESENT; ch++)
          {
             R1 = 1 << ch;
-            if(evstats & R1)	{	 // check if there is an event in the FIFO       
-               // read hit pattern and status info
-               chaddr = ch*16+16;
-               hit   = mapped[chaddr+CA_HIT];
-           //    printf("channel %d, hit 0x%x\n",ch,hit);
-               if(hit & Accept) {           
-                  // read data not needed for pure MCA runs
-                  timeL = mapped[chaddr+CA_TSL];
-                  timeH = mapped[chaddr+CA_TSH];
-                  psa0  = mapped[chaddr+CA_PSAA];        // Q0raw/4 | B
-                  psa1  = mapped[chaddr+CA_PSAB];        // M       | Q1raw/4
-                  cfd0  = mapped[chaddr+CA_CFDA];        // {ts_max[6:3],cfdticks[3:0],cfdhigh[11:0],cfdlow[11:0]}
-                  //cfd1  = mapped[chaddr+CA_CFDB];
+            if(evstats & R1)	{	 //  if there is an event in the header memory for this channel
+                  mapped[AMZ_EXAFWR] = AK7_MEMADDR;     // specify   K7's addr     addr 4 = memory address
+                  mapped[AMZ_EXDWR]  = HMaddr[ch];      //  take data from top of memory as remembered in C variable
+
+                  HMaddr[ch] += 8;              // increment remembered header address, roll over if necessary
+                  if(HMaddr[ch] >= 512)
+                     HMaddr[ch] = HMaddr - 512;
+
+                  mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
+                  mapped[AMZ_EXDWR]  = 0x100+ch;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
                  
-                  //printf("channel %d, hit 0x%x, timeL %d\n",ch,hit,timeL);
-                  // read raw energy sums 
-                  lsum  = mapped[chaddr+CA_LSUM];        // leading, larger, "S1", past rising edge
-                  tsum  = mapped[chaddr+CA_TSUM];        // trailing, smaller, "S0" before rising edge
-                  gsum  = mapped[chaddr+CA_GSUM];		   // gap sum, "Sg", during rising edge; also advances FIFO and increments Nout etc
-                  
+                  //(0)
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header memory, low 16bit
+                  tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B channel header memory, next 16bit
+                  tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_C channel header memory, next 16bit
+                  tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header memory, high 16bit and addr increase
+                  tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
+                  // tmp2 and tmp3 are actually all zero in P16 common usage
+                  out0 = tmp0+(tmp1<<16);  // preliminary, more bits to be filled in
+
+                  //(1)
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header memory, low 16bit
+                  tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B channel header memory, next 16bit
+                  tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_C channel header memory, next 16bit
+                  tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header memory, high 16bit and addr increase
+                  tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
+                  // tmp2 and tmp3 are actually all zero in P16 common usage
+                  timeL = tmp0+(tmp1<<16);  
+
+                  //(2)
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header memory, low 16bit
+                  tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B channel header memory, next 16bit
+                  tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_C channel header memory, next 16bit
+                  tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header memory, high 16bit and addr increase
+                  tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
+                  // tmp2 and tmp3 are actually all zero in P16 common usage
+                  timeH = tmp0;  
+                  TL[ch] = tmp1; 
+
+                  //(3)
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header memory, low 16bit
+                  tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B channel header memory, next 16bit
+                  tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_C channel header memory, next 16bit
+                  tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header memory, high 16bit and addr increase
+                  tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
+                  // tmp2 and tmp3 are actually all zero in P16 common usage
+                  tsum = tmp0+(tmp1<<16);  
+
+                  //(4)
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header memory, low 16bit
+                  tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B channel header memory, next 16bit
+                  tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_C channel header memory, next 16bit
+                  tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header memory, high 16bit and addr increase
+                  tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
+                  // tmp2 and tmp3 are actually all zero in P16 common usage
+                  lsum = tmp0+(tmp1<<16);  
+
+                  //(5)
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header memory, low 16bit
+                  tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B channel header memory, next 16bit
+                  tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_C channel header memory, next 16bit
+                  tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header memory, high 16bit and addr increase
+                  tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
+                  // tmp2 and tmp3 are actually all zero in P16 common usage
+                  gsum = tmp0+(tmp1<<16);  
+
+                  //(6)
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header memory, low 16bit
+                  tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B channel header memory, next 16bit
+                  tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_C channel header memory, next 16bit
+                  tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header memory, high 16bit and addr increase
+                  tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
+                  // tmp2,3 + ext TS. tmp1[15:3] = trace start. rest = cfdout 1
+                  trace_staddr = tmp1>>3;
+
+                  //(7) 
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header memory, low 16bit
+                  tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B channel header memory, next 16bit
+                  tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_C channel header memory, next 16bit
+                  tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header memory, high 16bit and addr increase
+                  tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
+                  // more cfd and ext TS
+
+                  // TODO: add pileup (and other) acceptance check
+
+                  // the next 8 words only need to be read if QDCs are enabled
+                       
                   // compute and histogram E
                   ph = C1[ch]*(double)lsum+Cg[ch]*(double)gsum+C0[ch]*(double)tsum;
                  //  printf("ph %f, BLavg %f, E %f\n",ph,baseline[ch], ph-baseline[ch]);
                   ph = ph-baseline[ch];
                   if ((ph<0.0)|| (ph>65536.0))	ph =0.0;	   // out of range energies -> 0
                   energy = (int)floor(ph);
-                  if ((hit & (1<< HIT_LOCALHIT))==0)	  	energy =0;	   // not a local hit -> 0
+                  //if ((hit & (1<< HIT_LOCALHIT))==0)	  	energy =0;	   // not a local hit -> 0
 
                   //  histogramming if E< max mcabin
                   bin = energy >> Binfactor[ch];
@@ -321,155 +407,63 @@ int main(void) {
                      mca[ch][bin] =  mca[ch][bin] + 1;	// increment mca
                      bin = bin >> WEB_LOGEBIN;
                      if(bin>0) wmca[ch][bin] = wmca[ch][bin] + 1;	// increment wmca
-
-                    // TODO: add split spectrum n.g for 0x502
                   }
                
                   // cfd and psa need some recomputation, not fully implemented yet
 
-                  // compute PSA results from raw data
-                  // need to subtract baseline in correct scale (1/4) and length (QDC#_LENGTH[ch])
-                  psa_base = psa0 & 0xFFFF;                                   // base only, in same scale as ADC samples
-                  if( fippiconfig.QDC_DIV8[ch]) 
-                     bscale = 32.0;
-                  else
-                     bscale = 4.0;
-                  
-                  tmpI = (psa0 & 0xFFFF0000) >> 16;                           // raw Q0, scaled by 1/4, not BL corrected
-                  tmpD = (double)tmpI - (double)psa_base/bscale * fippiconfig.QDC0_LENGTH[ch]; //  subtract QDCL0 x base/bscale from raw value
-                  if( (tmpD>0) && (tmpD<65535))
-                     psa_Q0 = (int)floor(tmpD);
-                  else
-                     psa_Q0 = 0;
-                  
-                  tmpI = (psa1 & 0xFFFF);                                     // raw Q1, scaled by 1/4, not BL corrected
-                  tmpD = (double)tmpI - (double)psa_base/bscale * fippiconfig.QDC1_LENGTH[ch]; //  subtract QDCL0 x base/bscale from raw value
-                  if( (tmpD>0) && (tmpD<65535))
-                     psa_Q1 = (int)floor(tmpD);
-                  else
-                     psa_Q1 = 0;
-                  
-                  psa_ampl = ((psa1 & 0xFFFF0000) >> 16) - psa_base;
-
-                  if(psa_Q0!=0)
-                     psa_R = (int)floor(1000.0*(double)psa_Q1/(double)psa_Q0);
-                  else
-                     psa_R = 0;
-
-
-                  // compute CFD fraction
-                  // Normally x = dt * (cfd level - cfd low) / (cfd high - cfd low) = time after lower sample
-                  // However, here CFD is latched before time stamp and we need to compute CFD time BEFORE timestamp. 
-                  // So we are interested in the time before higher sample = dt-x = dt*(cfd high - cfd level) / (cfd high - cfd low)
-                  // result is in units of 1/256th ns
-                  
-                  // compute 1-x
-                  cfdlev = (double)psa_ampl/2.0 + (double)psa_base;       // compute 50% level
-                  cfdlow =  (cfd0 & 0x00000FFF);
-                  cfdhigh = (cfd0 & 0x00FFF000) >> 12;      // limited to 12 bits currently!
-                  if((cfdhigh-cfdlow)>0) {
-                     tmpD = ((cfdhigh-cfdlev)/(cfdhigh-cfdlow));  //   in units of clock cycles
-                  } else {
-                     tmpD = 0;
-                  }
-                  cfdfrac = (int)floor(tmpD*4.0*256.0) & 0x3FF;      //fraction 0..1 mapped to 0..1023, i.e. in units of 1/256ns
-
-                  // add offset within 2-sample group and offset to trigger
-                  cfdticks = (cfd0 & 0x0F000000) >> 24;          // cfd ticks has the # of 4ns ticks from cfd level to the block of 2 samples that includes the maximum 
-                  ts_max =  (cfd0 & 0xF0000000) >> 28;          // ft ticks has the 4 relevant bits of timestamp at maximum
-                  tmpI = (timeL & 0x7F) >> 3;                    // 4 relevant bits of trigger time stamp, in 8ns steps
-                  tmpS = ts_max - tmpI;
-                  if(tmpS<0) tmpS = tmpS + 16;                   // build difference, tmps = time from trigger to max in 8ns steps
-                  tmpS = 2*tmpS - cfdticks;                      // build difference, tmps = time from trigger to CFD high in 4ns steps
-                  cfdout = (CW - tmpS)*4*256 + cfdfrac;          // time from CW end to CFD point in units of 1/256 ns
-
-                //  cfdout = cfdfrac + (cfdticks<<10); 
-                //  printf("ts_max %d, cfdticks %d, trig_to_max %d, trig_to_cfd %d \n",ts_max, cfdticks, tmpS2, tmpS);
-
-
+                  // fill in some constants. For now, report 10 32bit word headers (all except QDC)
+                  tmp0 = CHAN_HEAD_LENGTH_100;  // header length
+                  tmp1 = tmp0 + TL[ch];
+                  out1 = out0 & 0x80000FFF;     // keep pileup and crate/slot/channel #
+                  out1 = out1 + (tmp0<<12);     // add header length
+                  out1 = out1 + (tmp1<<17);     // add event length
+                  out2 = energy;
+                  out2 = out2 + (TL[ch]<<16);
+                  if(out0& 0x40000000) // test OOR
+                     out2 = out2 + (1<<31);
+                  out3 = 0;      // baseline placeholder, float actually
+       
                   // now store list mode data
 
-                  if(RunType==0x502)   {
-                     // 2D spectrum R vs E
-                     binx = (int)floor(ph/fippiconfig.MCA2D_SCALEX[ch]);
-                     biny = (int)floor((double)psa_R/fippiconfig.MCA2D_SCALEY[ch]);
-                     if( (binx<MCA2D_BINS) && (biny<MCA2D_BINS) && (binx>0) && (biny>0) ) 
-                     {
-                       mca2D[ch][binx+MCA2D_BINS*biny] =   mca2D[ch][binx+MCA2D_BINS*biny] +1; // increment 2D MCA
-                     }
-                     // not saving waveforms, events in a table
-                     fprintf(fil,"%u,%d,0x%X,%u,%u,%u,%u,%u,%u,%u,%u,%u\n",eventcount,ch,hit,timeH,timeL,energy,psa_ampl,cfdout,psa_base,psa_Q0,psa_Q1,psa_R );
-                  }    // 0x502
+                    if(RunType==0x100)   {
+                          memcpy( buffer2 + 0, &(out1), 4 );
+                          memcpy( buffer2 + 4, &(timeL), 4 );
+                          memcpy( buffer2 + 8, &(timeH), 4 );
+                          memcpy( buffer2 + 12, &(out2), 4 );
 
-                  if(RunType==0x501)   {
-                     // not saving waveforms, events in a table
-                     fprintf(fil,"%u,%d,0x%X,%u,%u,%u\n",eventcount,ch,hit,timeH,timeL,energy);
-                  }    // 0x501
+                          memcpy( buffer2 + 16, &(tsum), 4 );
+                          memcpy( buffer2 + 20, &(lsum), 4 );   
+                          memcpy( buffer2 + 24, &(gsum), 4 );
+                          memcpy( buffer2 + 28, &(out3), 4 );      // BL
 
-                  if(RunType==0x500)   {
-                        // saving 8 headers +  waveforms, one entry per line
-                       fprintf(fil,"%u\n%d\n0x%X\n%u\n%u\n%u\n%u\n%u\n",eventcount,ch,hit,timeH,timeL,energy,psa_R,cfdout);
-                       mapped[AOUTBLOCK] = 3;
-                       wf[0] = mapped[AWF0+ch];  // dummy read?
-                       for( k=0; k < (TL[ch]/4); k++)
-                       //for( k=0; k < 10; k++)
-                       {
-                          wf[2*k+0] = mapped[AWF0+ch];
-                          wf[2*k+1] = mapped[AWF0+ch];
-                          // re-order 2 sample words from 32bit FIFO 
-                          fprintf(fil,"%u\n",(wf[2*k+0] >> 16) );
-                          fprintf(fil,"%u\n",(wf[2*k+0] & 0xFFFF) );
-                          fprintf(fil,"%u\n",(wf[2*k+1] >> 16) );
-                          fprintf(fil,"%u\n",(wf[2*k+1] & 0xFFFF) );
+                          memcpy( buffer2 + 32, &(out3), 4 );      // ext TS
+                          memcpy( buffer2 + 36, &(out3), 4 );      // ext TS
+                          fwrite( buffer2, 1, CHAN_HEAD_LENGTH_100*4, fil );
 
-                         
-                       }
-                       mapped[AOUTBLOCK] = OB_EVREG;
-                  }    // 0x500
 
-                  if(RunType==0x400)   {
-                          TraceBlks = (int)floor(TL[ch]/BLOCKSIZE_400);
-                          memcpy( buffer2 + 0, &(hit), 4 );
-                          memcpy( buffer2 + 4, &(TraceBlks), 2 );
-                          memcpy( buffer2 + 6, &(NumPrevTraceBlks), 2 ); 
-                          memcpy( buffer2 + 8, &(timeL), 4 );
-                          memcpy( buffer2 + 12, &(timeH), 4 );
-                          memcpy( buffer2 + 16, &(energy), 2 );
-                          memcpy( buffer2 + 18, &(ch), 2 );
-                          memcpy( buffer2 + 20, &(psa_ampl), 2 );
-                          memcpy( buffer2 + 22, &(cfdout), 2 );   // actually cfd time
-                          memcpy( buffer2 + 24, &(psa_base), 2 );
-                          memcpy( buffer2 + 26, &(psa_Q0), 2 );
-                          memcpy( buffer2 + 28, &(psa_Q1), 2 );
-                          memcpy( buffer2 + 30, &(psa_R), 2 );  
-                          memcpy( buffer2 + 32, &(cfdticks), 2 );      // debug
-                          memcpy( buffer2 + 34, &(ts_max), 2 );   
-                          memcpy( buffer2 + 36, &(psa0), 4 );      // debug
-                          memcpy( buffer2 + 40, &(psa1), 4 );   
-                          // no checksum  for now
-                          memcpy( buffer2 + 60, &(wm), 4 );
-                          fwrite( buffer2, 1, CHAN_HEAD_LENGTH_400*2, fil );
-                          NumPrevTraceBlks = TraceBlks;
-   
-                          mapped[AOUTBLOCK] = 3;
+                          mapped[AMZ_EXAFWR] = AK7_MEMADDR;     // specify   K7's addr     addr 4 = memory address
+                          mapped[AMZ_EXDWR]  = trace_staddr;      //  take data from location recorded in headers
                         //  w0 = mapped[AWF0+ch];  // dummy read?
-                          for( k=0; k < (TL[ch]/4); k++)
+                          for( k=0; k < (TL[ch]/2); k++)
                           {
-                             w0 = mapped[AWF0+ch];
-                             w1 = mapped[AWF0+ch];                        
+                              mapped[AMZ_EXAFRD] = AK7_TRCMEM_A;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
+                              w0 = mapped[AMZ_EXDRD];      // read 16 bits
+                              mapped[AMZ_EXAFRD] = AK7_TRCMEM_B;     // write to  k7's addr for read -> reading from AK7_TRCMEM_B channel header memory, high 16bit and addr increase
+                              w1 = mapped[AMZ_EXDRD];      // read 16 bits
+                      
                              // re-order 2 sample words from 32bit FIFO
-                             wf[2*k+1] = (w1 >> 16) + ((w1 & 0xFFFF) << 16);
-                             wf[2*k+0] = (w0 >> 16) + ((w0 & 0xFFFF) << 16);
+                             wf[2*k+1] = w1;
+                             wf[2*k+0] = w0;
                           }
-                          mapped[AOUTBLOCK] = OB_EVREG;
-                          fwrite( wf, TL[ch]/2, 4, fil );
+
+                          fwrite( wf, TL[ch]/2, 2, fil );
                   }      // 0x400
                   
                   eventcount++;
                }
-               else { // event not acceptable (piled up )
-                  R1 = mapped[chaddr+CA_REJECT];		// read this register to advance event FIFOs without incrementing Nout etc
-               }
+     //          else { // event not acceptable (piled up )
+     //             R1 = mapped[chaddr+CA_REJECT];		// read this register to advance event FIFOs without incrementing Nout etc
+     //          }
             }     // end event in this channel
          }        //end for ch
       }           // end event in any channel
@@ -480,6 +474,7 @@ int main(void) {
        
         if(loopcount % PollTime == 0) 
         {
+        /*
             // 1) Run Statistics 
             mapped[AOUTBLOCK] = OB_RSREG;
 
@@ -498,7 +493,8 @@ int main(void) {
             read_print_runstats(1, 0, mapped);
 
             mapped[AOUTBLOCK] = OB_EVREG;     // read from event registers
-            
+         */   
+
             // 2) MCA
             filmca = fopen("MCA.csv","w");
             fprintf(filmca,"bin,MCAch0,MCAch1,MCAch2,MCAch3\n");
@@ -507,7 +503,7 @@ int main(void) {
                fprintf(filmca,"%d,%u,%u,%u,%u\n ", k*onlinebin,wmca[0][k],wmca[1][k],wmca[2][k],wmca[3][k]);
             }
             fclose(filmca);    
-  
+         /*
            // 3) 2D MCA or PSA
             if(RunType==0x502)   {
                filmca = fopen("psa2D.csv","w");
@@ -537,7 +533,7 @@ int main(void) {
                }  // biny loop
 
                fclose(filmca); 
-            }  // runtype 0x502       
+            }  // runtype 0x502    */   
         }
 
           // ----------- loop housekeeping -----------
@@ -564,6 +560,7 @@ int main(void) {
    }
    fclose(filmca);
 
+   /*
    mapped[AOUTBLOCK] = OB_RSREG;
    read_print_runstats(0, 0, mapped);
    mapped[AOUTBLOCK] = OB_IOREG;
@@ -598,29 +595,11 @@ int main(void) {
 
       fclose(filmca); 
    }  // runtype 0x502
+
+   */
  
  // clean up  
-    if(RunType==0x400)   {    // write EOR: special hit pattern, all zero except WM
-           TraceBlks = 0;
-           hit = EORMARK;
-           memcpy( buffer2 + 0, &(hit), 4 );
-           memcpy( buffer2 + 4, &(TraceBlks), 2 );
-           memcpy( buffer2 + 6, &(NumPrevTraceBlks), 2 ); 
-           memcpy( buffer2 + 8, &(TraceBlks), 4 );
-           memcpy( buffer2 + 12, &(TraceBlks), 4 );
-           memcpy( buffer2 + 16, &(TraceBlks), 2 );
-           memcpy( buffer2 + 18, &(TraceBlks), 2 );
-           memcpy( buffer2 + 20, &(TraceBlks), 4 );
-           memcpy( buffer2 + 24, &(TraceBlks), 4 );
-           memcpy( buffer2 + 28, &(TraceBlks), 4 );
-           memcpy( buffer2 + 32, &(TraceBlks), 4 );
-           // no checksum  for now
-           memcpy( buffer2 + 60, &(wm), 4 );
-           fwrite( buffer2, 1, CHAN_HEAD_LENGTH_400*2, fil );
-        }
-
-
- if( (RunType==0x500) || (RunType==0x501)  || (RunType==0x502) || (RunType==0x400) )  { 
+ if( (RunType==0x100) )  { 
    fclose(fil);
  }
  flock( fd, LOCK_UN );

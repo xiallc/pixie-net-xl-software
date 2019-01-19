@@ -223,6 +223,15 @@
 #define AK7_P16REG07 0x56
 #define AK7_P16REG13 0x5A
 #define AK7_P16REG17 0x5C
+#define AK7_MEMADDR 0x04
+#define AK7_PAGE 0x03
+#define AK7_SYSSYTATUS 0x85
+#define AK7_HDRMEM_A 0xD9
+#define AK7_HDRMEM_B 0xDA
+#define AK7_HDRMEM_C 0xDB
+#define AK7_HDRMEM_D 0xDC
+#define AK7_TRCMEM_A 0xDD
+#define AK7_TRCMEM_B 0xDE
 
 
 
@@ -245,6 +254,7 @@
 #define BLOCKSIZE_400         32    // waveform block size (# 16bit words) in run type 0x400
 #define FILE_HEAD_LENGTH_400  32    // file header size (# 16bit words) in run type 0x400
 #define CHAN_HEAD_LENGTH_400  32    // event/channel header size (# 16bit words) in run type 0x400
+#define CHAN_HEAD_LENGTH_100  10    // number of 32bit words in P16 0x100 run type
 #define WATERMARK     0x12345678    // for LM QC routine
 #define EORMARK       0x01000002    // End Of Run
 
