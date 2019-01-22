@@ -123,6 +123,7 @@ int main(void) {
   ReqRunTime   = fippiconfig.REQ_RUNTIME;
   PollTime     = fippiconfig.POLL_TIME;
   //CW           = (int)floor(fippiconfig.COINCIDENCE_WINDOW*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
+    printf( "REQ_RUNTIME %d  \n", ReqRunTime);
 
   if( (RunType!=0x100) ) {      // grouped list mode run (equiv 0x402)
       printf( "This function only support runtype 0x100 (P16) \n");
@@ -211,11 +212,11 @@ int main(void) {
         }           
     }
 
+    // Run Start Control
    mapped[AOUTBLOCK] = CS_MZ;	 // select FPGA 0 
-
-   mapped[ACSRIN] = ACSRIN;      // specify   K7's addr 
-   mapped[ACSRIN] = 0x0000; // all off, nLive = 0 (DAQ on)
-   // TODO: this should be a bit in a MZ register tied to a line to both FPGAs
+   mapped[ACSRIN] = 0x0001; // RunEnable=1 > nLive=0 (DAQ on)
+   // this is a bit in a MZ register tied to a line to both FPGAs
+   // falling edge of nLive clears counters and memory address pointers
    
    mapped[AOUTBLOCK] = CS_K0;	 // select FPGA 0 
 
@@ -258,8 +259,19 @@ int main(void) {
       // -----------poll for events -----------
       // if data ready. read out, compute E, increment MCA *********
 
+      mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
+      mapped[AMZ_EXDWR]  = 0x0;          //                         0x0  = system  page
+ 
+
+      mapped[AMZ_EXAFRD] = 0x81;     // write to  k7's addr for read -> reading from 0x85 system status register
+        usleep(1);
+      evstats = mapped[AMZ_EXDRD];   // bits set for every channel that has data in header memory
+      printf( "K7 0 read from 0x81: 0x%X\n", evstats );
+
+
       // Read Header DPM status
       mapped[AMZ_EXAFRD] = AK7_SYSSYTATUS;     // write to  k7's addr for read -> reading from 0x85 system status register
+        usleep(1);
       evstats = mapped[AMZ_EXDRD];   // bits set for every channel that has data in header memory
       printf( "K7 0 read from 0x85: 0x%X\n", evstats );
         
@@ -281,99 +293,70 @@ int main(void) {
                   mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
                   mapped[AMZ_EXDWR]  = 0x100+ch;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
                  
+                  // TODO: rely on K7 address increment for 4 consecutive reads A-D. 
                   //(0)
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header memory, low 16bit
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
+                    usleep(1);
                   tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B channel header memory, next 16bit
                   tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_C channel header memory, next 16bit
                   tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header memory, high 16bit and addr increase
                   tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
                   // tmp2 and tmp3 are actually all zero in P16 common usage
                   out0 = tmp0+(tmp1<<16);  // preliminary, more bits to be filled in
 
                   //(1)
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header memory, low 16bit
                   tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B channel header memory, next 16bit
                   tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_C channel header memory, next 16bit
                   tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header memory, high 16bit and addr increase
                   tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
                   // tmp2 and tmp3 are actually all zero in P16 common usage
                   timeL = tmp0+(tmp1<<16);  
 
                   //(2)
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header memory, low 16bit
                   tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B channel header memory, next 16bit
                   tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_C channel header memory, next 16bit
                   tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header memory, high 16bit and addr increase
                   tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
                   // tmp2 and tmp3 are actually all zero in P16 common usage
                   timeH = tmp0;  
                   TL[ch] = tmp1; 
 
                   //(3)
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header memory, low 16bit
                   tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B channel header memory, next 16bit
                   tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_C channel header memory, next 16bit
                   tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header memory, high 16bit and addr increase
                   tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
                   // tmp2 and tmp3 are actually all zero in P16 common usage
                   tsum = tmp0+(tmp1<<16);  
 
                   //(4)
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header memory, low 16bit
                   tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B channel header memory, next 16bit
                   tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_C channel header memory, next 16bit
                   tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header memory, high 16bit and addr increase
                   tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
                   // tmp2 and tmp3 are actually all zero in P16 common usage
                   lsum = tmp0+(tmp1<<16);  
 
                   //(5)
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header memory, low 16bit
                   tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B channel header memory, next 16bit
                   tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_C channel header memory, next 16bit
                   tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header memory, high 16bit and addr increase
                   tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
                   // tmp2 and tmp3 are actually all zero in P16 common usage
                   gsum = tmp0+(tmp1<<16);  
 
                   //(6)
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header memory, low 16bit
                   tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B channel header memory, next 16bit
                   tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_C channel header memory, next 16bit
                   tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header memory, high 16bit and addr increase
                   tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
                   // tmp2,3 + ext TS. tmp1[15:3] = trace start. rest = cfdout 1
                   trace_staddr = tmp1>>3;
 
                   //(7) 
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header memory, low 16bit
                   tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B channel header memory, next 16bit
                   tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_C channel header memory, next 16bit
                   tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header memory, high 16bit and addr increase
                   tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
                   // more cfd and ext TS
 
@@ -445,6 +428,7 @@ int main(void) {
                           }
 
                           fwrite( wf, TL[ch]/2, 2, fil );
+
                   }      // 0x400
                   
                   eventcount++;
@@ -526,17 +510,22 @@ int main(void) {
 
           // ----------- loop housekeeping -----------
 
+
+
+
          loopcount ++;
          currenttime = time(NULL);
-      } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-  //     } while (eventcount <= 20); // run for a fixed number of events   
+               usleep(100);
+               printf( "currenttime: %d\n", currenttime );
+   //   } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
+      } while (eventcount <= 20); // run for a fixed number of events   
 
 
 
    // ********************** Run Stop **********************
 
    // set nLive bit to stop run
-    mapped[ACSRIN] = 0x0200; // all off, nLive = 1 (off)          
+    mapped[ACSRIN] = 0x0000; // all off       
    // todo: there may be events left in the buffers. need to stop, then keep reading until nothing left
                       
    // final save MCA and RS

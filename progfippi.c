@@ -507,7 +507,7 @@ int main(void) {
 
   
   // first, set CSR run control options   
-  mapped[ACSRIN] = 0x0200; // all off, nLive = 1 (off)
+  mapped[ACSRIN] = 0x0000; // all off)
 
   mval =  fippiconfig.AUX_CTRL  & 0x00FF;  // upper bits reserved (yellow LED)
   mval = mval + 0x0100;     // set bit 8: yellow LED on
