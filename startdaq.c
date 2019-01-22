@@ -59,39 +59,41 @@ int main(void) {
   void *map_addr;
   int size = 4096;
   volatile unsigned int *mapped;
-  int k, ch, tmpS;
+  int k, ch;
   FILE * filmca;
   FILE * fil;
 
-  unsigned int Accept, RunType, SyncT, ReqRunTime, PollTime, CW;
+  unsigned int RunType, SyncT, ReqRunTime, PollTime;
   unsigned int SL[NCHANNELS];
   //unsigned int SG[NCHANNELS];
   float Tau[NCHANNELS], Dgain[NCHANNELS];
   unsigned int BLavg[NCHANNELS], BLcut[NCHANNELS], Binfactor[NCHANNELS], TL[NCHANNELS];
   double C0[NCHANNELS], C1[NCHANNELS], Cg[NCHANNELS];
   double baseline[NCHANNELS] = {0};
-  double dt, ph, tmpD, bscale;
+  double dt, ph;
   double elm, q;
-  double cfdlev;
+  //double cfdlev, tmpD, bscale;
   time_t starttime, currenttime;
-  unsigned int startTS, m, c0, c1, c2, c3, w0, w1, tmpI, revsn;
+  unsigned int startTS, w0, w1, revsn;
+  //unsigned int startTS, m, c0, c1, c2, c3, w0, w1, tmpI, revsn;
   unsigned int tmp0, tmp1, tmp2, tmp3;
   unsigned int out0, out1, out2, out3, trace_staddr;
-  unsigned int evstats, R1, hit, timeL, timeH, psa0, psa1, cfd0;
-  unsigned int psa_base, psa_Q0, psa_Q1, psa_ampl, psa_R;
-  unsigned int cfdout, cfdlow, cfdhigh, cfdticks, cfdfrac, ts_max;
-  unsigned int lsum, tsum, gsum, energy, bin, binx, biny;
+  unsigned int evstats, R1, timeL, timeH;
+  //unsigned int evstats, R1, hit, timeL, timeH, psa0, psa1, cfd0;
+  //unsigned int psa_base, psa_Q0, psa_Q1, psa_ampl, psa_R;
+  //unsigned int cfdout, cfdlow, cfdhigh, cfdticks, cfdfrac, ts_max;
+  unsigned int lsum, tsum, gsum, energy, bin; //, binx, biny;
   unsigned int mca[NCHANNELS][MAX_MCA_BINS] ={{0}};    // full MCA for end of run
   unsigned int wmca[NCHANNELS][WEB_MCA_BINS] ={{0}};    // smaller MCA during run
-  unsigned int mca2D[NCHANNELS][MCA2D_BINS*MCA2D_BINS] ={{0}};    // 2D MCA for end of run
+  //unsigned int mca2D[NCHANNELS][MCA2D_BINS*MCA2D_BINS] ={{0}};    // 2D MCA for end of run
   unsigned int onlinebin;
   unsigned int wf[MAX_TL/2];    // two 16bit values per word
-  unsigned int chaddr, loopcount, eventcount, NumPrevTraceBlks, TraceBlks;
-  unsigned short buffer1[FILE_HEAD_LENGTH_400] = {0};
+  unsigned int loopcount, eventcount; //, NumPrevTraceBlks, TraceBlks;
+  //unsigned short buffer1[FILE_HEAD_LENGTH_400] = {0};
   unsigned char buffer2[CHAN_HEAD_LENGTH_400*2] = {0};
   unsigned int HMaddr[NCHANNELS] = {0};
-  unsigned int TMaddr[NCHANNELS] = {0};
-  unsigned int wm = WATERMARK;
+  //unsigned int TMaddr[NCHANNELS] = {0};
+ // unsigned int wm = WATERMARK;
   unsigned int BLbad[NCHANNELS];
   onlinebin=MAX_MCA_BINS/WEB_MCA_BINS;
 
@@ -120,9 +122,9 @@ int main(void) {
   SyncT        = fippiconfig.SYNC_AT_START;
   ReqRunTime   = fippiconfig.REQ_RUNTIME;
   PollTime     = fippiconfig.POLL_TIME;
-  CW           = (int)floor(fippiconfig.COINCIDENCE_WINDOW*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
+  //CW           = (int)floor(fippiconfig.COINCIDENCE_WINDOW*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
 
-  if( (RunType!=0x100)  {      // grouped list mode run (equiv 0x402)
+  if( (RunType!=0x100) ) {      // grouped list mode run (equiv 0x402)
       printf( "This function only support runtype 0x100 (P16) \n");
       return(-1);
   }
@@ -209,27 +211,13 @@ int main(void) {
         }           
     }
 
-    mapped[AOUTBLOCK] = CS_K0;	 // select FPGA 0 
-    mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
-    mapped[AMZ_EXDWR]  = 0;      //                         0x000  =system     -> now addressing system page of K7-0
+   mapped[AOUTBLOCK] = CS_MZ;	 // select FPGA 0 
 
-   //mapped[ADSP_CLR] = 1;             // write to reset DAQ buffers
-    mapped[AMZ_EXAFWR] = ADSP_CLR;     // specify   K7's addr 
-    mapped[AMZ_EXDWR]  = 0;      //  any write will do 
-
-   //mapped[ACOUNTER_CLR] = 1;         // write to reset RS counters
-    mapped[AMZ_EXAFWR] = ACOUNTER_CLR;     // specify   K7's addr 
-    mapped[AMZ_EXDWR]  = 0;      //  any write will do 
-
-    //mapped[ARTC_CLR] = 1;         // write to reset RS counters
-    mapped[AMZ_EXAFWR] = ARTC_CLR;     // specify   K7's addr 
-    mapped[AMZ_EXDWR]  = 0;      //  any write will do 
-
-   //mapped[ACSRIN] = 1;               // set RunEnable bit to start run
-   mapped[AMZ_EXAFWR] = ACSRIN;     // specify   K7's addr 
-   mapped[AMZ_EXDWR]  = 1;      //  set RunEnable bit to start run 
+   mapped[ACSRIN] = ACSRIN;      // specify   K7's addr 
+   mapped[ACSRIN] = 0x0000; // all off, nLive = 0 (DAQ on)
    // TODO: this should be a bit in a MZ register tied to a line to both FPGAs
-    
+   
+   mapped[AOUTBLOCK] = CS_K0;	 // select FPGA 0 
 
     // ********************** Run Loop **********************
    do {
@@ -273,13 +261,13 @@ int main(void) {
       // Read Header DPM status
       mapped[AMZ_EXAFRD] = AK7_SYSSYTATUS;     // write to  k7's addr for read -> reading from 0x85 system status register
       evstats = mapped[AMZ_EXDRD];   // bits set for every channel that has data in header memory
-      printf( "K7 0 read from 0x85: %x\n", evstats );
+      printf( "K7 0 read from 0x85: 0x%X\n", evstats );
         
 
       // event readout compatible with P16 DSP code
       // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
       if(evstats) {					  // if there are events in any channel
-         for( ch=0; ch < NCHANNELS_PRESENT; ch++)
+         for( ch=0; ch < NCHANNEL_PER_K7; ch++)
          {
             R1 = 1 << ch;
             if(evstats & R1)	{	 //  if there is an event in the header memory for this channel
@@ -288,7 +276,7 @@ int main(void) {
 
                   HMaddr[ch] += 8;              // increment remembered header address, roll over if necessary
                   if(HMaddr[ch] >= 512)
-                     HMaddr[ch] = HMaddr - 512;
+                     HMaddr[ch] = HMaddr[ch] - 512;
 
                   mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
                   mapped[AMZ_EXDWR]  = 0x100+ch;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
@@ -460,7 +448,7 @@ int main(void) {
                   }      // 0x400
                   
                   eventcount++;
-               }
+     //          }
      //          else { // event not acceptable (piled up )
      //             R1 = mapped[chaddr+CA_REJECT];		// read this register to advance event FIFOs without incrementing Nout etc
      //          }
@@ -547,8 +535,8 @@ int main(void) {
 
    // ********************** Run Stop **********************
 
-   // clear RunEnable bit to stop run
-   mapped[ACSRIN] = 0;               
+   // set nLive bit to stop run
+    mapped[ACSRIN] = 0x0200; // all off, nLive = 1 (off)          
    // todo: there may be events left in the buffers. need to stop, then keep reading until nothing left
                       
    // final save MCA and RS

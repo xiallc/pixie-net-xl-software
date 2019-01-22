@@ -507,7 +507,7 @@ int main(void) {
 
   
   // first, set CSR run control options   
-  mapped[ACSRIN] = 0x0000; // all off
+  mapped[ACSRIN] = 0x0200; // all off, nLive = 1 (off)
 
   mval =  fippiconfig.AUX_CTRL  & 0x00FF;  // upper bits reserved (yellow LED)
   mval = mval + 0x0100;     // set bit 8: yellow LED on
@@ -523,8 +523,8 @@ int main(void) {
     for( k = 0; k < NCHANNEL_PER_K7 ; k ++ )
     {
 
-       mapped[AMZ_EXAFWR] = AK7_CHANNEL;     // write to  k7's addr to select CHANNEL register
-       mapped[AMZ_EXDWR]  = k;               // write selected channel      
+       mapped[AMZ_EXAFWR] = AK7_PAGE;     // write to  k7's addr to select PAGE register
+       mapped[AMZ_EXDWR]  = 0x100+k;      // write to select a channel page     
 
 
      // ......... P16 Reg 0  .......................            
@@ -554,6 +554,7 @@ int main(void) {
       reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[k],CCSRC_MODVETOSEL,    FiPPI_MODVETOSEL );     
       reghi = reghi + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_ENARELAY,      FiPPI_ENARELAY   );     
 
+      printf("Reg 0 high 0x%08X, low 0x%08X \n",reghi, reglo);
       // now write 
       mapped[AMZ_EXAFWR] = AK7_P16REG00+0;                  // write to  k7's addr to select channel's register N
       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;                  // write lower 16 bit
