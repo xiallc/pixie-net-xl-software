@@ -222,7 +222,7 @@
 #define AK7_P16REG07 0x56
 #define AK7_P16REG13 0x5A
 #define AK7_P16REG17 0x5C
-#define AK7_MEMADDR 0x04
+#define AK7_MEMADDR 0x010
 #define AK7_PAGE 0x03
 #define AK7_SYSSYTATUS 0x85
 #define AK7_HDRMEM_A 0xD9
@@ -251,6 +251,7 @@
 #define BLREADPERIOD          20
 #define MIN_POLL_TIME         1000
 #define BLOCKSIZE_400         32    // waveform block size (# 16bit words) in run type 0x400
+#define BLOCKSIZE_100         2    // waveform block size (# 16bit words) in run type 0x400
 #define FILE_HEAD_LENGTH_400  32    // file header size (# 16bit words) in run type 0x400
 #define CHAN_HEAD_LENGTH_400  32    // event/channel header size (# 16bit words) in run type 0x400
 #define CHAN_HEAD_LENGTH_100  10    // number of 32bit words in P16 0x100 run type

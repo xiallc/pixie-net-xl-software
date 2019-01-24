@@ -136,7 +136,7 @@ int main(void) {
       SL[k]          = (int)floor(fippiconfig.ENERGY_RISETIME[k]*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
 //    SG[k]          = (int)floor(fippiconfig.ENERGY_FLATTOP[k]*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
       Dgain[k]       = fippiconfig.DIG_GAIN[k];
-      TL[k]          = BLOCKSIZE_400*(int)floor(fippiconfig.TRACE_LENGTH[k]*ADC_CLK_MHZ/BLOCKSIZE_400);       // multiply time in us *  # ticks per us = time in ticks, multiple of 4
+      TL[k]          = BLOCKSIZE_100*(int)floor(fippiconfig.TRACE_LENGTH[k]*ADC_CLK_MHZ/BLOCKSIZE_100);       // multiply time in us *  # ticks per us = time in ticks, multiple of 4
       Binfactor[k]   = fippiconfig.BINFACTOR[k];
       Tau[k]         = fippiconfig.TAU[k];
       BLcut[k]       = fippiconfig.BLCUT[k];
@@ -265,7 +265,7 @@ int main(void) {
  
 
       mapped[AMZ_EXAFRD] = 0x81;     // write to  k7's addr for read -> reading from 0x85 system status register
-        usleep(1);
+  //      usleep(1);
       evstats = mapped[AMZ_EXDRD];   // bits set for every channel that has data in header memory
     //  printf( "K7 0 read from 0x81: 0x%X\n", evstats );
 
@@ -295,29 +295,53 @@ int main(void) {
                   mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
                   mapped[AMZ_EXDWR]  = 0x100+ch;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
                  
-                  if(  eventcount==0) {
+                 if(  eventcount==0) {
                   // dummy reads
                      mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
                      hdr[0] = mapped[AMZ_EXDRD];      // read 16 bits
                      mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
                      hdr[0] = mapped[AMZ_EXDRD];      // read 16 bits
+              //       mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
+              //       hdr[0] = mapped[AMZ_EXDRD];      // read 16 bits
+              //       mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
+              //       hdr[0] = mapped[AMZ_EXDRD];      // read 16 bits
+
+
 
                      }
+            
 
-
-                  for( k=0; k < 32; k++)
+                  for( k=0; k < 8; k++)
                   {
                      mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
-                     hdr[k] = mapped[AMZ_EXDRD];      // read 16 bits
+                     hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
+                     mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
+                     hdr[4*k+2] = mapped[AMZ_EXDRD];      // read 16 bits
+                     mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
+                     hdr[4*k+1] = mapped[AMZ_EXDRD];      // read 16 bits
+                     mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
+                     hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
+
                   }
 
-                  printf( "Read 0: 0x %X %X %X %X\n", hdr[0], hdr[1], hdr[2], hdr[3] );
-                  printf( "Read 1: 0x %X %X %X %X\n", hdr[4], hdr[5], hdr[6], hdr[7] );
-                  printf( "Read 2: 0x %X %X %X %X\n", hdr[8], hdr[9], hdr[10], hdr[11] );
-                  printf( "Read 3: 0x %X %X %X %X\n", hdr[12], hdr[13], hdr[14], hdr[15] );
-                  printf( "Read 4: 0x %X %X %X %X\n", hdr[16], hdr[17], hdr[18], hdr[19] );
-                  printf( "Read 5: 0x %X %X %X %X\n", hdr[20], hdr[21], hdr[22], hdr[23] );
-
+             /*     printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
+                  printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
+                  printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
+                  printf( "Read 3 H-L: 0x %X %X %X %X\n",hdr[15], hdr[14], hdr[13], hdr[12] );
+                  printf( "Read 4 H-L: 0x %X %X %X %X\n",hdr[19], hdr[18], hdr[17], hdr[16] );
+                  printf( "Read 5 H-L: 0x %X %X %X %X\n",hdr[23], hdr[22], hdr[21], hdr[20] );
+                  printf( "Read 6 H-L: 0x %X %X %X %X\n",hdr[27], hdr[26], hdr[25], hdr[24] );
+                  printf( "Read 7 H-L: 0x %X %X %X %X\n",hdr[31], hdr[30], hdr[29], hdr[28] );
+            */
+                  out0   = hdr[0]+(hdr[1]<<16);  // preliminary, more bits to be filled in
+                  timeL  = hdr[4]+(hdr[5]<<16); 
+                  timeH  = hdr[8];  
+              //    TL[ch] = hdr[9]; 
+                  tsum = hdr[12]+(hdr[13]<<16);
+                  lsum = hdr[16]+(hdr[17]<<16);
+                  gsum = hdr[20]+(hdr[21]<<16);
+                  trace_staddr = hdr[25]>>3;     // tmp2,3 + ext TS. tmp1[15:3] = trace start. rest = cfdout 1
+                  printf( "time Low: 0x%08X = %0f ms \n",timeL,timeL*13.333/1000000 );
 
                   /*
                   // TODO: rely on K7 address increment for 4 consecutive reads A-D. 
@@ -459,7 +483,7 @@ int main(void) {
        
                   // now store list mode data
 
-                    if(RunType==0x100)   {
+                    if(RunType==0x100)   {                         
                           memcpy( buffer2 + 0, &(out1), 4 );
                           memcpy( buffer2 + 4, &(timeL), 4 );
                           memcpy( buffer2 + 8, &(timeH), 4 );
@@ -473,9 +497,11 @@ int main(void) {
                           memcpy( buffer2 + 32, &(out3), 4 );      // ext TS
                           memcpy( buffer2 + 36, &(out3), 4 );      // ext TS
                           fwrite( buffer2, 1, CHAN_HEAD_LENGTH_100*4, fil );
+             /*
+                           printf( "N samples %d, start addr 0x%X \n", TL[ch], trace_staddr);
 
 
-                          mapped[AMZ_EXAFWR] = AK7_MEMADDR;     // specify   K7's addr     addr 4 = memory address
+                          mapped[AMZ_EXAFWR] = AK7_MEMADDR+ch;     // specify   K7's addr     addr 4 = memory address
                           mapped[AMZ_EXDWR]  = trace_staddr;      //  take data from location recorded in headers
                         //  w0 = mapped[AWF0+ch];  // dummy read?
                           for( k=0; k < (TL[ch]/2); k++)
@@ -492,11 +518,14 @@ int main(void) {
 
                           fwrite( wf, TL[ch]/2, 2, fil );
 
-                  }      // 0x400
+                           printf( "Trace 0-3 %d %d %d %d\n", wf[0], wf[1], wf[2], wf[3] );
+                           printf( "Trace 4-7 %d %d %d %d\n", wf[4], wf[5], wf[6], wf[7] );
+                   */
+                  }      // 0x400     
                   
-                  eventcount++;
+                  eventcount++;             
      //          }
-     //          else { // event not acceptable (piled up )
+     //          else { // event not acceptable (piled up 
      //             R1 = mapped[chaddr+CA_REJECT];		// read this register to advance event FIFOs without incrementing Nout etc
      //          }
             }     // end event in this channel
@@ -581,7 +610,7 @@ int main(void) {
     //           usleep(100);
     //           printf( "currenttime: %d\n", currenttime );
    //   } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-      } while (eventcount <= 5); // run for a fixed number of events   
+      } while (eventcount <= 10); // run for a fixed number of events   
 
 
 
