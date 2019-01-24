@@ -64,7 +64,7 @@ int main(void) {
   FILE * fil;
 
   unsigned int RunType, SyncT, ReqRunTime, PollTime;
-  unsigned int SL[NCHANNELS];
+  unsigned int SL[NCHANNELS], CCSRA[NCHANNELS];
   //unsigned int SG[NCHANNELS];
   float Tau[NCHANNELS], Dgain[NCHANNELS];
   unsigned int BLavg[NCHANNELS], BLcut[NCHANNELS], Binfactor[NCHANNELS], TL[NCHANNELS];
@@ -145,6 +145,7 @@ int main(void) {
       if(BLavg[k]==65536)     BLavg[k] = 0;
       if(BLavg[k]>MAX_BLAVG)  BLavg[k] = MAX_BLAVG;
       BLbad[k] = MAX_BADBL;   // initialize to indicate no good BL found yet
+      CCSRA[k]       =  fippiconfig.CHANNEL_CSRA[k]; 
    }
 
 
@@ -272,15 +273,13 @@ int main(void) {
 
       // Read Header DPM status
       mapped[AMZ_EXAFRD] = AK7_SYSSYTATUS;     // write to  k7's addr for read -> reading from 0x85 system status register
-        usleep(1);
+        usleep(1);      // required?
       evstats = mapped[AMZ_EXDRD];   // bits set for every channel that has data in header memory
-   //   printf( "K7 0 read from 0x85: 0x%X\n", evstats );
-        
 
       // event readout compatible with P16 DSP code
       // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
       if(evstats) {					  // if there are events in any channel
-       printf( "K7 0 read from 0x85: 0x%X\n", evstats );
+    //   printf( "K7 0 read from 0x85: 0x%X\n", evstats );
          for( ch=0; ch < NCHANNEL_PER_K7; ch++)
          {
             R1 = 1 << ch;
@@ -305,12 +304,10 @@ int main(void) {
               //       hdr[0] = mapped[AMZ_EXDRD];      // read 16 bits
               //       mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
               //       hdr[0] = mapped[AMZ_EXDRD];      // read 16 bits
-
-
-
                      }
             
 
+                  // read 8 64bit words from header
                   for( k=0; k < 8; k++)
                   {
                      mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
@@ -321,7 +318,7 @@ int main(void) {
                      hdr[4*k+1] = mapped[AMZ_EXDRD];      // read 16 bits
                      mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
                      hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
-
+                     // the next 8 words only need to be read if QDCs are enabled
                   }
 
              /*     printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
@@ -336,121 +333,17 @@ int main(void) {
                   out0   = hdr[0]+(hdr[1]<<16);  // preliminary, more bits to be filled in
                   timeL  = hdr[4]+(hdr[5]<<16); 
                   timeH  = hdr[8];  
-              //    TL[ch] = hdr[9]; 
+                  TL[ch] = hdr[9]; 
                   tsum = hdr[12]+(hdr[13]<<16);
                   lsum = hdr[16]+(hdr[17]<<16);
                   gsum = hdr[20]+(hdr[21]<<16);
                   trace_staddr = hdr[25]>>3;     // tmp2,3 + ext TS. tmp1[15:3] = trace start. rest = cfdout 1
                   printf( "time Low: 0x%08X = %0f ms \n",timeL,timeL*13.333/1000000 );
 
-                  /*
-                  // TODO: rely on K7 address increment for 4 consecutive reads A-D. 
-                  //(0)
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
-                  tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
-                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
-                  // tmp2 and tmp3 are actually all zero in P16 common usage
-                  out0 = tmp0+(tmp1<<16);  // preliminary, more bits to be filled in
-                //  printf( "Read 0: 0x %X %X %X %X\n", tmp0, tmp1, tmp2, tmp3 );
-
-                  //(1)
-                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
-                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
-                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
-                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
-                  // tmp2 and tmp3 are actually all zero in P16 common usage
-                  timeL = tmp0+(tmp1<<16);  
-                 // printf( "Read 1: 0x %X %X %X %X\n", tmp0, tmp1, tmp2, tmp3 );
-
-
-                  //(2)
-                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
-                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
-                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
-                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
-                  // tmp2 and tmp3 are actually all zero in P16 common usage
-                  timeH = tmp0;  
-                  TL[ch] = tmp1; 
-              //    printf( "Read 2: 0x %X %X %X %X\n", tmp0, tmp1, tmp2, tmp3 );
-
-
-                  //(3)
-                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
-                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
-                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
-                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
-                  // tmp2 and tmp3 are actually all zero in P16 common usage
-                  tsum = tmp0+(tmp1<<16);  
-
-                  //(4)
-                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
-                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
-                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
-                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
-                  // tmp2 and tmp3 are actually all zero in P16 common usage
-                  lsum = tmp0+(tmp1<<16);  
-
-                  //(5)
-                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
-                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
-                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
-                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
-                  // tmp2 and tmp3 are actually all zero in P16 common usage
-                  gsum = tmp0+(tmp1<<16);  
-
-                  //(6)
-                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
-                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
-                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
-                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
-                  // tmp2,3 + ext TS. tmp1[15:3] = trace start. rest = cfdout 1
-                  trace_staddr = tmp1>>3;
-
-                  //(7) 
-                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
-                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
-                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
-                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
-                  tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
-                  // more cfd and ext TS
-
-                  */
+    
                   // TODO: add pileup (and other) acceptance check
 
-                  // the next 8 words only need to be read if QDCs are enabled
-                       
+                             
                   // compute and histogram E
                   ph = C1[ch]*(double)lsum+Cg[ch]*(double)gsum+C0[ch]*(double)tsum;
                  //  printf("ph %f, BLavg %f, E %f\n",ph,baseline[ch], ph-baseline[ch]);
@@ -497,30 +390,38 @@ int main(void) {
                           memcpy( buffer2 + 32, &(out3), 4 );      // ext TS
                           memcpy( buffer2 + 36, &(out3), 4 );      // ext TS
                           fwrite( buffer2, 1, CHAN_HEAD_LENGTH_100*4, fil );
-             /*
-                           printf( "N samples %d, start addr 0x%X \n", TL[ch], trace_staddr);
+             
+                 //          if(0) {
+                           if( (TL[ch] >0) && ( CCSRA[ch] & (1<<CCSRA_TRACEENA)) )  {   // check if TL >0 and traces are recorded (bit 8 of CCSRA)
+                             printf( "N samples %d, start addr 0x%X \n", TL[ch], trace_staddr);
+                             mapped[AMZ_EXAFWR] = AK7_MEMADDR+ch;     // specify   K7's addr     addr 4 = memory address
+                             mapped[AMZ_EXDWR]  = trace_staddr;      //  take data from location recorded in headers
+                           //  w0 = mapped[AWF0+ch];  // dummy read?
+                             for( k=0; k < (TL[ch]/2); k++)
+                             {
+                                 mapped[AMZ_EXAFRD] = AK7_TRCMEM_A;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
+                                 w0 = mapped[AMZ_EXDRD];      // read 16 bits
+                                 mapped[AMZ_EXAFRD] = AK7_TRCMEM_B;     // write to  k7's addr for read -> reading from AK7_TRCMEM_B channel header memory, high 16bit and addr increase
+                                 w1 = mapped[AMZ_EXDRD];      // read 16 bits
+                         
+                                // re-order 2 sample words from 32bit FIFO
+                                wf[k] = w0+(w1<<16);
+                               // wf[2*k+0] = w0;
+                             }
+   
+                             fwrite( wf, TL[ch]/2, 4, fil );   
+                              
+                             /*
+                             //printf( "Trace 0-3 %d %d %d %d\n", wf[0], wf[1], wf[2], wf[3] );
+                             //printf( "Trace 4-7 %d %d %d %d\n", wf[4], wf[5], wf[6], wf[7] );
+                              for( k=0; k < (TL[ch]/2); k++)
+                             {
+                               printf( "Trace %d :  %d \n", 2*k+0, wf[k]&0xFFFF  );
+                               printf( "Trace %d :  %d \n", 2*k+1, wf[k]>>16 );
+                             }     */
 
-
-                          mapped[AMZ_EXAFWR] = AK7_MEMADDR+ch;     // specify   K7's addr     addr 4 = memory address
-                          mapped[AMZ_EXDWR]  = trace_staddr;      //  take data from location recorded in headers
-                        //  w0 = mapped[AWF0+ch];  // dummy read?
-                          for( k=0; k < (TL[ch]/2); k++)
-                          {
-                              mapped[AMZ_EXAFRD] = AK7_TRCMEM_A;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
-                              w0 = mapped[AMZ_EXDRD];      // read 16 bits
-                              mapped[AMZ_EXAFRD] = AK7_TRCMEM_B;     // write to  k7's addr for read -> reading from AK7_TRCMEM_B channel header memory, high 16bit and addr increase
-                              w1 = mapped[AMZ_EXDRD];      // read 16 bits
-                      
-                             // re-order 2 sample words from 32bit FIFO
-                             wf[2*k+1] = w1;
-                             wf[2*k+0] = w0;
-                          }
-
-                          fwrite( wf, TL[ch]/2, 2, fil );
-
-                           printf( "Trace 0-3 %d %d %d %d\n", wf[0], wf[1], wf[2], wf[3] );
-                           printf( "Trace 4-7 %d %d %d %d\n", wf[4], wf[5], wf[6], wf[7] );
-                   */
+                           }   // end trace read and save
+                   
                   }      // 0x400     
                   
                   eventcount++;             
@@ -610,7 +511,7 @@ int main(void) {
     //           usleep(100);
     //           printf( "currenttime: %d\n", currenttime );
    //   } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-      } while (eventcount <= 10); // run for a fixed number of events   
+      } while (eventcount <= 2); // run for a fixed number of events   
 
 
 

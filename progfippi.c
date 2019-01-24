@@ -637,6 +637,9 @@ int main(void) {
       mval = pafl - mval;                                           //delay from DSP computation
       if( (fippiconfig.CHANNEL_CSRA[k]  & 0x0400) >0 )  //(1<<CCSRA_CFDMODE) >0  )      
          mval = mval + FL[k] + FG[k];                                // add CFD delay if necessary
+
+     //    mval = mval+75;
+     mval = TD[k];
       reghi = reghi +  (mval<<9);                                      // trace delay (Capture_FIFOdelaylen )
    
       // now write 
