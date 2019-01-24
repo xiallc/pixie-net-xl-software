@@ -77,6 +77,7 @@ int main(void) {
   unsigned int startTS, w0, w1, revsn;
   //unsigned int startTS, m, c0, c1, c2, c3, w0, w1, tmpI, revsn;
   unsigned int tmp0, tmp1, tmp2, tmp3;
+  unsigned int hdr[32];
   unsigned int out0, out1, out2, out3, trace_staddr;
   unsigned int evstats, R1, timeL, timeH;
   //unsigned int evstats, R1, hit, timeL, timeH, psa0, psa1, cfd0;
@@ -213,7 +214,7 @@ int main(void) {
     }
 
     // Run Start Control
-   mapped[AOUTBLOCK] = CS_MZ;	 // select FPGA 0 
+   mapped[AOUTBLOCK] = CS_MZ;	 // select MZ
    mapped[ACSRIN] = 0x0001; // RunEnable=1 > nLive=0 (DAQ on)
    // this is a bit in a MZ register tied to a line to both FPGAs
    // falling edge of nLive clears counters and memory address pointers
@@ -266,25 +267,26 @@ int main(void) {
       mapped[AMZ_EXAFRD] = 0x81;     // write to  k7's addr for read -> reading from 0x85 system status register
         usleep(1);
       evstats = mapped[AMZ_EXDRD];   // bits set for every channel that has data in header memory
-      printf( "K7 0 read from 0x81: 0x%X\n", evstats );
+    //  printf( "K7 0 read from 0x81: 0x%X\n", evstats );
 
 
       // Read Header DPM status
       mapped[AMZ_EXAFRD] = AK7_SYSSYTATUS;     // write to  k7's addr for read -> reading from 0x85 system status register
         usleep(1);
       evstats = mapped[AMZ_EXDRD];   // bits set for every channel that has data in header memory
-      printf( "K7 0 read from 0x85: 0x%X\n", evstats );
+   //   printf( "K7 0 read from 0x85: 0x%X\n", evstats );
         
 
       // event readout compatible with P16 DSP code
       // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
       if(evstats) {					  // if there are events in any channel
+       printf( "K7 0 read from 0x85: 0x%X\n", evstats );
          for( ch=0; ch < NCHANNEL_PER_K7; ch++)
          {
             R1 = 1 << ch;
             if(evstats & R1)	{	 //  if there is an event in the header memory for this channel
                   mapped[AMZ_EXAFWR] = AK7_MEMADDR;     // specify   K7's addr     addr 4 = memory address
-                  mapped[AMZ_EXDWR]  = HMaddr[ch];      //  take data from top of memory as remembered in C variable
+                  mapped[AMZ_EXDWR]  = 0x123; //HMaddr[ch];      //  take data from top of memory as remembered in C variable
 
                   HMaddr[ch] += 8;              // increment remembered header address, roll over if necessary
                   if(HMaddr[ch] >= 512)
@@ -293,73 +295,134 @@ int main(void) {
                   mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
                   mapped[AMZ_EXDWR]  = 0x100+ch;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
                  
+                  if(  eventcount==0) {
+                  // dummy reads
+                     mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
+                     hdr[0] = mapped[AMZ_EXDRD];      // read 16 bits
+                     mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
+                     hdr[0] = mapped[AMZ_EXDRD];      // read 16 bits
+
+                     }
+
+
+                  for( k=0; k < 32; k++)
+                  {
+                     mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
+                     hdr[k] = mapped[AMZ_EXDRD];      // read 16 bits
+                  }
+
+                  printf( "Read 0: 0x %X %X %X %X\n", hdr[0], hdr[1], hdr[2], hdr[3] );
+                  printf( "Read 1: 0x %X %X %X %X\n", hdr[4], hdr[5], hdr[6], hdr[7] );
+                  printf( "Read 2: 0x %X %X %X %X\n", hdr[8], hdr[9], hdr[10], hdr[11] );
+                  printf( "Read 3: 0x %X %X %X %X\n", hdr[12], hdr[13], hdr[14], hdr[15] );
+                  printf( "Read 4: 0x %X %X %X %X\n", hdr[16], hdr[17], hdr[18], hdr[19] );
+                  printf( "Read 5: 0x %X %X %X %X\n", hdr[20], hdr[21], hdr[22], hdr[23] );
+
+
+                  /*
                   // TODO: rely on K7 address increment for 4 consecutive reads A-D. 
                   //(0)
                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
-                    usleep(1);
                   tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
+                  mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
                   // tmp2 and tmp3 are actually all zero in P16 common usage
                   out0 = tmp0+(tmp1<<16);  // preliminary, more bits to be filled in
+                //  printf( "Read 0: 0x %X %X %X %X\n", tmp0, tmp1, tmp2, tmp3 );
 
                   //(1)
+                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
+                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
+                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
+                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
                   // tmp2 and tmp3 are actually all zero in P16 common usage
                   timeL = tmp0+(tmp1<<16);  
+                 // printf( "Read 1: 0x %X %X %X %X\n", tmp0, tmp1, tmp2, tmp3 );
+
 
                   //(2)
+                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
+                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
+                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
+                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
                   // tmp2 and tmp3 are actually all zero in P16 common usage
                   timeH = tmp0;  
                   TL[ch] = tmp1; 
+              //    printf( "Read 2: 0x %X %X %X %X\n", tmp0, tmp1, tmp2, tmp3 );
+
 
                   //(3)
+                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
+                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
+                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
+                    mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
                   // tmp2 and tmp3 are actually all zero in P16 common usage
                   tsum = tmp0+(tmp1<<16);  
 
                   //(4)
+                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
+                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
+                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
+                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
                   // tmp2 and tmp3 are actually all zero in P16 common usage
                   lsum = tmp0+(tmp1<<16);  
 
                   //(5)
+                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
+                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
+                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
+                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
                   // tmp2 and tmp3 are actually all zero in P16 common usage
                   gsum = tmp0+(tmp1<<16);  
 
                   //(6)
+                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
+                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
+                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
+                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
                   // tmp2,3 + ext TS. tmp1[15:3] = trace start. rest = cfdout 1
                   trace_staddr = tmp1>>3;
 
                   //(7) 
+                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp0 = mapped[AMZ_EXDRD];      // read 16 bits
+                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp1 = mapped[AMZ_EXDRD];      // read 16 bits
+                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp2 = mapped[AMZ_EXDRD];      // read 16 bits
+                   mapped[AMZ_EXAFRD] = AK7_HDRMEM_D; 
                   tmp3 = mapped[AMZ_EXDRD];      // read 16 bits
                   // more cfd and ext TS
 
+                  */
                   // TODO: add pileup (and other) acceptance check
 
                   // the next 8 words only need to be read if QDCs are enabled
@@ -515,10 +578,10 @@ int main(void) {
 
          loopcount ++;
          currenttime = time(NULL);
-               usleep(100);
-               printf( "currenttime: %d\n", currenttime );
+    //           usleep(100);
+    //           printf( "currenttime: %d\n", currenttime );
    //   } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-      } while (eventcount <= 20); // run for a fixed number of events   
+      } while (eventcount <= 5); // run for a fixed number of events   
 
 
 

@@ -996,6 +996,11 @@ int main(void) {
   if(mapped[AAUXCTRL] != mval) printf("Error writing AUX_CTRL register\n");
  
 
+  // toggle nLive to clear memories
+      mapped[AOUTBLOCK] = CS_MZ;	 // select MZ
+   mapped[ACSRIN] = 0x0001; // RunEnable=1 > nLive=0 (DAQ on)
+       mapped[AOUTBLOCK] = CS_MZ;	 // select MZ
+   mapped[ACSRIN] = 0x0000; // RunEnable=1 > nLive=0 (DAQ on)
 
 
      
