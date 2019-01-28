@@ -78,8 +78,8 @@ int main(void) {
   //unsigned int startTS, m, c0, c1, c2, c3, w0, w1, tmpI, revsn;
   unsigned int tmp0, tmp1, tmp2, tmp3;
   unsigned int hdr[32];
-  unsigned int out0, out1, out2, out3, trace_staddr;
-  unsigned int evstats, R1, timeL, timeH;
+  unsigned int out0, out1, out2, out3, trace_staddr, tracewrite;
+  unsigned int evstats, R1, timeL, timeH, hit;
   //unsigned int evstats, R1, hit, timeL, timeH, psa0, psa1, cfd0;
   //unsigned int psa_base, psa_Q0, psa_Q1, psa_ampl, psa_R;
   //unsigned int cfdout, cfdlow, cfdhigh, cfdticks, cfdfrac, ts_max;
@@ -89,12 +89,10 @@ int main(void) {
   //unsigned int mca2D[NCHANNELS][MCA2D_BINS*MCA2D_BINS] ={{0}};    // 2D MCA for end of run
   unsigned int onlinebin;
   unsigned int wf[MAX_TL/2];    // two 16bit values per word
-  unsigned int loopcount, eventcount; //, NumPrevTraceBlks, TraceBlks;
-  //unsigned short buffer1[FILE_HEAD_LENGTH_400] = {0};
+  unsigned int loopcount, eventcount, NumPrevTraceBlks, TraceBlks;
+  unsigned short buffer1[FILE_HEAD_LENGTH_400] = {0};
   unsigned char buffer2[CHAN_HEAD_LENGTH_400*2] = {0};
-  unsigned int HMaddr[NCHANNELS] = {0};
-  //unsigned int TMaddr[NCHANNELS] = {0};
- // unsigned int wm = WATERMARK;
+  unsigned int wm = WATERMARK;
   unsigned int BLbad[NCHANNELS];
   onlinebin=MAX_MCA_BINS/WEB_MCA_BINS;
 
@@ -126,8 +124,10 @@ int main(void) {
   //CW           = (int)floor(fippiconfig.COINCIDENCE_WINDOW*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
     printf( "REQ_RUNTIME %d  \n", ReqRunTime);
 
-  if( (RunType!=0x100) ) {      // grouped list mode run (equiv 0x402)
-      printf( "This function only support runtype 0x100 (P16) \n");
+  if( (RunType==0x100) || (RunType==0x400) || (RunType==0x301)  ) {      // check run type
+   // 0x100, 0x400 are ok
+  } else {
+      printf( "This function only support runtypes 0x100 (P16) or 0x400 or 0x301 \n");
       return(-1);
   }
 
@@ -199,11 +199,11 @@ int main(void) {
 
     // ********************** Run Start **********************
 
-
+   NumPrevTraceBlks = 0;
    loopcount =  0;
    eventcount = 0;
    starttime = time(NULL);                         // capture OS start time
-   if( (RunType==0x100)  )  {    // list mode runtypes    
+   if( (RunType==0x100) ||  (RunType==0x400) )  {    // list mode runtypes    
       if(SyncT) mapped[ARTC_CLR] = 1;              // write to reset time counter
       mapped[AOUTBLOCK] = 2;
       startTS = mapped[AREALTIME];
@@ -211,7 +211,28 @@ int main(void) {
       if(RunType==0x100){
         // write a 0x100 header  -- actually there is no header, just events
         fil = fopen("LMdata.bin","wb");
-        }           
+      }  
+        
+      if(RunType==0x400){
+        // write a 0x400 header
+        // fwrite is slow so we will write to a buffer, and then to the file.
+        fil = fopen("LMdata.b00","wb");
+        buffer1[0] = BLOCKSIZE_400;
+        buffer1[1] = 0;                                       // module number (get from settings file?)
+        buffer1[2] = RunType;
+        buffer1[3] = CHAN_HEAD_LENGTH_400;
+        buffer1[4] = fippiconfig.COINCIDENCE_PATTERN;
+        buffer1[5] = fippiconfig.COINCIDENCE_WINDOW;
+        buffer1[7] = revsn>>16;               // HW revision from EEPROM
+        buffer1[12] = revsn & 0xFFFF;         // serial number from EEPROM
+        for( ch = 0; ch < NCHANNELS; ch++) {
+            buffer1[6]   +=(int)floor((TL[ch] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400);         // combined event length, in blocks
+            buffer1[8+ch] =(int)floor((TL[ch] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400);			// each channel's event length, in blocks
+        }
+        fwrite( buffer1, 2, FILE_HEAD_LENGTH_400, fil );     // write to file
+      }           
+
+
     }
 
     // Run Start Control
@@ -225,16 +246,36 @@ int main(void) {
     // ********************** Run Loop **********************
    do {
 
-   /*  no baselines for now
+ 
       //----------- Periodically read BL and update average -----------
       // this will be moved into the FPGA soon
       if(loopcount % BLREADPERIOD == 0) {  //|| (loopcount ==0) ) {     // sometimes 0 mod N not zero and first few events have wrong E? watch
-         for( ch=0; ch < NCHANNELS; ch++) {
+         for( ch=0; ch < NCHANNEL_PER_K7; ch++) {
             // read raw BL sums 
-            chaddr = ch*16+16;
-            lsum  = mapped[chaddr+CA_LSUMB];         
-            tsum  = mapped[chaddr+CA_TSUMB];
-            gsum  = mapped[chaddr+CA_GSUMB];
+            mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
+            mapped[AMZ_EXDWR]  = 0x100+ch;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
+
+            mapped[AMZ_EXAFRD] = AK7_BLLOCK;    // read from 0xD4 to lock BL registers (no data)
+            tmp0 = mapped[AMZ_EXDRD];
+
+            mapped[AMZ_EXAFRD] = AK7_BLSTART+0;        // lsum low 16 bit
+            tmp0 =  mapped[AMZ_EXDRD];
+            mapped[AMZ_EXAFRD] = AK7_BLSTART+1;        // lsum high 16 bit
+            tmp1 =  mapped[AMZ_EXDRD];
+            lsum = tmp0 + (tmp1<<16); 
+
+            mapped[AMZ_EXAFRD] = AK7_BLSTART+2;        // tsum low 16 bit
+            tmp0 =  mapped[AMZ_EXDRD];
+            mapped[AMZ_EXAFRD] = AK7_BLSTART+3;        // tsum high 16 bit
+            tmp1 =  mapped[AMZ_EXDRD];
+            tsum = tmp0 + (tmp1<<16); 
+
+            mapped[AMZ_EXAFRD] = AK7_BLSTART+6;        // gsum low 16 bit
+            tmp0 =  mapped[AMZ_EXDRD];
+            mapped[AMZ_EXAFRD] = AK7_BLSTART+7;        // gsum high 16 bit, unlock
+            tmp1 =  mapped[AMZ_EXDRD];
+            gsum = tmp0 + (tmp1<<16); 
+
             if (tsum>0)		// tum=0 indicates bad baseline
             {
               ph = C1[ch]*lsum+Cg[ch]*gsum+C0[ch]*tsum;
@@ -256,7 +297,7 @@ int main(void) {
             }       // end tsum >0 check
          }          // end for loop
       }             // end periodicity check
-     */ 
+     
       
       // -----------poll for events -----------
       // if data ready. read out, compute E, increment MCA *********
@@ -265,15 +306,15 @@ int main(void) {
       mapped[AMZ_EXDWR]  = 0x0;          //                         0x0  = system  page
  
 
-      mapped[AMZ_EXAFRD] = 0x81;     // write to  k7's addr for read -> reading from 0x85 system status register
+ //     mapped[AMZ_EXAFRD] = 0x81;     // write to  k7's addr for read -> reading from 0x85 system status register
   //      usleep(1);
-      evstats = mapped[AMZ_EXDRD];   // bits set for every channel that has data in header memory
+  //    evstats = mapped[AMZ_EXDRD];   // bits set for every channel that has data in header memory
     //  printf( "K7 0 read from 0x81: 0x%X\n", evstats );
 
 
       // Read Header DPM status
       mapped[AMZ_EXAFRD] = AK7_SYSSYTATUS;     // write to  k7's addr for read -> reading from 0x85 system status register
-        usleep(1);      // required?
+//        usleep(1);      // required?
       evstats = mapped[AMZ_EXDRD];   // bits set for every channel that has data in header memory
 
       // event readout compatible with P16 DSP code
@@ -284,12 +325,12 @@ int main(void) {
          {
             R1 = 1 << ch;
             if(evstats & R1)	{	 //  if there is an event in the header memory for this channel
-                  mapped[AMZ_EXAFWR] = AK7_MEMADDR;     // specify   K7's addr     addr 4 = memory address
-                  mapped[AMZ_EXDWR]  = 0x123; //HMaddr[ch];      //  take data from top of memory as remembered in C variable
+             //     mapped[AMZ_EXAFWR] = AK7_MEMADDR;     // specify   K7's addr     addr 4 = memory address
+             //     mapped[AMZ_EXDWR]  = 0x123; //HMaddr[ch];      //  take data from top of memory as remembered in C variable
 
-                  HMaddr[ch] += 8;              // increment remembered header address, roll over if necessary
-                  if(HMaddr[ch] >= 512)
-                     HMaddr[ch] = HMaddr[ch] - 512;
+             //     HMaddr[ch] += 8;              // increment remembered header address, roll over if necessary
+             //     if(HMaddr[ch] >= 512)
+             //        HMaddr[ch] = HMaddr[ch] - 512;
 
                   mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
                   mapped[AMZ_EXDWR]  = 0x100+ch;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
@@ -300,10 +341,6 @@ int main(void) {
                      hdr[0] = mapped[AMZ_EXDRD];      // read 16 bits
                      mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
                      hdr[0] = mapped[AMZ_EXDRD];      // read 16 bits
-              //       mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
-              //       hdr[0] = mapped[AMZ_EXDRD];      // read 16 bits
-              //       mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
-              //       hdr[0] = mapped[AMZ_EXDRD];      // read 16 bits
                      }
             
 
@@ -330,6 +367,10 @@ int main(void) {
                   printf( "Read 6 H-L: 0x %X %X %X %X\n",hdr[27], hdr[26], hdr[25], hdr[24] );
                   printf( "Read 7 H-L: 0x %X %X %X %X\n",hdr[31], hdr[30], hdr[29], hdr[28] );
             */
+                
+
+            
+            
                   out0   = hdr[0]+(hdr[1]<<16);  // preliminary, more bits to be filled in
                   timeL  = hdr[4]+(hdr[5]<<16); 
                   timeH  = hdr[8];  
@@ -342,6 +383,27 @@ int main(void) {
 
     
                   // TODO: add pileup (and other) acceptance check
+
+                  // waveform read (if accepted)
+                  // TODO: free trace memory by reading from last address (just set the address)
+                  if( (TL[ch] >0) && ( CCSRA[ch] & (1<<CCSRA_TRACEENA)) )  {   // check if TL >0 and traces are recorded (bit 8 of CCSRA)
+                    tracewrite = 1;
+                    printf( "N samples %d, start addr 0x%X \n", TL[ch], trace_staddr);
+                    mapped[AMZ_EXAFWR] = AK7_MEMADDR+ch;     // specify   K7's addr     addr 4 = memory address
+                    mapped[AMZ_EXDWR]  = trace_staddr;      //  take data from location recorded in trace memory
+                    for( k=0; k < (TL[ch]/2); k++)
+                    {
+                        mapped[AMZ_EXAFRD] = AK7_TRCMEM_A;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
+                        w0 = mapped[AMZ_EXDRD];      // read 16 bits
+                        mapped[AMZ_EXAFRD] = AK7_TRCMEM_B;     // write to  k7's addr for read -> reading from AK7_TRCMEM_B channel header memory, high 16bit and addr increase
+                        w1 = mapped[AMZ_EXDRD];      // read 16 bits  , increments trace memory address
+                
+                       // re-order 2 sample words from 32bit FIFO
+                       wf[k] = w0+(w1<<16);
+                    }
+                  }  else {
+                     tracewrite = 0;
+                  }
 
                              
                   // compute and histogram E
@@ -376,53 +438,56 @@ int main(void) {
        
                   // now store list mode data
 
-                    if(RunType==0x100)   {                         
-                          memcpy( buffer2 + 0, &(out1), 4 );
-                          memcpy( buffer2 + 4, &(timeL), 4 );
-                          memcpy( buffer2 + 8, &(timeH), 4 );
-                          memcpy( buffer2 + 12, &(out2), 4 );
+                  if(RunType==0x100)   {                         
+                       memcpy( buffer2 + 0, &(out1), 4 );
+                       memcpy( buffer2 + 4, &(timeL), 4 );
+                       memcpy( buffer2 + 8, &(timeH), 4 );
+                       memcpy( buffer2 + 12, &(out2), 4 );
 
-                          memcpy( buffer2 + 16, &(tsum), 4 );
-                          memcpy( buffer2 + 20, &(lsum), 4 );   
-                          memcpy( buffer2 + 24, &(gsum), 4 );
-                          memcpy( buffer2 + 28, &(out3), 4 );      // BL
+                       memcpy( buffer2 + 16, &(tsum), 4 );
+                       memcpy( buffer2 + 20, &(lsum), 4 );   
+                       memcpy( buffer2 + 24, &(gsum), 4 );
+                       memcpy( buffer2 + 28, &(out3), 4 );      // BL
 
-                          memcpy( buffer2 + 32, &(out3), 4 );      // ext TS
-                          memcpy( buffer2 + 36, &(out3), 4 );      // ext TS
-                          fwrite( buffer2, 1, CHAN_HEAD_LENGTH_100*4, fil );
-             
-                 //          if(0) {
-                           if( (TL[ch] >0) && ( CCSRA[ch] & (1<<CCSRA_TRACEENA)) )  {   // check if TL >0 and traces are recorded (bit 8 of CCSRA)
-                             printf( "N samples %d, start addr 0x%X \n", TL[ch], trace_staddr);
-                             mapped[AMZ_EXAFWR] = AK7_MEMADDR+ch;     // specify   K7's addr     addr 4 = memory address
-                             mapped[AMZ_EXDWR]  = trace_staddr;      //  take data from location recorded in headers
-                           //  w0 = mapped[AWF0+ch];  // dummy read?
-                             for( k=0; k < (TL[ch]/2); k++)
-                             {
-                                 mapped[AMZ_EXAFRD] = AK7_TRCMEM_A;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
-                                 w0 = mapped[AMZ_EXDRD];      // read 16 bits
-                                 mapped[AMZ_EXAFRD] = AK7_TRCMEM_B;     // write to  k7's addr for read -> reading from AK7_TRCMEM_B channel header memory, high 16bit and addr increase
-                                 w1 = mapped[AMZ_EXDRD];      // read 16 bits
-                         
-                                // re-order 2 sample words from 32bit FIFO
-                                wf[k] = w0+(w1<<16);
-                               // wf[2*k+0] = w0;
-                             }
-   
-                             fwrite( wf, TL[ch]/2, 4, fil );   
-                              
-                             /*
-                             //printf( "Trace 0-3 %d %d %d %d\n", wf[0], wf[1], wf[2], wf[3] );
-                             //printf( "Trace 4-7 %d %d %d %d\n", wf[4], wf[5], wf[6], wf[7] );
-                              for( k=0; k < (TL[ch]/2); k++)
-                             {
-                               printf( "Trace %d :  %d \n", 2*k+0, wf[k]&0xFFFF  );
-                               printf( "Trace %d :  %d \n", 2*k+1, wf[k]>>16 );
-                             }     */
-
-                           }   // end trace read and save
+                       memcpy( buffer2 + 32, &(out3), 4 );      // ext TS
+                       memcpy( buffer2 + 36, &(out3), 4 );      // ext TS
+                       fwrite( buffer2, 1, CHAN_HEAD_LENGTH_100*4, fil );
+          
+                       if( tracewrite )  {   // previously checked if TL >0 and traces are recorded (bit 8 of CCSRA)                          
+                          fwrite( wf, TL[ch]/2, 4, fil );                        
+                       }   // end trace write
                    
-                  }      // 0x400     
+                  }      // 0x100     
+
+                   if(RunType==0x400)   {
+                       hit = (1<<ch);
+                       TraceBlks = (int)floor(TL[ch]/BLOCKSIZE_400);
+                       memcpy( buffer2 + 0, &(hit), 4 );
+                       memcpy( buffer2 + 4, &(TraceBlks), 2 );
+                       memcpy( buffer2 + 6, &(NumPrevTraceBlks), 2 ); 
+                       memcpy( buffer2 + 8, &(timeL), 4 );
+                       memcpy( buffer2 + 12, &(timeH), 4 );
+                       memcpy( buffer2 + 16, &(energy), 2 );
+                       memcpy( buffer2 + 18, &(ch), 2 );
+                       memcpy( buffer2 + 20, &(out3), 2 );
+                       memcpy( buffer2 + 22, &(out3), 2 );   // actually cfd time
+                       memcpy( buffer2 + 24, &(out3), 2 );
+                       memcpy( buffer2 + 26, &(out3), 2 );
+                       memcpy( buffer2 + 28, &(out3), 2 );
+                       memcpy( buffer2 + 30, &(out3), 2 );  
+                       memcpy( buffer2 + 32, &(out3), 2 );      // debug
+                       memcpy( buffer2 + 34, &(out3), 2 );   
+                       memcpy( buffer2 + 36, &(out3), 4 );      // debug
+                       memcpy( buffer2 + 40, &(out3), 4 );   
+                       // no checksum  for now
+                       memcpy( buffer2 + 60, &(wm), 4 );
+                       fwrite( buffer2, 1, CHAN_HEAD_LENGTH_400*2, fil );
+                       NumPrevTraceBlks = TraceBlks;
+
+                       if( tracewrite )  {   // previously checked if TL >0 and traces are recorded (bit 8 of CCSRA)     
+                         fwrite( wf, TL[ch]/2, 4, fil );
+                       }   // end trace write
+                  }      // 0x400
                   
                   eventcount++;             
      //          }
