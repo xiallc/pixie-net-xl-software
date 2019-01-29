@@ -213,6 +213,8 @@
 #define AMZ_CSROUTH  0x21
 #define AMZ_BRDINFO  0x22
 #define AMZ_SYSREV  0x28
+#define AMZ_RS      0x20
+
 #define AK7_P16REG00 0x40
 #define AK7_P16REG01 0x44
 #define AK7_P16REG02 0x48
@@ -233,7 +235,9 @@
 #define AK7_TRCMEM_B 0xDE
 #define AK7_BLLOCK 0xD4
 #define AK7_BLSTART 0xC8
-
+#define AK7_SYS_RS 0x80
+#define AK7_CHN_RS_CT 0xC0
+#define AK7_CHN_RS_FP 0xC0
 
 
 

@@ -694,5 +694,356 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
 }
 
 
+int read_print_runstats_XL_2x4(int mode, int dest, volatile unsigned int *mapped ) {
+// mode 0: full print of all runstats, including raw values
+// mode 1: only print times and rates
+// dest 0: print to file
+// dest 1: print to stdout      -- useful for cgi
+// dest 2: print to both        -- currently fails if called by web client due to file write permissions
+
+  int k,q, lastrs;
+  FILE * fil;
+  unsigned int co[N_PL_RS_PAR], [sy[2][N_PL_RS_PAR], ch[NCHANNELS][N_PL_RS_PAR];
+  unsigned int csr, csrbit;
+  double sa, ca[NCHANNELS], sb, cb[NCHANNELS], CT[NCHANNELS], val;
+  char N[14][32] = {      // names for the cgi array
+    "ParameterC",
+    "Controller",
+    "ParameterS",
+    "System0",
+    "System1",
+    "ParameterC",
+    "Channel0",
+    "Channel1",
+    "Channel2",
+    "Channel3",
+    "Channel4",
+    "Channel5",
+    "Channel6",
+    "Channel7" 
+    
+    
+    };
+
+  // Run stats PL Parameter names applicable to a Pixie module 
+char Controller_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
+   "reserved",
+   "CSROUT",		//0 
+   "SYSTIME", 
+   "RUNTIME", 
+   "RUNTIME", 
+   "TOTALTIME", 
+   "TOTALTIME", 
+   "NUMEVENTS", 
+   "NUMEVENTS", 
+   "SW_VERSION", 
+   "HW_VERSION", 
+   "FW_VERSION", 	   //10
+   "SNUM",
+   "PPSTIME", 
+   "T_BOARD", 
+   "T_ZYNQ", 
+   "reserved", 
+   "reserved", 
+   "reserved",
+   "reserved",
+   "reserved",		    //20
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",	    //30
+   "reserved"
+};
+
+
+   // Run stats PL Parameter names applicable to a Pixie module 
+char System_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
+   "reserved",
+   "CSROUT",		//0 
+   "SYSTIME", 
+   "RUNTIME", 
+   "RUNTIME", 
+   "reserved", 
+   "reserved", 
+   "reserved", 
+   "reserved", 
+   "reserved", 
+   "reserved", 
+   "FW_VERSION", 	   //10
+   "reserved",
+   "PPSTIME", 
+   "T_ADC", 
+   "T_WR", 
+   "reserved", 
+   "reserved", 
+   "reserved",
+   "reserved",
+   "reserved",		    //20
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",	    //30
+   "reserved"
+};
+
+ // Run stats PL Parameter names applicable to a Pixie channel 
+char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
+   "reserved",
+   "reserved",		//0 
+   "reserved", 
+   "COUNTTIME", 
+   "COUNTTIME", 
+   "COUNTTIME", 
+   "NTRIG", 
+   "NTRIG", 
+   "NTRIG", 
+   "reserved", 
+   "reserved", 
+   "reserved", 	   //10
+   "reserved", 
+   "reserved", 
+   "reserved", 
+   "reserved", 
+   "reserved", 
+   "reserved", 
+   "reserved", 
+   "reserved",
+   "reserved",		    //20
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",	    //30
+   "reserved"
+};      
+
+// return(0);
+
+//}
+
+  // ************** XIA code begins **************************
+  // open the output file
+  if(dest != 1)  {
+          fil = fopen("RS.csv","w");
+          fprintf(fil,"ParameterC,Controller,ParameterS,System0,System1,ParameterC,Channel0,Channel1,Channel2,Channel3,Channel4,,Channel5,,Channel6,,Channel7\n");
+   }
+      
+
+  // ----------------- read _used_ RS values (16bit) ----------------------------
+  // at this point, raw binary values; later conversion into count rates etc
+
+  // read controller data
+  mapped[AOUTBLOCK] = CS_MZ;
+  for( k = 0; k < 16; k ++ )
+  {
+      co[k] =  mapped[AMZ_RS+k];
+  }
+
+
+  // read from K7 - 0 
+  mapped[AOUTBLOCK] = CS_K0;
+
+  // read system data
+  mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
+  mapped[AMZ_EXDWR]  = 0x000;        //                         0x000  = system     -> now addressing system page of K7-0
+
+  for( k = 0; k < N_USED_RS_PAR; k ++ )
+  {
+       mapped[AMZ_EXAFRD] = AK7_SYS_RS+k;    // read from system output range
+       sy[0][k] = mapped[AMZ_EXDRD];
+  }
+
+  // read channel data
+  for( q = 0; q < NCHANNEL_PER_K7; q ++ )
+  {
+      mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
+      mapped[AMZ_EXDWR]  = 0x100+ch;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
+
+      for( k = 0; k < 3; k ++ )
+      {
+         mapped[AMZ_EXAFRD] = AK7_CHN_RS_CT+k;    // read from channel output range
+         ch[q][k+0] = mapped[AMZ_EXDRD];
+
+         mapped[AMZ_EXAFRD] = AK7_CHN_RS_FP+k;    // read from channel output range
+         ch[q][k+3] = mapped[AMZ_EXDRD];
+      }
+  }
+
+
+
+  csr = m[1];    // more memorable name for CSR
+
+   // --------------- compute and print useful output values ----------------------- 
+   // run time = total time and Count time
+   ma = ((double)m[3]+(double)m[4]*TWOTO32)*1.0e-9;
+   if(dest != 1) fprintf(fil,"RUN_TIME,%4.6G,COUNT_TIME",ma); 
+   if(dest != 0) printf("{%s:\"RUN_TIME\",%s:%4.6G,%s:\"COUNT_TIME\"",N[0], N[1],ma,N[2]);
+   for( k = 0; k < NCHANNELS; k ++ ) {
+      CT[k] = ((double)c[k][3] + (double)c[k][4]*TWOTO32)*1.0e-9;
+      if(dest != 1) fprintf(fil,",%4.6G",CT[k]);
+      if(dest != 0) printf(",%s:%4.6G",N[3+k],CT[k]);
+   }
+   if(dest != 1) fprintf(fil,"\n ");
+   if(dest != 0) printf("},  \n");
+
+   
+   // Total time and ICR
+   if(dest != 1) fprintf(fil,"TOTAL_TIME,%4.6G,INPUT_COUNT_RATE",ma); 
+   if(dest != 0) printf("{%s:\"TOTAL_TIME\",%s:%4.6G,%s:\"INPUT_COUNT_RATE\"",N[0], N[1],ma,N[2]);
+   for( k = 0; k < NCHANNELS; k ++ ) {
+      ca[k] = (double)c[k][5] + (double)c[k][6]*TWOTO32;               //Ntrig
+      cb[k] = ((double)c[k][7] + (double)c[k][8]*TWOTO32)*1.0e-9;      //FTDT
+      if((CT[k]-cb[k])==0)
+         val = 0;                 // avoid division by zero
+      else
+         val = ca[k]/(CT[k]-cb[k]);
+      if(dest != 1) fprintf(fil,",%4.6G",val);
+      if(dest != 0) printf(",%s:%4.6G",N[3+k],val);
+   }
+   if(dest != 1) fprintf(fil,"\n ");
+   if(dest != 0) printf("},  \n");
+
+   // Event rate and OCR
+   mb = (double)m[7]+(double)m[8]*TWOTO32;
+   if(ma==0)
+      val = 0;                 // avoid division by zero
+   else
+      val = mb/ma;
+   if(dest != 1) fprintf(fil,"EVENT_RATE,%4.6G,OUTPUT_COUNT_RATE",val); 
+   if(dest != 0) printf("{%s:\"EVENT_RATE\",%s:%4.6G,%s:\"OUTPUT_COUNT_RATE\"",N[0], N[1],val,N[2]);
+   for( k = 0; k < NCHANNELS; k ++ ) {
+      ca[k] = (double)c[k][13] + (double)c[k][14]*TWOTO32;     // Nout
+      if(CT[k]==0)
+         val = 0;                 // avoid division by zero
+      else
+         val = ca[k]/CT[k];
+      if(dest != 1) fprintf(fil,",%4.6G",val);
+      if(dest != 0) printf(",%s:%4.6G",N[3+k],val);
+   }
+   if(dest != 1) fprintf(fil,"\n ");
+   if(dest != 0) printf("},  \n");
+
+   // FTDT
+   if(dest != 1) fprintf(fil,"PS_CODE_VERSION,0x%X,FTDT",PS_CODE_VERSION); 
+   if(dest != 0) printf("{%s:\"PS_CODE_VERSION\",%s:\"0x%X\",%s:\"FTDT\"",N[0], N[1],PS_CODE_VERSION,N[2]);
+   for( k = 0; k < NCHANNELS; k ++ ) {
+      if(dest != 1) fprintf(fil,",%4.3E",cb[k]);
+      if(dest != 0) printf(",%s:%4.3E",N[3+k],cb[k]);
+   }
+   if(dest != 1) fprintf(fil,"\n ");
+   if(dest != 0) printf("},  \n");
+
+   // Active bit, SFDT
+   csrbit =  (csr & 0x00002000) >> 13;
+   if(dest != 1) fprintf(fil,"ACTIVE,%d,SFDT*",csrbit ); 
+   if(dest != 0) printf("{%s:\"ACTIVE\",%s:\"%d\",%s:\"SFDT*\"",N[0], N[1],csrbit,N[2]);
+   for( k = 0; k < NCHANNELS; k ++ ) {
+      ca[k] = ((double)c[k][9] + (double)c[k][10]*TWOTO32)*1.0e-9;    // SFDT
+      if(dest != 1) fprintf(fil,",%4.3E",ca[k]);
+      if(dest != 0) printf(",%s:%4.3E",N[3+k],ca[k]);
+   }
+   if(dest != 1) fprintf(fil,"\n ");
+   if(dest != 0) printf("},  \n");
+
+   // PSA_LICENSED, PPR
+   csrbit =  (csr & 0x00000400) >> 10;
+   if(dest != 1) fprintf(fil,"PSA_LICENSED,%d,PASS_PILEUP_RATE*",csrbit); 
+   if(dest != 0) printf("{%s:\"--\",%s:%d,%s:\"PASS_PILEUP_RATE*\"",N[0], N[1],csrbit,N[2]);
+   for( k = 0; k < NCHANNELS; k ++ ) {
+      ca[k] = (double)c[k][17] + (double)c[k][18]*TWOTO32;     // NPPI
+      if(CT[k]==0)
+         val = 0;                 // avoid division by zero
+      else
+         val = ca[k]/CT[k];
+      if(dest != 1) fprintf(fil,",%4.6G",val);
+      if(dest != 0) printf(",%s:%4.6G",N[3+k],val);
+   }
+   if(dest != 1) fprintf(fil,"\n ");
+   if(dest != 0) printf("},  \n");
+
+
+   // PTP required, Gate rate
+   csrbit =  (csr & 0x00000020) >> 5;
+   if(dest != 1) fprintf(fil,"PTP_REQ,%d,GATE_RATE*",csrbit); 
+   if(dest != 0) printf("{%s:\"PTP_REQ\",%s:%d,%s:\"GATE_RATE*\"",N[0], N[1],csrbit,N[2]);
+   for( k = 0; k < NCHANNELS; k ++ ) {
+      ca[k] = (double)c[k][11] + (double)c[k][12]*TWOTO32;     // GCOUNT
+      if(CT[k]==0)
+         val = 0;                 // avoid division by zero
+      else
+         val = ca[k]/CT[k];
+      if(dest != 1) fprintf(fil,",%4.6G",val);
+      if(dest != 0) printf(",%s:%4.6G",N[3+k],val);
+   }
+   if(dest != 1) fprintf(fil,"\n ");
+   if(dest != 0) printf("},  \n");
+
+
+   // Gate time
+   if(dest != 1) fprintf(fil,"--,0,GDT*"); 
+   if(dest != 0) printf("{%s:\"--\",%s:0,%s:\"GDT*\"",N[0], N[1],N[2]);
+   for( k = 0; k < NCHANNELS; k ++ ) {
+      ca[k] = ((double)c[k][15] + (double)c[k][16]*TWOTO32)*1.0e-9;    // GDT
+      if(dest != 1) fprintf(fil,",%4.6G",ca[k]);
+      if(dest != 0) printf(",%s:%4.6G",N[3+k],ca[k]);
+   }
+   if(dest != 1) fprintf(fil,"\n ");
+   if(dest != 0) printf("},  \n");
+
+   if(mode == 1) 
+     lastrs = 3;
+   else
+   {
+     lastrs = N_USED_RS_PAR;
+     // temperatures
+     m[14] = (int)board_temperature(mapped,I2C_SELMAIN);
+     m[15] = (int)zynq_temperature();
+     m[16] = (int)(0xFFFF & (hwinfo(mapped) >> 16));          // this is a pretty slow I2C I/O
+   }
+
+
+
+
+
+   // print raw values also
+   for( k = 0; k < lastrs; k ++ )
+   {
+      if(k==16 || k==11 || k==1) {   // print bit patterns for some parameters
+         if(dest != 1) fprintf(fil,"%s,0x%X,%s,%u,%u,%u,%u\n ",Module_PLRS_Names[k],m[k],Channel_PLRS_Names[k],c[0][k],c[1][k],c[2][k],c[3][k]);
+         if(dest != 0) printf("{%s:\"%s\",%s:\"0x%X\",%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u},  \n",N[0],Module_PLRS_Names[k],N[1],m[k],N[2],Channel_PLRS_Names[k],N[3],c[0][k],N[4],c[1][k],N[5],c[2][k],N[6],c[3][k]);
+      } else if(k==2) {    // ICR gets factor 15 to scale in cps
+         if(dest != 1) fprintf(fil,"%s,0x%X,%s,%u,%u,%u,%u\n ",Module_PLRS_Names[k],m[k],Channel_PLRS_Names[k],ICRSCALE*c[0][k],ICRSCALE*c[1][k],ICRSCALE*c[2][k],ICRSCALE*c[3][k]);
+         if(dest != 0) printf("{%s:\"%s\",%s:\"0x%X\",%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u},  \n",N[0],Module_PLRS_Names[k],N[1],m[k],N[2],Channel_PLRS_Names[k],N[3],ICRSCALE*c[0][k],N[4],ICRSCALE*c[1][k],N[5],ICRSCALE*c[2][k],N[6],ICRSCALE*c[3][k]);
+      } else  {
+         if(dest != 1) fprintf(fil,"%s,%u,%s,%u,%u,%u,%u\n ",Module_PLRS_Names[k],m[k],Channel_PLRS_Names[k],c[0][k],c[1][k],c[2][k],c[3][k]);
+         if(dest != 0) printf("{%s:\"%s\",%s:%u,%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u},  \n",N[0],Module_PLRS_Names[k],N[1],m[k],N[2],Channel_PLRS_Names[k],N[3],c[0][k],N[4],c[1][k],N[5],c[2][k],N[6],c[3][k]);
+      }
+   }
+      
+       
+ 
+ // clean up  
+ if(dest != 1) fclose(fil);
+ return 0;
+}
+
+
 
 
