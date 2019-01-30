@@ -554,7 +554,7 @@ int main(void) {
       reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[k],CCSRC_MODVETOSEL,    FiPPI_MODVETOSEL );     
       reghi = reghi + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_ENARELAY,      FiPPI_ENARELAY   );     
 
-      printf("Reg 0 high 0x%08X, low 0x%08X \n",reghi, reglo);
+      //printf("Reg 0 high 0x%08X, low 0x%08X \n",reghi, reglo);
       // now write 
       mapped[AMZ_EXAFWR] = AK7_P16REG00+0;                  // write to  k7's addr to select channel's register N
       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;                  // write lower 16 bit

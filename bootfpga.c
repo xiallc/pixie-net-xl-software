@@ -126,25 +126,25 @@ int main( void ) {
 
   // progb toggle
   mval = mapped[AFPGAPROG];	
-  printf("AFPGAPROG read: 0x%x\n",mval);
+//  printf("AFPGAPROG read: 0x%x\n",mval);
   mval = 0x0000;
   mapped[AFPGAPROG] = mval;
-  printf("AFPGAPROG write: 0x%x\n",mval);
+//  printf("AFPGAPROG write: 0x%x\n",mval);
   usleep(I2CWAIT);
 //  mval = mval | 0x0200;    // Set  FPGA Progb = 1 to start configuration
   mval = 0x0001;
   mapped[AFPGAPROG] = mval;
-  printf("AFPGAPROG write: 0x%x\n",mval);
+//  printf("AFPGAPROG write: 0x%x\n",mval);
   usleep(I2CWAIT);
   mval = mapped[AFPGAPROG];	
-  printf("AFPGAPROG read: 0x%x\n",mval);
+//  printf("AFPGAPROG read: 0x%x\n",mval);
 
 
   // check INIT, continue when high
   // Initialize counter1 to 0. If mval.15==0, finished clearing communication FPGA 
   //mapped[AOUTBLOCK] = OB_MZ_EVREG;	  // read/write from/to MZ event block
   mval = mapped[AMZ_CSROUTL];	
-  printf("ACSROUT read: 0x%x\n",mval);
+//  printf("ACSROUT read: 0x%x\n",mval);
   counter1 = 0;
   while ((mval& 0x8000) == 0x0000 && counter1 < 100) {
       usleep(I2CWAIT);

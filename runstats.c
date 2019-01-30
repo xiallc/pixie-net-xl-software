@@ -75,9 +75,9 @@ int main(void) {
 
   // ************** XIA code begins **************************
   
-  mapped[AOUTBLOCK] = OB_RSREG;
-  read_print_runstats(0, 0, mapped);
-  mapped[AOUTBLOCK] = OB_IOREG;
+  mapped[AOUTBLOCK] = CS_MZ;
+  read_print_runstats_XL_2x4(0, 0, mapped);
+  mapped[AOUTBLOCK] = CS_MZ;
 
    
  // clean up  

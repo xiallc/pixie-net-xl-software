@@ -286,14 +286,15 @@ int hwinfo( volatile unsigned int *mapped )
 
 float board_temperature( volatile unsigned int *mapped, unsigned int I2Csel )
 {
-    unsigned int  mval, i2cdata[8];
+   unsigned int  mval, i2cdata[8], saveaux;
    unsigned int ctrl[8];
    int k;
 
   // ---------------- read EEPROM ---------------------------
-   mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
-  mval = mapped[AAUXCTRL];	
-  mval = mval | I2Csel;    // set bit 4 to select MZ I2C pins
+  mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
+  saveaux = mapped[AAUXCTRL];	
+  saveaux = saveaux & 0xFF8F;    // clear the I2C select bits
+  mval = saveaux | I2Csel;    // set bit 4-6 to select MZ I2C pins
   mapped[AAUXCTRL] = mval;
 
  /*  mval = mapped[AMZ_BRDINFO];           TODO: ensure  AMZ_BRDINFO has the right address
@@ -359,8 +360,9 @@ float board_temperature( volatile unsigned int *mapped, unsigned int I2Csel )
    I2Cstop(mapped);
   
 //    printf("I2C read test 0x%04X\n",mval);
-//   printf("I2C (main) temperature (addr=0), temp (C) %f\n",mval*0.0078125);
+ //  printf("I2C (main) temperature (addr=0), temp (C) %f\n",mval*0.0078125);
 
+   mapped[AAUXCTRL] = saveaux;	
 
   return(mval*0.0078125);
 }//float board_temperature( volatile unsigned int *mapped )
@@ -703,17 +705,18 @@ int read_print_runstats_XL_2x4(int mode, int dest, volatile unsigned int *mapped
 
   int k,q, lastrs;
   FILE * fil;
-  unsigned int co[N_PL_RS_PAR], [sy[2][N_PL_RS_PAR], ch[NCHANNELS_PRESENT][N_PL_RS_PAR];
-  unsigned int csr, csrbit;
-  unsigned int Tdb0, Tdb1, Tmz, Tboard, revsn;
-  double coa, cha[NCHANNELS_PRESENT], sya, chb[NCHANNELS_PRESENT], CT[NCHANNELS_PRESENT], val;
+  unsigned int co[N_PL_RS_PAR] ={0};
+  unsigned int sy[2][N_PL_RS_PAR]  ={{0}};  
+  unsigned int ch[NCHANNELS_PRESENT][N_PL_RS_PAR]  ={{0}};  
+  unsigned int csr, csrbit, revsn;
+  double coa, sya, CT[NCHANNELS_PRESENT], val;
   char N[14][32] = {      // names for the cgi array
-    "ParameterC",
+    "ParameterCo",
     "Controller",
-    "ParameterS",
+    "ParameterSy",
     "System0",
     "System1",
-    "ParameterC",
+    "ParameterCh",
     "Channel0",
     "Channel1",
     "Channel2",
@@ -728,7 +731,7 @@ int read_print_runstats_XL_2x4(int mode, int dest, volatile unsigned int *mapped
 
   // Run stats PL Parameter names applicable to a Pixie module 
 char Controller_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
-   "reserved",    // dummy read
+ //  "reserved",    // dummy read
    "CSROUT",		//0 
    "reserved", 
    "reserved", 
@@ -758,8 +761,9 @@ char Controller_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    "reserved",
    "reserved",
    "reserved",
-   "reserved",	    //30
-   "reserved"
+   "reserved",	    
+   "reserved",       //30
+    "reserved"
 };
 
 
@@ -780,10 +784,10 @@ char System_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    "reserved",
    "FW_VERSION", 
    "reserved", 
-   "reserved", 
    "T_ADC", 
    "T_WR", 
    "reserved",
+   "reserved", 
    "reserved",
    "reserved",		    
    "reserved",        //20
@@ -801,7 +805,7 @@ char System_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
 
  // Run stats PL Parameter names applicable to a Pixie channel 
 char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
-   "reserved",
+ //  "reserved",
    "COUNTTIME",		//0 
    "COUNTTIME", 
    "COUNTTIME", 
@@ -832,7 +836,8 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    "reserved",
    "reserved",
    "reserved",	   
-   "reserved"       //30
+   "reserved",       //30
+    "reserved"
 };      
 
 // return(0);
@@ -843,7 +848,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
   // open the output file
   if(dest != 1)  {
           fil = fopen("RS.csv","w");
-          fprintf(fil,"ParameterC,Controller,ParameterS,System0,System1,ParameterC,Channel0,Channel1,Channel2,Channel3,Channel4,,Channel5,,Channel6,,Channel7\n");
+          fprintf(fil,"ParameterCo,Controller,ParameterSy,System0,System1,ParameterCh,Channel0,Channel1,Channel2,Channel3,Channel4,Channel5,Channel6,Channel7\n");
    }
       
 
@@ -856,7 +861,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
   {
       co[k] =  mapped[AMZ_RS+k];
   }
-     csr = co[1];    // more memorable name for CSR
+     csr = co[0];    // more memorable name for CSR
 
 
   // read from K7 - 0 
@@ -865,6 +870,10 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
   // read system data
   mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
   mapped[AMZ_EXDWR]  = 0x000;        //                         0x000  = system     -> now addressing system page of K7-0
+
+  // dummy read?
+  mapped[AMZ_EXAFRD] = AK7_SYS_RS;    // read from system output range
+  sy[0][0] = mapped[AMZ_EXDRD];
 
   for( k = 0; k < N_USED_RS_PAR; k ++ )
   {
@@ -876,7 +885,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
   for( q = 0; q < NCHANNEL_PER_K7; q ++ )
   {
       mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
-      mapped[AMZ_EXDWR]  = 0x100+ch;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
+      mapped[AMZ_EXDWR]  = 0x100+q;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
 
       for( k = 0; k < 3; k ++ )
       {
@@ -908,15 +917,18 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
   for( q = NCHANNEL_PER_K7; q < NCHANNEL_PER_K7*2; q ++ )
   {
       mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
-      mapped[AMZ_EXDWR]  = 0x100+ch;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
+      mapped[AMZ_EXDWR]  = 0x100+q;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
 
       for( k = 0; k < 3; k ++ )
       {
-         mapped[AMZ_EXAFRD] = AK7_CHN_RS_CT+k;    // read from channel output range
+        mapped[AMZ_EXAFRD] = AK7_CHN_RS_CT+k;    // read from channel output range
          ch[q][k+0] = mapped[AMZ_EXDRD];
 
-         mapped[AMZ_EXAFRD] = AK7_CHN_RS_FP+k;    // read from channel output range
-         ch[q][k+3] = mapped[AMZ_EXDRD];
+         mapped[AMZ_EXAFRD] = AK7_CHN_RS_NTRIG+k;    // read from channel output range
+         ch[q][k+4] = mapped[AMZ_EXDRD];
+
+         mapped[AMZ_EXAFRD] = AK7_CHN_RS_NOUT+k;    // read from channel output range
+         ch[q][k+8] = mapped[AMZ_EXDRD];
       }
   }
 
@@ -952,7 +964,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    if(dest != 0) printf("{%s:\"PS_CODE_VERSION\",%s:\"0x%X\"",N[0], N[1],PS_CODE_VERSION);
 
    if(dest != 1) fprintf(fil,",--,0"); 
-   if(dest != 0) printf(",%s:\"--\",%s:0G",N[2], N[3]);
+   if(dest != 0) printf(",%s:\"--\",%s:0",N[2], N[3]);
    if(dest != 1) fprintf(fil,",0"); 
    if(dest != 0) printf(",%s:0",N[4]);
   
@@ -960,7 +972,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    if(dest != 0) printf(",%s:\"INPUT_COUNT_RATE\"",N[5]);
    for( k = 0; k < NCHANNELS_PRESENT; k ++ ) {
       val = ( (double)ch[k][4] + (double)ch[k][5]*65536 + (double)ch[k][6]*TWOTO32 );    // fastpeaks, Nin
-      if(val==0)
+      if(CT[k]==0)
          val=0;
       else 
          val = val/CT[k];
@@ -976,15 +988,15 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    if(dest != 0) printf("{%s:\"ACTIVE\",%s:\"%d\"",N[0], N[1],csrbit);
 
    if(dest != 1) fprintf(fil,",--,0"); 
-   if(dest != 0) printf(",%s:\"--\",%s:0G",N[2], N[3]);
+   if(dest != 0) printf(",%s:\"--\",%s:0",N[2], N[3]);
    if(dest != 1) fprintf(fil,",0"); 
    if(dest != 0) printf(",%s:0",N[4]);
   
-   if(dest != 1) fprintf(fil,",INPUT_COUNT_RATE"); 
-   if(dest != 0) printf(",%s:\"INPUT_COUNT_RATE\"",N[5]);
+   if(dest != 1) fprintf(fil,",OUTPUT_COUNT_RATE"); 
+   if(dest != 0) printf(",%s:\"OUTPUT_COUNT_RATE\"",N[5]);
    for( k = 0; k < NCHANNELS_PRESENT; k ++ ) {
       val = ( (double)ch[k][8] + (double)ch[k][9]*65536 + (double)ch[k][10]*TWOTO32 );    // Nout
-      if(val==0)
+      if(CT[k]==0)
          val=0;
       else 
          val = val/CT[k];
@@ -1001,9 +1013,14 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    else
    {
       // ----------------- read I2C values (slow) to substitute some unused values
-      co[15]    = (int)board_temperature(mapped,I2C_SELMAIN);
-      sy[0][15] = (int)board_temperature(mapped,I2C_SELDB0);
-      sy[1][15] = (int)board_temperature(mapped,I2C_SELDB1);
+
+
+      // a dummy I2C operation required for the TMP116 I/O?
+  //    mapped[AAUXCTRL] = I2C_SELMAIN;	  // select bit 5 -> DB0 I2C        // XXXXXX
+      co[15]    = (unsigned int)board_temperature(mapped,I2C_SELMAIN);
+      sy[0][15] = (unsigned int)board_temperature(mapped,I2C_SELDB0);
+      sy[1][15] = (unsigned int)board_temperature(mapped,I2C_SELDB1);
+  //    printf("T_board %d, T_DB0 %d, T_DB1 %d\n", co[15], sy[0][15], sy[1][15]); 
       co[16]    = (int)zynq_temperature();
       revsn  = hwinfo(mapped);
       co[18] = (revsn>>16) & 0xFFFF;    // pcb rev from TMP116
@@ -1014,7 +1031,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
 
 
 
-
+  
    // print raw values also
    for( k = 0; k < lastrs; k ++ )
    {
@@ -1023,31 +1040,33 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
          {
             fprintf(fil,"%s,%u,",Controller_PLRS_Names[k],co[k]);
             fprintf(fil,"%s,%u,%u,",System_PLRS_Names[k], sy[0][k], sy[1][k]);
-            fprintf(fil,"%s,%u,%u,%u,%u,%u,%u,%u,%u\n ", Channel_PLRS_Names[k],c[0][k],c[1][k],c[2][k],c[3][k],c[4][k],c[5][k],c[6][k],c[7][k]);
+            fprintf(fil,"%s,%u,%u,%u,%u,%u,%u,%u,%u\n ", Channel_PLRS_Names[k],ch[0][k],ch[1][k],ch[2][k],ch[3][k],ch[4][k],ch[5][k],ch[6][k],ch[7][k]);
          }
          if(dest != 0) 
          {
-            printf("{%s:\"%s\",%s:%u,",N[0],Module_PLRS_Names[k],N[1],co[k]);
+            printf("{%s:\"%s\",%s:%u,",N[0],Controller_PLRS_Names[k],N[1],co[k]);
             printf("%s:\"%s\",%s:%u,%s:%u,",N[2],System_PLRS_Names[k], N[3],sy[0][k], N[4],sy[1][k]);
-            printf("%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u},  \n", N[5],Channel_PLRS_Names[k],N[6],c[0][k],N[7],c[1][k],N[8],c[2][k],N[9],c[3][k],N[10],c[4][k],N[11],c[5][k],N[12],c[6][k],N[13],c[7][k]);
+            printf("%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u},  \n", N[5],Channel_PLRS_Names[k],N[6],ch[0][k],N[7],ch[1][k],N[8],ch[2][k],N[9],ch[3][k],N[10],ch[4][k],N[11],ch[5][k],N[12],ch[6][k],N[13],ch[7][k]);
          }
       } else {                                // others are bit patterns
          if(dest != 1) 
          {
             fprintf(fil,"%s,0x%X,",Controller_PLRS_Names[k],co[k]);
             fprintf(fil,"%s,0x%X,0x%X,",System_PLRS_Names[k], sy[0][k], sy[1][k]);
-            fprintf(fil,"%s,%u,%u,%u,%u,%u,%u,%u,%u\n ", Channel_PLRS_Names[k],c[0][k],c[1][k],c[2][k],c[3][k],c[4][k],c[5][k],c[6][k],c[7][k]);
+            fprintf(fil,"%s,%u,%u,%u,%u,%u,%u,%u,%u\n ", Channel_PLRS_Names[k],ch[0][k],ch[1][k],ch[2][k],ch[3][k],ch[4][k],ch[5][k],ch[6][k],ch[7][k]);
          }
          if(dest != 0) 
          {
-            printf("{%s:\"%s\",%s:\"0x%X\",",N[0],Module_PLRS_Names[k],N[1],co[k]);
+            printf("{%s:\"%s\",%s:\"0x%X\",",N[0],Controller_PLRS_Names[k],N[1],co[k]);
             printf("%s:\"%s\",%s:\"0x%X\",%s:\"0x%X\",",N[2],System_PLRS_Names[k], N[3],sy[0][k], N[4],sy[1][k]);
-            printf("%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u},  \n", N[5],Channel_PLRS_Names[k],N[6],c[0][k],N[7],c[1][k],N[8],c[2][k],N[9],c[3][k],N[10],c[4][k],N[11],c[5][k],N[12],c[6][k],N[13],c[7][k]);
+            printf("%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u},  \n", N[5],Channel_PLRS_Names[k],N[6],ch[0][k],N[7],ch[1][k],N[8],ch[2][k],N[9],ch[3][k],N[10],ch[4][k],N[11],ch[5][k],N[12],ch[6][k],N[13],ch[7][k]);
          }
    //      if(dest != 1) fprintf(fil,"%s,0x%X,%s,%u,%u,%u,%u\n ",Module_PLRS_Names[k],m[k],Channel_PLRS_Names[k],c[0][k],c[1][k],c[2][k],c[3][k]);
    //      if(dest != 0) printf("{%s:\"%s\",%s:\"0x%X\",%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u},  \n",N[0],Module_PLRS_Names[k],N[1],m[k],N[2],Channel_PLRS_Names[k],N[3],c[0][k],N[4],c[1][k],N[5],c[2][k],N[6],c[3][k]);
       }
-   }
+   }  // end for
+
+   
       
        
  

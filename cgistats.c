@@ -94,15 +94,17 @@ int main(void) {
    
   // print runstats to stdout
   printf("  var csv = [                  \n");
-  //   printf("{ParameterM:\"rest\", Module:123, ParameterC:\"test\", Channel0:1, Channel1:1, Channel2:1, Channel3:1},  \n");
-  mapped[AOUTBLOCK] = OB_RSREG;
-  read_print_runstats(0, 1, mapped);
-  mapped[AOUTBLOCK] = OB_IOREG;
+ //    printf("{ParameterCo:\"test\", Controller:123, ParameterSy:\"test\",System0:234, System1:342,"); 
+ //     printf("ParameterCh:\"test\", Channel0:1, Channel1:1, Channel2:1, Channel3:1, Channel4:1, Channel5:1, Channel6:1, Channel7:1},  \n");
+
+  mapped[AOUTBLOCK] = CS_MZ;
+  read_print_runstats_XL_2x4(0, 1, mapped);
+  mapped[AOUTBLOCK] = CS_MZ;
   printf("  ];                 \n");
 
 
   // finish printing the webpage
-  for( k = 61; k < 99; k ++ )
+  for( k = 61; k < 106; k ++ )
   {
       fgets(line, LINESZ, fil);        // read from template
       printf("%s",line);               // "print" to webserver on stdout

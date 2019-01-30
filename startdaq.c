@@ -504,11 +504,11 @@ int main(void) {
        
         if(loopcount % PollTime == 0) 
         {
-        /*
+       
             // 1) Run Statistics 
-            mapped[AOUTBLOCK] = OB_RSREG;
+           mapped[AOUTBLOCK] = CS_MZ;
 
-            // for debug purposes, print to std out so we see what's going on
+        /*     // for debug purposes, print to std out so we see what's going on
             k = 3;    // no loop for now
             {
               m  = mapped[ARS0_MOD+k];
@@ -518,12 +518,12 @@ int main(void) {
               c3 = mapped[ARS0_CH3+k];
               printf("%s,%u,%s,%u,%u,%u,%u\n ","RunTime",m,"COUNTTIME",c0,c1,c2,c3);        
             }
-
+           */  
             // print (small) set of RS to file, visible to web
-            read_print_runstats(1, 0, mapped);
+            read_print_runstats_XL_2x4(1, 0, mapped);
 
-            mapped[AOUTBLOCK] = OB_EVREG;     // read from event registers
-         */   
+            mapped[AOUTBLOCK] = CS_MZ;     // read from event registers
+      
 
             // 2) MCA
             filmca = fopen("MCA.csv","w");
@@ -595,11 +595,11 @@ int main(void) {
    }
    fclose(filmca);
 
-   /*
-   mapped[AOUTBLOCK] = OB_RSREG;
-   read_print_runstats(0, 0, mapped);
-   mapped[AOUTBLOCK] = OB_IOREG;
+   mapped[AOUTBLOCK] = CS_MZ;
+   read_print_runstats_XL_2x4(0, 0, mapped);
+   mapped[AOUTBLOCK] = CS_MZ;
 
+   /*
    // 3) 2D MCA
    if(RunType==0x502)   {
       filmca = fopen("psa2D.csv","w");
