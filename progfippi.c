@@ -190,9 +190,7 @@ int main(void) {
     // RUN_TYPE     -- not written to FPGA registers
     if( !( (fippiconfig.RUN_TYPE == 0x301)  ||
            (fippiconfig.RUN_TYPE == 0x100)  ||
-           (fippiconfig.RUN_TYPE == 0x101)  ||
-           (fippiconfig.RUN_TYPE == 0x102)  ||
-           (fippiconfig.RUN_TYPE == 0x103)   ) ) {
+           (fippiconfig.RUN_TYPE == 0x400)   ) ) {
       printf("Invalid RUN_TYPE = 0x%x, please check manual for a list of supported run types\n",fippiconfig.RUN_TYPE);
       return -2100;
     }

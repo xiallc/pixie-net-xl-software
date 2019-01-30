@@ -122,7 +122,6 @@ int main(void) {
   ReqRunTime   = fippiconfig.REQ_RUNTIME;
   PollTime     = fippiconfig.POLL_TIME;
   //CW           = (int)floor(fippiconfig.COINCIDENCE_WINDOW*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
-    printf( "REQ_RUNTIME %d  \n", ReqRunTime);
 
   if( (RunType==0x100) || (RunType==0x400) || (RunType==0x301)  ) {      // check run type
    // 0x100, 0x400 are ok
@@ -379,7 +378,7 @@ int main(void) {
                   lsum = hdr[16]+(hdr[17]<<16);
                   gsum = hdr[20]+(hdr[21]<<16);
                   trace_staddr = hdr[25]>>3;     // tmp2,3 + ext TS. tmp1[15:3] = trace start. rest = cfdout 1
-                  printf( "time Low: 0x%08X = %0f ms \n",timeL,timeL*13.333/1000000 );
+              //    printf( "time Low: 0x%08X = %0f ms \n",timeL,timeL*13.333/1000000 );
 
     
                   // TODO: add pileup (and other) acceptance check
@@ -388,7 +387,7 @@ int main(void) {
                   // TODO: free trace memory by reading from last address (just set the address)
                   if( (TL[ch] >0) && ( CCSRA[ch] & (1<<CCSRA_TRACEENA)) )  {   // check if TL >0 and traces are recorded (bit 8 of CCSRA)
                     tracewrite = 1;
-                    printf( "N samples %d, start addr 0x%X \n", TL[ch], trace_staddr);
+                 //   printf( "N samples %d, start addr 0x%X \n", TL[ch], trace_staddr);
                     mapped[AMZ_EXAFWR] = AK7_MEMADDR+ch;     // specify   K7's addr     addr 4 = memory address
                     mapped[AMZ_EXDWR]  = trace_staddr;      //  take data from location recorded in trace memory
                     for( k=0; k < (TL[ch]/2); k++)
@@ -533,37 +532,7 @@ int main(void) {
                fprintf(filmca,"%d,%u,%u,%u,%u\n ", k*onlinebin,wmca[0][k],wmca[1][k],wmca[2][k],wmca[3][k]);
             }
             fclose(filmca);    
-         /*
-           // 3) 2D MCA or PSA
-            if(RunType==0x502)   {
-               filmca = fopen("psa2D.csv","w");
 
-               // title row (x index)
-               for( ch=0; ch <NCHANNELS; ch++)       
-               {
-                  for( binx=0;binx<MCA2D_BINS;binx++)
-                  {
-                     fprintf(filmca,",%d",binx+MCA2D_BINS*ch);
-                  }
-               }    // channel loop
-               fprintf(filmca,"\n");
-              
-               for( biny=0;biny<MCA2D_BINS;biny++)
-               {
-                  fprintf(filmca, "%d",biny);        // beginning of line 
-                  for( ch=0; ch <NCHANNELS; ch++)       
-                  {
-                     for( binx=0;binx<MCA2D_BINS;binx++)
-                     {
-                        fprintf(filmca,",%d",mca2D[ch][biny+MCA2D_BINS*binx]);
-                     }  // binx loop
-                  }    // channel loop
-                  fprintf(filmca,"\n");            // end of line
-         
-               }  // biny loop
-
-               fclose(filmca); 
-            }  // runtype 0x502    */   
         }
 
           // ----------- loop housekeeping -----------
@@ -575,8 +544,8 @@ int main(void) {
          currenttime = time(NULL);
     //           usleep(100);
     //           printf( "currenttime: %d\n", currenttime );
-   //   } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-      } while (eventcount <= 2); // run for a fixed number of events   
+      } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
+   //   } while (eventcount <= 20); // run for a fixed number of events   
 
 
 
@@ -599,39 +568,6 @@ int main(void) {
    read_print_runstats_XL_2x4(0, 0, mapped);
    mapped[AOUTBLOCK] = CS_MZ;
 
-   /*
-   // 3) 2D MCA
-   if(RunType==0x502)   {
-      filmca = fopen("psa2D.csv","w");
-
-      // title row (x index)
-      for( ch=0; ch <NCHANNELS; ch++)       
-      {
-         for( binx=0;binx<MCA2D_BINS;binx++)
-         {
-            fprintf(filmca,",%d",binx+MCA2D_BINS*ch);
-         }
-      }    // channel loop
-      fprintf(filmca,"\n");
-     
-      for( biny=0;biny<MCA2D_BINS;biny++)
-      {
-         fprintf(filmca, "%d",biny);        // beginning of line 
-         for( ch=0; ch <NCHANNELS; ch++)       
-         {
-            for( binx=0;binx<MCA2D_BINS;binx++)
-            {
-               fprintf(filmca,",%d",mca2D[ch][biny+MCA2D_BINS*binx]);
-            }  // binx loop
-         }    // channel loop
-         fprintf(filmca,"\n");            // end of line
-
-      }  // biny loop
-
-      fclose(filmca); 
-   }  // runtype 0x502
-
-   */
  
  // clean up  
  if( (RunType==0x100) )  { 
