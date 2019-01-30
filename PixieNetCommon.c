@@ -427,7 +427,7 @@ int read_print_runstats(int mode, int dest, volatile unsigned int *mapped ) {
   int k, lastrs;
   FILE * fil;
   unsigned int m[N_PL_RS_PAR], c[NCHANNELS][N_PL_RS_PAR], csr, csrbit;
-  double ma, ca[NCHANNELS], mb, cb[NCHANNELS], CT[NCHANNELS], val;
+  double ma, ca[NCHANNELS], mb, cb[NCHANNELS], CT[NCHANNELS], val;   
   char N[7][32] = {      // names for the cgi array
     "ParameterM",
     "Module",
@@ -703,9 +703,10 @@ int read_print_runstats_XL_2x4(int mode, int dest, volatile unsigned int *mapped
 
   int k,q, lastrs;
   FILE * fil;
-  unsigned int co[N_PL_RS_PAR], [sy[2][N_PL_RS_PAR], ch[NCHANNELS][N_PL_RS_PAR];
+  unsigned int co[N_PL_RS_PAR], [sy[2][N_PL_RS_PAR], ch[NCHANNELS_PRESENT][N_PL_RS_PAR];
   unsigned int csr, csrbit;
-  double sa, ca[NCHANNELS], sb, cb[NCHANNELS], CT[NCHANNELS], val;
+  unsigned int Tdb0, Tdb1, Tmz, Tboard, revsn;
+  double coa, cha[NCHANNELS_PRESENT], sya, chb[NCHANNELS_PRESENT], CT[NCHANNELS_PRESENT], val;
   char N[14][32] = {      // names for the cgi array
     "ParameterC",
     "Controller",
@@ -727,28 +728,28 @@ int read_print_runstats_XL_2x4(int mode, int dest, volatile unsigned int *mapped
 
   // Run stats PL Parameter names applicable to a Pixie module 
 char Controller_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
-   "reserved",
+   "reserved",    // dummy read
    "CSROUT",		//0 
-   "SYSTIME", 
-   "RUNTIME", 
-   "RUNTIME", 
-   "TOTALTIME", 
-   "TOTALTIME", 
-   "NUMEVENTS", 
-   "NUMEVENTS", 
-   "SW_VERSION", 
+   "reserved", 
+   "reserved", 
+   "reserved", 
+   "reserved", 
+   "reserved", 
+   "SysTime", 
+   "SysTime", 
+   "FW_VERSION", 
    "HW_VERSION", 
-   "FW_VERSION", 	   //10
-   "SNUM",
-   "PPSTIME", 
+   "TotalTime", 	   //10
+   "TotalTime",
+   "TotalTime", 
+   "TotalTime", 
+   "SNUM", 
    "T_BOARD", 
    "T_ZYNQ", 
-   "reserved", 
-   "reserved", 
-   "reserved",
-   "reserved",
-   "reserved",		    //20
-   "reserved",
+   "PCB_SNUM",
+   "PCB_VERSION",
+   "reserved",		   
+   "reserved",         //20
    "reserved",
    "reserved",
    "reserved",
@@ -764,28 +765,28 @@ char Controller_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
 
    // Run stats PL Parameter names applicable to a Pixie module 
 char System_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
-   "reserved",
+   "reserved",    // dummy read
    "CSROUT",		//0 
-   "SYSTIME", 
-   "RUNTIME", 
-   "RUNTIME", 
+   "sysstatus", 
+   "dpmstatus", 
+   "dpmstatus", 
+   "dpmstatus", 
+   "dpmstatus", 
+   "ADCframe", 
    "reserved", 
-   "reserved", 
-   "reserved", 
-   "reserved", 
-   "reserved", 
-   "reserved", 
-   "FW_VERSION", 	   //10
+   "RunTime", 
+   "RunTime", 
+   "RunTime", 	   //10
    "reserved",
-   "PPSTIME", 
+   "FW_VERSION", 
+   "reserved", 
+   "reserved", 
    "T_ADC", 
    "T_WR", 
-   "reserved", 
-   "reserved", 
    "reserved",
    "reserved",
-   "reserved",		    //20
-   "reserved",
+   "reserved",		    
+   "reserved",        //20
    "reserved",
    "reserved",
    "reserved",
@@ -794,44 +795,44 @@ char System_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    "reserved",
    "reserved",
    "reserved",
-   "reserved",	    //30
-   "reserved"
+   "reserved",	    
+   "reserved"       //30
 };
 
  // Run stats PL Parameter names applicable to a Pixie channel 
 char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    "reserved",
-   "reserved",		//0 
+   "COUNTTIME",		//0 
+   "COUNTTIME", 
+   "COUNTTIME", 
    "reserved", 
-   "COUNTTIME", 
-   "COUNTTIME", 
-   "COUNTTIME", 
    "NTRIG", 
    "NTRIG", 
    "NTRIG", 
    "reserved", 
-   "reserved", 
-   "reserved", 	   //10
-   "reserved", 
-   "reserved", 
-   "reserved", 
+   "NOUT", 
+   "NOUT", 
+   "NOUT", 	   //10
    "reserved", 
    "reserved", 
    "reserved", 
    "reserved", 
+   "reserved", 
+   "reserved", 
+   "reserved", 
    "reserved",
-   "reserved",		    //20
-   "reserved",
-   "reserved",
-   "reserved",
-   "reserved",
-   "reserved",
-   "reserved",
+   "reserved",		   
+   "reserved",       //20
    "reserved",
    "reserved",
    "reserved",
-   "reserved",	    //30
-   "reserved"
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",
+   "reserved",	   
+   "reserved"       //30
 };      
 
 // return(0);
@@ -855,6 +856,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
   {
       co[k] =  mapped[AMZ_RS+k];
   }
+     csr = co[1];    // more memorable name for CSR
 
 
   // read from K7 - 0 
@@ -881,141 +883,132 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
          mapped[AMZ_EXAFRD] = AK7_CHN_RS_CT+k;    // read from channel output range
          ch[q][k+0] = mapped[AMZ_EXDRD];
 
+         mapped[AMZ_EXAFRD] = AK7_CHN_RS_NTRIG+k;    // read from channel output range
+         ch[q][k+4] = mapped[AMZ_EXDRD];
+
+         mapped[AMZ_EXAFRD] = AK7_CHN_RS_NOUT+k;    // read from channel output range
+         ch[q][k+8] = mapped[AMZ_EXDRD];
+      }
+  }
+
+  // read from K7 - 1 
+  mapped[AOUTBLOCK] = CS_K1;
+
+  // read system data
+  mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
+  mapped[AMZ_EXDWR]  = 0x000;        //                         0x000  = system     -> now addressing system page of K7-0
+
+  for( k = 0; k < N_USED_RS_PAR; k ++ )
+  {
+       mapped[AMZ_EXAFRD] = AK7_SYS_RS+k;    // read from system output range
+       sy[1][k] = mapped[AMZ_EXDRD];
+  }
+
+  // read channel data
+  for( q = NCHANNEL_PER_K7; q < NCHANNEL_PER_K7*2; q ++ )
+  {
+      mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
+      mapped[AMZ_EXDWR]  = 0x100+ch;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
+
+      for( k = 0; k < 3; k ++ )
+      {
+         mapped[AMZ_EXAFRD] = AK7_CHN_RS_CT+k;    // read from channel output range
+         ch[q][k+0] = mapped[AMZ_EXDRD];
+
          mapped[AMZ_EXAFRD] = AK7_CHN_RS_FP+k;    // read from channel output range
          ch[q][k+3] = mapped[AMZ_EXDRD];
       }
   }
 
-
-
-  csr = m[1];    // more memorable name for CSR
-
+ 
    // --------------- compute and print useful output values ----------------------- 
-   // run time = total time and Count time
-   ma = ((double)m[3]+(double)m[4]*TWOTO32)*1.0e-9;
-   if(dest != 1) fprintf(fil,"RUN_TIME,%4.6G,COUNT_TIME",ma); 
-   if(dest != 0) printf("{%s:\"RUN_TIME\",%s:%4.6G,%s:\"COUNT_TIME\"",N[0], N[1],ma,N[2]);
-   for( k = 0; k < NCHANNELS; k ++ ) {
-      CT[k] = ((double)c[k][3] + (double)c[k][4]*TWOTO32)*1.0e-9;
+   // when printing to std out for cgi, N[i] provide the column titles (repeated for every row as in "name":value)
+ 
+   // total time (MZ), run time (sys) and Count time (ch)
+   coa = ( (double)co[11] + (double)co[12]*65536 + (double)co[13]*TWOTO32 + (double)co[14]*65536*TWOTO32 )*1.0e-9;
+   if(dest != 1) fprintf(fil,"TOTAL_TIME,%4.6G",coa); 
+   if(dest != 0) printf("{%s:\"TOTAL_TIME\",%s:%4.6G",N[0], N[1],coa);
+
+   sya = ( (double)sy[0][8] + (double)sy[0][9]*65536 + (double)sy[0][10]*TWOTO32 )/SYSTEM_CLOCK_MHZ*1.0e-6;
+   if(dest != 1) fprintf(fil,",RUN_TIME,%4.6G",sya); 
+   if(dest != 0) printf(",%s:\"RUN_TIME\",%s:%4.6G",N[2], N[3],sya);
+   sya = ( (double)sy[1][8] + (double)sy[1][9]*65536 + (double)sy[1][10]*TWOTO32 )/SYSTEM_CLOCK_MHZ*1.0e-6;
+   if(dest != 1) fprintf(fil,",%4.6G",sya); 
+   if(dest != 0) printf(",%s:%4.6G",N[4],sya);
+  
+   if(dest != 1) fprintf(fil,",COUNT_TIME"); 
+   if(dest != 0) printf(",%s:\"COUNT_TIME\"",N[5]);
+   for( k = 0; k < NCHANNELS_PRESENT; k ++ ) {
+      CT[k] = ( (double)ch[k][0] + (double)ch[k][1]*65536 + (double)ch[k][2]*TWOTO32 )/FILTER_CLOCK_MHZ*1.0e-6;
       if(dest != 1) fprintf(fil,",%4.6G",CT[k]);
-      if(dest != 0) printf(",%s:%4.6G",N[3+k],CT[k]);
+      if(dest != 0) printf(",%s:%4.6G",N[6+k],CT[k]);
    }
    if(dest != 1) fprintf(fil,"\n ");
    if(dest != 0) printf("},  \n");
 
    
-   // Total time and ICR
-   if(dest != 1) fprintf(fil,"TOTAL_TIME,%4.6G,INPUT_COUNT_RATE",ma); 
-   if(dest != 0) printf("{%s:\"TOTAL_TIME\",%s:%4.6G,%s:\"INPUT_COUNT_RATE\"",N[0], N[1],ma,N[2]);
-   for( k = 0; k < NCHANNELS; k ++ ) {
-      ca[k] = (double)c[k][5] + (double)c[k][6]*TWOTO32;               //Ntrig
-      cb[k] = ((double)c[k][7] + (double)c[k][8]*TWOTO32)*1.0e-9;      //FTDT
-      if((CT[k]-cb[k])==0)
-         val = 0;                 // avoid division by zero
-      else
-         val = ca[k]/(CT[k]-cb[k]);
+   // PS_CODE_VERSION, --, ICR      
+   if(dest != 1) fprintf(fil,"PS_CODE_VERSION,0x%X",PS_CODE_VERSION); 
+   if(dest != 0) printf("{%s:\"PS_CODE_VERSION\",%s:\"0x%X\"",N[0], N[1],PS_CODE_VERSION);
+
+   if(dest != 1) fprintf(fil,",--,0"); 
+   if(dest != 0) printf(",%s:\"--\",%s:0G",N[2], N[3]);
+   if(dest != 1) fprintf(fil,",0"); 
+   if(dest != 0) printf(",%s:0",N[4]);
+  
+   if(dest != 1) fprintf(fil,",INPUT_COUNT_RATE"); 
+   if(dest != 0) printf(",%s:\"INPUT_COUNT_RATE\"",N[5]);
+   for( k = 0; k < NCHANNELS_PRESENT; k ++ ) {
+      val = ( (double)ch[k][4] + (double)ch[k][5]*65536 + (double)ch[k][6]*TWOTO32 );    // fastpeaks, Nin
+      if(val==0)
+         val=0;
+      else 
+         val = val/CT[k];
       if(dest != 1) fprintf(fil,",%4.6G",val);
-      if(dest != 0) printf(",%s:%4.6G",N[3+k],val);
+      if(dest != 0) printf(",%s:%4.6G",N[6+k],val);
    }
    if(dest != 1) fprintf(fil,"\n ");
    if(dest != 0) printf("},  \n");
 
-   // Event rate and OCR
-   mb = (double)m[7]+(double)m[8]*TWOTO32;
-   if(ma==0)
-      val = 0;                 // avoid division by zero
-   else
-      val = mb/ma;
-   if(dest != 1) fprintf(fil,"EVENT_RATE,%4.6G,OUTPUT_COUNT_RATE",val); 
-   if(dest != 0) printf("{%s:\"EVENT_RATE\",%s:%4.6G,%s:\"OUTPUT_COUNT_RATE\"",N[0], N[1],val,N[2]);
-   for( k = 0; k < NCHANNELS; k ++ ) {
-      ca[k] = (double)c[k][13] + (double)c[k][14]*TWOTO32;     // Nout
-      if(CT[k]==0)
-         val = 0;                 // avoid division by zero
-      else
-         val = ca[k]/CT[k];
-      if(dest != 1) fprintf(fil,",%4.6G",val);
-      if(dest != 0) printf(",%s:%4.6G",N[3+k],val);
-   }
-   if(dest != 1) fprintf(fil,"\n ");
-   if(dest != 0) printf("},  \n");
-
-   // FTDT
-   if(dest != 1) fprintf(fil,"PS_CODE_VERSION,0x%X,FTDT",PS_CODE_VERSION); 
-   if(dest != 0) printf("{%s:\"PS_CODE_VERSION\",%s:\"0x%X\",%s:\"FTDT\"",N[0], N[1],PS_CODE_VERSION,N[2]);
-   for( k = 0; k < NCHANNELS; k ++ ) {
-      if(dest != 1) fprintf(fil,",%4.3E",cb[k]);
-      if(dest != 0) printf(",%s:%4.3E",N[3+k],cb[k]);
-   }
-   if(dest != 1) fprintf(fil,"\n ");
-   if(dest != 0) printf("},  \n");
-
-   // Active bit, SFDT
+   // Active bit, --, OCR   
    csrbit =  (csr & 0x00002000) >> 13;
-   if(dest != 1) fprintf(fil,"ACTIVE,%d,SFDT*",csrbit ); 
-   if(dest != 0) printf("{%s:\"ACTIVE\",%s:\"%d\",%s:\"SFDT*\"",N[0], N[1],csrbit,N[2]);
-   for( k = 0; k < NCHANNELS; k ++ ) {
-      ca[k] = ((double)c[k][9] + (double)c[k][10]*TWOTO32)*1.0e-9;    // SFDT
-      if(dest != 1) fprintf(fil,",%4.3E",ca[k]);
-      if(dest != 0) printf(",%s:%4.3E",N[3+k],ca[k]);
-   }
-   if(dest != 1) fprintf(fil,"\n ");
-   if(dest != 0) printf("},  \n");
+   if(dest != 1) fprintf(fil,"ACTIVE,%d",csrbit); 
+   if(dest != 0) printf("{%s:\"ACTIVE\",%s:\"%d\"",N[0], N[1],csrbit);
 
-   // PSA_LICENSED, PPR
-   csrbit =  (csr & 0x00000400) >> 10;
-   if(dest != 1) fprintf(fil,"PSA_LICENSED,%d,PASS_PILEUP_RATE*",csrbit); 
-   if(dest != 0) printf("{%s:\"--\",%s:%d,%s:\"PASS_PILEUP_RATE*\"",N[0], N[1],csrbit,N[2]);
-   for( k = 0; k < NCHANNELS; k ++ ) {
-      ca[k] = (double)c[k][17] + (double)c[k][18]*TWOTO32;     // NPPI
-      if(CT[k]==0)
-         val = 0;                 // avoid division by zero
-      else
-         val = ca[k]/CT[k];
+   if(dest != 1) fprintf(fil,",--,0"); 
+   if(dest != 0) printf(",%s:\"--\",%s:0G",N[2], N[3]);
+   if(dest != 1) fprintf(fil,",0"); 
+   if(dest != 0) printf(",%s:0",N[4]);
+  
+   if(dest != 1) fprintf(fil,",INPUT_COUNT_RATE"); 
+   if(dest != 0) printf(",%s:\"INPUT_COUNT_RATE\"",N[5]);
+   for( k = 0; k < NCHANNELS_PRESENT; k ++ ) {
+      val = ( (double)ch[k][8] + (double)ch[k][9]*65536 + (double)ch[k][10]*TWOTO32 );    // Nout
+      if(val==0)
+         val=0;
+      else 
+         val = val/CT[k];
       if(dest != 1) fprintf(fil,",%4.6G",val);
-      if(dest != 0) printf(",%s:%4.6G",N[3+k],val);
+      if(dest != 0) printf(",%s:%4.6G",N[6+k],val);
    }
    if(dest != 1) fprintf(fil,"\n ");
    if(dest != 0) printf("},  \n");
 
 
-   // PTP required, Gate rate
-   csrbit =  (csr & 0x00000020) >> 5;
-   if(dest != 1) fprintf(fil,"PTP_REQ,%d,GATE_RATE*",csrbit); 
-   if(dest != 0) printf("{%s:\"PTP_REQ\",%s:%d,%s:\"GATE_RATE*\"",N[0], N[1],csrbit,N[2]);
-   for( k = 0; k < NCHANNELS; k ++ ) {
-      ca[k] = (double)c[k][11] + (double)c[k][12]*TWOTO32;     // GCOUNT
-      if(CT[k]==0)
-         val = 0;                 // avoid division by zero
-      else
-         val = ca[k]/CT[k];
-      if(dest != 1) fprintf(fil,",%4.6G",val);
-      if(dest != 0) printf(",%s:%4.6G",N[3+k],val);
-   }
-   if(dest != 1) fprintf(fil,"\n ");
-   if(dest != 0) printf("},  \n");
-
-
-   // Gate time
-   if(dest != 1) fprintf(fil,"--,0,GDT*"); 
-   if(dest != 0) printf("{%s:\"--\",%s:0,%s:\"GDT*\"",N[0], N[1],N[2]);
-   for( k = 0; k < NCHANNELS; k ++ ) {
-      ca[k] = ((double)c[k][15] + (double)c[k][16]*TWOTO32)*1.0e-9;    // GDT
-      if(dest != 1) fprintf(fil,",%4.6G",ca[k]);
-      if(dest != 0) printf(",%s:%4.6G",N[3+k],ca[k]);
-   }
-   if(dest != 1) fprintf(fil,"\n ");
-   if(dest != 0) printf("},  \n");
 
    if(mode == 1) 
-     lastrs = 3;
+      lastrs = 3;
    else
    {
-     lastrs = N_USED_RS_PAR;
-     // temperatures
-     m[14] = (int)board_temperature(mapped,I2C_SELMAIN);
-     m[15] = (int)zynq_temperature();
-     m[16] = (int)(0xFFFF & (hwinfo(mapped) >> 16));          // this is a pretty slow I2C I/O
+      // ----------------- read I2C values (slow) to substitute some unused values
+      co[15]    = (int)board_temperature(mapped,I2C_SELMAIN);
+      sy[0][15] = (int)board_temperature(mapped,I2C_SELDB0);
+      sy[1][15] = (int)board_temperature(mapped,I2C_SELDB1);
+      co[16]    = (int)zynq_temperature();
+      revsn  = hwinfo(mapped);
+      co[18] = (revsn>>16) & 0xFFFF;    // pcb rev from TMP116
+      co[17] = revsn & 0xFFFF;          // s/n from TMP116
+      lastrs = N_USED_RS_PAR;
    }
 
 
@@ -1025,15 +1018,34 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    // print raw values also
    for( k = 0; k < lastrs; k ++ )
    {
-      if(k==16 || k==11 || k==1) {   // print bit patterns for some parameters
-         if(dest != 1) fprintf(fil,"%s,0x%X,%s,%u,%u,%u,%u\n ",Module_PLRS_Names[k],m[k],Channel_PLRS_Names[k],c[0][k],c[1][k],c[2][k],c[3][k]);
-         if(dest != 0) printf("{%s:\"%s\",%s:\"0x%X\",%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u},  \n",N[0],Module_PLRS_Names[k],N[1],m[k],N[2],Channel_PLRS_Names[k],N[3],c[0][k],N[4],c[1][k],N[5],c[2][k],N[6],c[3][k]);
-      } else if(k==2) {    // ICR gets factor 15 to scale in cps
-         if(dest != 1) fprintf(fil,"%s,0x%X,%s,%u,%u,%u,%u\n ",Module_PLRS_Names[k],m[k],Channel_PLRS_Names[k],ICRSCALE*c[0][k],ICRSCALE*c[1][k],ICRSCALE*c[2][k],ICRSCALE*c[3][k]);
-         if(dest != 0) printf("{%s:\"%s\",%s:\"0x%X\",%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u},  \n",N[0],Module_PLRS_Names[k],N[1],m[k],N[2],Channel_PLRS_Names[k],N[3],ICRSCALE*c[0][k],N[4],ICRSCALE*c[1][k],N[5],ICRSCALE*c[2][k],N[6],ICRSCALE*c[3][k]);
-      } else  {
-         if(dest != 1) fprintf(fil,"%s,%u,%s,%u,%u,%u,%u\n ",Module_PLRS_Names[k],m[k],Channel_PLRS_Names[k],c[0][k],c[1][k],c[2][k],c[3][k]);
-         if(dest != 0) printf("{%s:\"%s\",%s:%u,%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u},  \n",N[0],Module_PLRS_Names[k],N[1],m[k],N[2],Channel_PLRS_Names[k],N[3],c[0][k],N[4],c[1][k],N[5],c[2][k],N[6],c[3][k]);
+      if(k==14 || k==15 || k==16 || k==17) {   // print decimals for some parameters
+         if(dest != 1) 
+         {
+            fprintf(fil,"%s,%u,",Controller_PLRS_Names[k],co[k]);
+            fprintf(fil,"%s,%u,%u,",System_PLRS_Names[k], sy[0][k], sy[1][k]);
+            fprintf(fil,"%s,%u,%u,%u,%u,%u,%u,%u,%u\n ", Channel_PLRS_Names[k],c[0][k],c[1][k],c[2][k],c[3][k],c[4][k],c[5][k],c[6][k],c[7][k]);
+         }
+         if(dest != 0) 
+         {
+            printf("{%s:\"%s\",%s:%u,",N[0],Module_PLRS_Names[k],N[1],co[k]);
+            printf("%s:\"%s\",%s:%u,%s:%u,",N[2],System_PLRS_Names[k], N[3],sy[0][k], N[4],sy[1][k]);
+            printf("%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u},  \n", N[5],Channel_PLRS_Names[k],N[6],c[0][k],N[7],c[1][k],N[8],c[2][k],N[9],c[3][k],N[10],c[4][k],N[11],c[5][k],N[12],c[6][k],N[13],c[7][k]);
+         }
+      } else {                                // others are bit patterns
+         if(dest != 1) 
+         {
+            fprintf(fil,"%s,0x%X,",Controller_PLRS_Names[k],co[k]);
+            fprintf(fil,"%s,0x%X,0x%X,",System_PLRS_Names[k], sy[0][k], sy[1][k]);
+            fprintf(fil,"%s,%u,%u,%u,%u,%u,%u,%u,%u\n ", Channel_PLRS_Names[k],c[0][k],c[1][k],c[2][k],c[3][k],c[4][k],c[5][k],c[6][k],c[7][k]);
+         }
+         if(dest != 0) 
+         {
+            printf("{%s:\"%s\",%s:\"0x%X\",",N[0],Module_PLRS_Names[k],N[1],co[k]);
+            printf("%s:\"%s\",%s:\"0x%X\",%s:\"0x%X\",",N[2],System_PLRS_Names[k], N[3],sy[0][k], N[4],sy[1][k]);
+            printf("%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u},  \n", N[5],Channel_PLRS_Names[k],N[6],c[0][k],N[7],c[1][k],N[8],c[2][k],N[9],c[3][k],N[10],c[4][k],N[11],c[5][k],N[12],c[6][k],N[13],c[7][k]);
+         }
+   //      if(dest != 1) fprintf(fil,"%s,0x%X,%s,%u,%u,%u,%u\n ",Module_PLRS_Names[k],m[k],Channel_PLRS_Names[k],c[0][k],c[1][k],c[2][k],c[3][k]);
+   //      if(dest != 0) printf("{%s:\"%s\",%s:\"0x%X\",%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u},  \n",N[0],Module_PLRS_Names[k],N[1],m[k],N[2],Channel_PLRS_Names[k],N[3],c[0][k],N[4],c[1][k],N[5],c[2][k],N[6],c[3][k]);
       }
    }
       

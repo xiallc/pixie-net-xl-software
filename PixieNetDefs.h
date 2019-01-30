@@ -226,7 +226,7 @@
 #define AK7_P16REG17 0x5C
 #define AK7_MEMADDR 0x010
 #define AK7_PAGE 0x03
-#define AK7_SYSSYTATUS 0x85
+#define AK7_SYSSYTATUS 0x81
 #define AK7_HDRMEM_A 0xD9
 #define AK7_HDRMEM_B 0xDA
 #define AK7_HDRMEM_C 0xDB
@@ -237,9 +237,8 @@
 #define AK7_BLSTART 0xC8
 #define AK7_SYS_RS 0x80
 #define AK7_CHN_RS_CT 0xC0
-#define AK7_CHN_RS_FP 0xC0
-
-
+#define AK7_CHN_RS_NTRIG 0xD0
+#define AK7_CHN_RS_NOUT 0xD0
 
 // program control constants
 #define LINESZ                1024  // max number of characters in ini file line
