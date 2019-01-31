@@ -941,10 +941,10 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    if(dest != 1) fprintf(fil,"TOTAL_TIME,%4.6G",coa); 
    if(dest != 0) printf("{%s:\"TOTAL_TIME\",%s:%4.6G",N[0], N[1],coa);
 
-   sya = ( (double)sy[0][8] + (double)sy[0][9]*65536 + (double)sy[0][10]*TWOTO32 )/SYSTEM_CLOCK_MHZ*1.0e-6;
+   sya = ( (double)sy[0][9] + (double)sy[0][10]*65536 + (double)sy[0][11]*TWOTO32 )/SYSTEM_CLOCK_MHZ*1.0e-6;
    if(dest != 1) fprintf(fil,",RUN_TIME,%4.6G",sya); 
    if(dest != 0) printf(",%s:\"RUN_TIME\",%s:%4.6G",N[2], N[3],sya);
-   sya = ( (double)sy[1][8] + (double)sy[1][9]*65536 + (double)sy[1][10]*TWOTO32 )/SYSTEM_CLOCK_MHZ*1.0e-6;
+   sya = ( (double)sy[1][9] + (double)sy[1][10]*65536 + (double)sy[1][11]*TWOTO32 )/SYSTEM_CLOCK_MHZ*1.0e-6;
    if(dest != 1) fprintf(fil,",%4.6G",sya); 
    if(dest != 0) printf(",%s:%4.6G",N[4],sya);
   
@@ -970,7 +970,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
   
    if(dest != 1) fprintf(fil,",INPUT_COUNT_RATE"); 
    if(dest != 0) printf(",%s:\"INPUT_COUNT_RATE\"",N[5]);
-   for( k = 0; k < NCHANNELS_PRESENT; k ++ ) {
+   for( k = 0; k < NCHANNELS_PRESENT; k ++ ) {   
       val = ( (double)ch[k][4] + (double)ch[k][5]*65536 + (double)ch[k][6]*TWOTO32 );    // fastpeaks, Nin
       if(CT[k]==0)
          val=0;
