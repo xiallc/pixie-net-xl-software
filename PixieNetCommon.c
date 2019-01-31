@@ -937,7 +937,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    // when printing to std out for cgi, N[i] provide the column titles (repeated for every row as in "name":value)
  
    // total time (MZ), run time (sys) and Count time (ch)
-   coa = ( (double)co[11] + (double)co[12]*65536 + (double)co[13]*TWOTO32 + (double)co[14]*65536*TWOTO32 )*1.0e-9;
+   coa = ( (double)co[10] + (double)co[11]*65536 + (double)co[12]*TWOTO32 + (double)co[13]*65536*TWOTO32 )*1.0e-9;
    if(dest != 1) fprintf(fil,"TOTAL_TIME,%4.6G",coa); 
    if(dest != 0) printf("{%s:\"TOTAL_TIME\",%s:%4.6G",N[0], N[1],coa);
 

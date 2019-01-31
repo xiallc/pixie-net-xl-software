@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------
- * Copyright (c) 2017 XIA LLC
+ * Copyright (c) 2019 XIA LLC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, 
@@ -236,6 +236,9 @@ int main(void) {
 
     // Run Start Control
    mapped[AOUTBLOCK] = CS_MZ;	 // select MZ
+   if(SyncT==1)
+      mapped[ARTC_CLR] = 0x0001; // any write will create a pulse to clear timers
+   else 
    mapped[ACSRIN] = 0x0001; // RunEnable=1 > nLive=0 (DAQ on)
    // this is a bit in a MZ register tied to a line to both FPGAs
    // falling edge of nLive clears counters and memory address pointers
@@ -367,9 +370,6 @@ int main(void) {
                   printf( "Read 7 H-L: 0x %X %X %X %X\n",hdr[31], hdr[30], hdr[29], hdr[28] );
             */
                 
-
-            
-            
                   out0   = hdr[0]+(hdr[1]<<16);  // preliminary, more bits to be filled in
                   timeL  = hdr[4]+(hdr[5]<<16); 
                   timeH  = hdr[8];  
@@ -520,7 +520,6 @@ int main(void) {
            */  
             // print (small) set of RS to file, visible to web
             read_print_runstats_XL_2x4(1, 0, mapped);
-
             mapped[AOUTBLOCK] = CS_MZ;     // read from event registers
       
 
