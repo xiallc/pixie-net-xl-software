@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------
- * Copyright (c) 2018 XIA LLC
+ * Copyright (c) 2019 XIA LLC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, 
@@ -184,15 +184,21 @@ int hwinfo( volatile unsigned int *mapped )
 // returns 32bit hwrev_sn, or 0 on error
 {
    unsigned int  mval, i2cdata[8];
-   unsigned int revsn;
+   unsigned int revsn, saveaux;
    unsigned int ctrl[8];
    int k;
 
   // ---------------- read EEPROM ---------------------------
-   mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
-  mval = mapped[AAUXCTRL];	
-  mval = mval | 0x0010;    // set bit 4 to select MZ I2C pins
+    mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
+  saveaux = mapped[AAUXCTRL];	
+  saveaux = saveaux & 0xFF8F;    // clear the I2C select bits
+  mval = saveaux | I2C_SELMAIN;    // set bit 4-6 to select MZ I2C pins
   mapped[AAUXCTRL] = mval;
+
+//   mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
+//  mval = mapped[AAUXCTRL];	
+//  mval = mval | 0x0010;    // set bit 4 to select MZ I2C pins
+//  mapped[AAUXCTRL] = mval;
 
  /*  mval = mapped[AMZ_BRDINFO];           TODO: ensure  AMZ_BRDINFO has the right address
    ctrl[7] = (mval & 0x800000) >> 23 ;    
@@ -278,6 +284,8 @@ int hwinfo( volatile unsigned int *mapped )
    }
 
   */
+
+   mapped[AAUXCTRL] = saveaux;
 
    return(revsn);
 
@@ -769,7 +777,7 @@ char Controller_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
 
    // Run stats PL Parameter names applicable to a Pixie module 
 char System_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
-   "reserved",    // dummy read
+//   "reserved",    // dummy read
    "CSROUT",		//0 
    "sysstatus", 
    "dpmstatus", 
@@ -784,6 +792,7 @@ char System_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    "reserved",
    "FW_VERSION", 
    "reserved", 
+    "reserved",
    "T_ADC", 
    "T_WR", 
    "reserved",
@@ -871,17 +880,15 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
   mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
   mapped[AMZ_EXDWR]  = 0x000;        //                         0x000  = system     -> now addressing system page of K7-0
 
-  // dummy read?
-  mapped[AMZ_EXAFRD] = AK7_SYS_RS;    // read from system output range
-  sy[0][0] = mapped[AMZ_EXDRD];
-
   for( k = 0; k < N_USED_RS_PAR; k ++ )
   {
        mapped[AMZ_EXAFRD] = AK7_SYS_RS+k;    // read from system output range
        sy[0][k] = mapped[AMZ_EXDRD];
+       if(SLOWREAD) sy[0][k] = mapped[AMZ_EXDRD];         
   }
 
   // read channel data
+
   for( q = 0; q < NCHANNEL_PER_K7; q ++ )
   {
       mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
@@ -891,12 +898,15 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
       {
          mapped[AMZ_EXAFRD] = AK7_CHN_RS_CT+k;    // read from channel output range
          ch[q][k+0] = mapped[AMZ_EXDRD];
+        if(SLOWREAD) ch[q][k+0] = mapped[AMZ_EXDRD];            
 
          mapped[AMZ_EXAFRD] = AK7_CHN_RS_NTRIG+k;    // read from channel output range
          ch[q][k+4] = mapped[AMZ_EXDRD];
+         if(SLOWREAD) ch[q][k+4] = mapped[AMZ_EXDRD];            
 
          mapped[AMZ_EXAFRD] = AK7_CHN_RS_NOUT+k;    // read from channel output range
          ch[q][k+8] = mapped[AMZ_EXDRD];
+         if(SLOWREAD) ch[q][k+8] = mapped[AMZ_EXDRD];           
       }
   }
 
@@ -911,6 +921,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
   {
        mapped[AMZ_EXAFRD] = AK7_SYS_RS+k;    // read from system output range
        sy[1][k] = mapped[AMZ_EXDRD];
+       if(SLOWREAD) sy[1][k] = mapped[AMZ_EXDRD];
   }
 
   // read channel data
@@ -919,16 +930,20 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
       mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
       mapped[AMZ_EXDWR]  = 0x100+q;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
 
+ 
       for( k = 0; k < 3; k ++ )
       {
         mapped[AMZ_EXAFRD] = AK7_CHN_RS_CT+k;    // read from channel output range
          ch[q][k+0] = mapped[AMZ_EXDRD];
+         if(SLOWREAD) ch[q][k+0] = mapped[AMZ_EXDRD];
 
          mapped[AMZ_EXAFRD] = AK7_CHN_RS_NTRIG+k;    // read from channel output range
          ch[q][k+4] = mapped[AMZ_EXDRD];
+         if(SLOWREAD) ch[q][k+4] = mapped[AMZ_EXDRD];
 
          mapped[AMZ_EXAFRD] = AK7_CHN_RS_NOUT+k;    // read from channel output range
          ch[q][k+8] = mapped[AMZ_EXDRD];
+         if(SLOWREAD) ch[q][k+8] = mapped[AMZ_EXDRD];
       }
   }
 
@@ -941,10 +956,10 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    if(dest != 1) fprintf(fil,"TOTAL_TIME,%4.6G",coa); 
    if(dest != 0) printf("{%s:\"TOTAL_TIME\",%s:%4.6G",N[0], N[1],coa);
 
-   sya = ( (double)sy[0][9] + (double)sy[0][10]*65536 + (double)sy[0][11]*TWOTO32 )/SYSTEM_CLOCK_MHZ*1.0e-6;
+   sya = ( (double)sy[0][8] + (double)sy[0][9]*65536 + (double)sy[0][10]*TWOTO32 )/SYSTEM_CLOCK_MHZ*1.0e-6;
    if(dest != 1) fprintf(fil,",RUN_TIME,%4.6G",sya); 
    if(dest != 0) printf(",%s:\"RUN_TIME\",%s:%4.6G",N[2], N[3],sya);
-   sya = ( (double)sy[1][9] + (double)sy[1][10]*65536 + (double)sy[1][11]*TWOTO32 )/SYSTEM_CLOCK_MHZ*1.0e-6;
+   sya = ( (double)sy[1][8] + (double)sy[1][9]*65536 + (double)sy[1][10]*TWOTO32 )/SYSTEM_CLOCK_MHZ*1.0e-6;
    if(dest != 1) fprintf(fil,",%4.6G",sya); 
    if(dest != 0) printf(",%s:%4.6G",N[4],sya);
   
@@ -1016,7 +1031,6 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
 
 
       // a dummy I2C operation required for the TMP116 I/O?
-  //    mapped[AAUXCTRL] = I2C_SELMAIN;	  // select bit 5 -> DB0 I2C        // XXXXXX
       co[15]    = (unsigned int)board_temperature(mapped,I2C_SELMAIN);
       sy[0][15] = (unsigned int)board_temperature(mapped,I2C_SELDB0);
       sy[1][15] = (unsigned int)board_temperature(mapped,I2C_SELDB1);

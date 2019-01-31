@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------
- * Copyright (c) 2017 XIA LLC
+ * Copyright (c) 2019 XIA LLC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, 
@@ -62,7 +62,8 @@ int main( int argc, char *argv[] ) {
   int k;
 
   unsigned int sn = 0xDEAD;
-  unsigned int rev = 0xBEEF;
+  unsigned int addr = 0xBEEF;
+  unsigned int dev = 0;
   unsigned int zero[8] = {0};
   unsigned int i2cdata[8] = {0};
   unsigned int mval = 0;
@@ -112,21 +113,29 @@ int main( int argc, char *argv[] ) {
 
    // ************************ parse arguments *********************************
 
-   if( argc!=3)  {
-     printf( "please give arguments addr (0x##) for test read and serial number (decimal)  \n" );
-     printf( "if addr >15, skip write \n" );
+   if( argc!=4)  {
+     printf( "Please give arguments\n 1) addr (0x##) for test read\n 2) serial number (decimal) for write\n" );
+     printf( " 3) device (0=board, 1=DB1, 2=DB2) \n" );
+     printf( "  if addr > 0x0F, skip write and only read sn and from addr & 0xF\n" );
      return 2;
    }
 
-   rev = strtol(argv[1], NULL, 16);
-   sn = strtol(argv[2], NULL, 10);
+   addr = strtol(argv[1], NULL, 16);     // address from test read
+   sn = strtol(argv[2], NULL, 10);       // serial number
+   dev = strtol(argv[3], NULL, 10);      // device select board or DB#
 
    // ************************ prepare to write *********************************
 
-      
+   if(dev>2) {
+     printf( "invalid device number \n" );
+     return 3;
+   }
+   
+
   mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
-  mval = mapped[AAUXCTRL];	
-  mval = mval | 0x0010;    // set bit 4 to select MZ I2C pins
+  if(dev==0) mval = I2C_SELMAIN ;          // set bit 4 to select MZ I2C pins
+  if(dev==1) mval = I2C_SELDB0 ;
+  if(dev==2) mval = I2C_SELDB1 ;
   mapped[AAUXCTRL] = mval;
 
    // ************************ I2C programming EEPROM *********************************
@@ -136,152 +145,145 @@ int main( int argc, char *argv[] ) {
    byte  content
        0,1    temperature
        2,3    configuration
-       4,5    temp high   revision low   ?
+       4,5    temp high   addrision low   ?
        6,7    temp low     s/n           ?
        8,9     unlock
        10-17   unique ID
        30,31   device ID 
-
-
     */
 
- if (rev<16) {
-
-  // ----------- write unlock reg --------------
-  
-    // 4 bytes: ctrl, addr, data, data  : 
-   I2Cstart(mapped);
-   ctrl[0] = 0;   // R/W*
-   I2Cbytesend(mapped, ctrl);     // I2C control byte: write
-   I2Cslaveack(mapped);  
-
-//  printf("I2C write 1\n");
-
-   mval = 0x04;   // register address  : 4 = unlock reg
-   i2cdata[7] = (mval & 0x0080) >> 7 ;    
-   i2cdata[6] = (mval & 0x0040) >> 6 ;    
-   i2cdata[5] = (mval & 0x0020) >> 5 ;    
-   i2cdata[4] = (mval & 0x0010) >> 4 ;
-   i2cdata[3] = (mval & 0x0008) >> 3 ;    
-   i2cdata[2] = (mval & 0x0004) >> 2 ;   
-   i2cdata[1] = (mval & 0x0002) >> 1 ;    
-   i2cdata[0] = (mval & 0x0001)      ;   
-   I2Cbytesend(mapped, i2cdata);
-   I2Cslaveack(mapped);
-
-   mval = 0x8000;  //  register data  : set unlock bit
-   i2cdata[7] = (mval & 0x8000) >> 15 ;    
-   i2cdata[6] = (mval & 0x4000) >> 14 ;    
-   i2cdata[5] = (mval & 0x2000) >> 13 ;    
-   i2cdata[4] = (mval & 0x1000) >> 12 ; 
-   i2cdata[3] = (mval & 0x0800) >> 11 ;    
-   i2cdata[2] = (mval & 0x0400) >> 10 ;   
-   i2cdata[1] = (mval & 0x0200) >> 9 ;    
-   i2cdata[0] = (mval & 0x0100) >> 8 ;   
-   I2Cbytesend(mapped, i2cdata);
-   I2Cslaveack(mapped);
-
-   i2cdata[7] = (mval & 0x0080) >> 7 ;    
-   i2cdata[6] = (mval & 0x0040) >> 6 ;    
-   i2cdata[5] = (mval & 0x0020) >> 5 ;    
-   i2cdata[4] = (mval & 0x0010) >> 4 ;
-   i2cdata[3] = (mval & 0x0008) >> 3 ;    
-   i2cdata[2] = (mval & 0x0004) >> 2 ;   
-   i2cdata[1] = (mval & 0x0002) >> 1 ;    
-   i2cdata[0] = (mval & 0x0001)      ;   
-   I2Cbytesend(mapped, i2cdata);
-   I2Cslaveack(mapped);
-
-   I2Cstop(mapped);
-   usleep(1000);
-
-   // ----------- write serial number  --------------
-
-   // 4 bytes: ctrl, addr, data, data  : 
-    I2Cstart(mapped);
-   ctrl[0] = 0;   // R/W*
-   I2Cbytesend(mapped, ctrl);     // I2C control byte: write
-   I2Cslaveack(mapped);  
-
-   mval = 0x07;   // register address  : 7 = unique id all zeros
-   i2cdata[7] = (mval & 0x0080) >> 7 ;    
-   i2cdata[6] = (mval & 0x0040) >> 6 ;    
-   i2cdata[5] = (mval & 0x0020) >> 5 ;    
-   i2cdata[4] = (mval & 0x0010) >> 4 ;
-   i2cdata[3] = (mval & 0x0008) >> 3 ;    
-   i2cdata[2] = (mval & 0x0004) >> 2 ;   
-   i2cdata[1] = (mval & 0x0002) >> 1 ;    
-   i2cdata[0] = (mval & 0x0001)      ;   
-   I2Cbytesend(mapped, i2cdata);
-   I2Cslaveack(mapped);
-
-     //  register data  : serial number
-   i2cdata[7] = (sn & 0x8000) >> 15 ;    
-   i2cdata[6] = (sn & 0x4000) >> 14 ;    
-   i2cdata[5] = (sn & 0x2000) >> 13 ;    
-   i2cdata[4] = (sn & 0x1000) >> 12 ; 
-   i2cdata[3] = (sn & 0x0800) >> 11 ;    
-   i2cdata[2] = (sn & 0x0400) >> 10 ;   
-   i2cdata[1] = (sn & 0x0200) >> 9 ;    
-   i2cdata[0] = (sn & 0x0100) >> 8 ;   
-   I2Cbytesend(mapped, i2cdata);
-   I2Cslaveack(mapped);
-
-   i2cdata[7] = (sn & 0x0080) >> 7 ;    
-   i2cdata[6] = (sn & 0x0040) >> 6 ;    
-   i2cdata[5] = (sn & 0x0020) >> 5 ;    
-   i2cdata[4] = (sn & 0x0010) >> 4 ;
-   i2cdata[3] = (sn & 0x0008) >> 3 ;    
-   i2cdata[2] = (sn & 0x0004) >> 2 ;   
-   i2cdata[1] = (sn & 0x0002) >> 1 ;    
-   i2cdata[0] = (sn & 0x0001)      ;   
-   I2Cbytesend(mapped, i2cdata);
-   I2Cslaveack(mapped);
-   I2Cstop(mapped);
-
-   usleep(10000);    // wait 7ms or more. should check and wait more if necessary, really, 
-    usleep(10000);  
-    
-   // -----------general call reset --------------
-
-    // 2 bytes: ctrl, reset  : 
-    I2Cstart(mapped);
-   I2Cbytesend(mapped, zero);     // I2C control byte (general address): write
-   I2Cslaveack(mapped);  
-
-   mval = 0x06;   // reset code word
-   i2cdata[7] = (mval & 0x0080) >> 7 ;    
-   i2cdata[6] = (mval & 0x0040) >> 6 ;    
-   i2cdata[5] = (mval & 0x0020) >> 5 ;    
-   i2cdata[4] = (mval & 0x0010) >> 4 ;
-   i2cdata[3] = (mval & 0x0008) >> 3 ;    
-   i2cdata[2] = (mval & 0x0004) >> 2 ;   
-   i2cdata[1] = (mval & 0x0002) >> 1 ;    
-   i2cdata[0] = (mval & 0x0001)      ;   
-   I2Cbytesend(mapped, i2cdata);
-   I2Cslaveack(mapped);
-
-   I2Cslaveack(mapped);
-   I2Cstop(mapped);
-
-   usleep(10000);
-     usleep(10000);   
-
-     }   // end <16
-
-   // ----------- read back for verification --------------
+     // ************* write the serial number to addr 7 ***********************
+    if (addr<16) {     
    
-
-
+     // ----------- write unlock reg --------------
      
-   // read serial number
+      // 4 bytes: ctrl, addr, data, data  : 
+      I2Cstart(mapped);
+      ctrl[0] = 0;   // R/W*
+      I2Cbytesend(mapped, ctrl);     // I2C control byte: write
+      I2Cslaveack(mapped);  
+   
+      mval = 0x04;   // register address  : 4 = unlock reg
+      i2cdata[7] = (mval & 0x0080) >> 7 ;    
+      i2cdata[6] = (mval & 0x0040) >> 6 ;    
+      i2cdata[5] = (mval & 0x0020) >> 5 ;    
+      i2cdata[4] = (mval & 0x0010) >> 4 ;
+      i2cdata[3] = (mval & 0x0008) >> 3 ;    
+      i2cdata[2] = (mval & 0x0004) >> 2 ;   
+      i2cdata[1] = (mval & 0x0002) >> 1 ;    
+      i2cdata[0] = (mval & 0x0001)      ;   
+      I2Cbytesend(mapped, i2cdata);
+      I2Cslaveack(mapped);
+   
+      mval = 0x8000;  //  register data  : set unlock bit
+      i2cdata[7] = (mval & 0x8000) >> 15 ;    
+      i2cdata[6] = (mval & 0x4000) >> 14 ;    
+      i2cdata[5] = (mval & 0x2000) >> 13 ;    
+      i2cdata[4] = (mval & 0x1000) >> 12 ; 
+      i2cdata[3] = (mval & 0x0800) >> 11 ;    
+      i2cdata[2] = (mval & 0x0400) >> 10 ;   
+      i2cdata[1] = (mval & 0x0200) >> 9 ;    
+      i2cdata[0] = (mval & 0x0100) >> 8 ;   
+      I2Cbytesend(mapped, i2cdata);
+      I2Cslaveack(mapped);
+   
+      i2cdata[7] = (mval & 0x0080) >> 7 ;    
+      i2cdata[6] = (mval & 0x0040) >> 6 ;    
+      i2cdata[5] = (mval & 0x0020) >> 5 ;    
+      i2cdata[4] = (mval & 0x0010) >> 4 ;
+      i2cdata[3] = (mval & 0x0008) >> 3 ;    
+      i2cdata[2] = (mval & 0x0004) >> 2 ;   
+      i2cdata[1] = (mval & 0x0002) >> 1 ;    
+      i2cdata[0] = (mval & 0x0001)      ;   
+      I2Cbytesend(mapped, i2cdata);
+      I2Cslaveack(mapped);
+   
+      I2Cstop(mapped);
+      usleep(1000);
+   
+      // ----------- write serial number  --------------
+   
+      // 4 bytes: ctrl, addr, data, data  : 
+       I2Cstart(mapped);
+      ctrl[0] = 0;   // R/W*
+      I2Cbytesend(mapped, ctrl);     // I2C control byte: write
+      I2Cslaveack(mapped);  
+   
+      mval = 0x07;   // register address  : 7 = unique id all zeros
+      i2cdata[7] = (mval & 0x0080) >> 7 ;    
+      i2cdata[6] = (mval & 0x0040) >> 6 ;    
+      i2cdata[5] = (mval & 0x0020) >> 5 ;    
+      i2cdata[4] = (mval & 0x0010) >> 4 ;
+      i2cdata[3] = (mval & 0x0008) >> 3 ;    
+      i2cdata[2] = (mval & 0x0004) >> 2 ;   
+      i2cdata[1] = (mval & 0x0002) >> 1 ;    
+      i2cdata[0] = (mval & 0x0001)      ;   
+      I2Cbytesend(mapped, i2cdata);
+      I2Cslaveack(mapped);
+   
+        //  register data  : serial number
+      i2cdata[7] = (sn & 0x8000) >> 15 ;    
+      i2cdata[6] = (sn & 0x4000) >> 14 ;    
+      i2cdata[5] = (sn & 0x2000) >> 13 ;    
+      i2cdata[4] = (sn & 0x1000) >> 12 ; 
+      i2cdata[3] = (sn & 0x0800) >> 11 ;    
+      i2cdata[2] = (sn & 0x0400) >> 10 ;   
+      i2cdata[1] = (sn & 0x0200) >> 9 ;    
+      i2cdata[0] = (sn & 0x0100) >> 8 ;   
+      I2Cbytesend(mapped, i2cdata);
+      I2Cslaveack(mapped);
+   
+      i2cdata[7] = (sn & 0x0080) >> 7 ;    
+      i2cdata[6] = (sn & 0x0040) >> 6 ;    
+      i2cdata[5] = (sn & 0x0020) >> 5 ;    
+      i2cdata[4] = (sn & 0x0010) >> 4 ;
+      i2cdata[3] = (sn & 0x0008) >> 3 ;    
+      i2cdata[2] = (sn & 0x0004) >> 2 ;   
+      i2cdata[1] = (sn & 0x0002) >> 1 ;    
+      i2cdata[0] = (sn & 0x0001)      ;   
+      I2Cbytesend(mapped, i2cdata);
+      I2Cslaveack(mapped);
+      I2Cstop(mapped);
+   
+      usleep(10000);    // wait 7ms or more. should check and wait more if necessary, really, 
+      usleep(10000);  
+       
+      // -----------general call reset --------------
+   
+      // 2 bytes: ctrl, reset  : 
+      I2Cstart(mapped);
+      I2Cbytesend(mapped, zero);     // I2C control byte (general address): write
+      I2Cslaveack(mapped);  
+   
+      mval = 0x06;   // reset code word
+      i2cdata[7] = (mval & 0x0080) >> 7 ;    
+      i2cdata[6] = (mval & 0x0040) >> 6 ;    
+      i2cdata[5] = (mval & 0x0020) >> 5 ;    
+      i2cdata[4] = (mval & 0x0010) >> 4 ;
+      i2cdata[3] = (mval & 0x0008) >> 3 ;    
+      i2cdata[2] = (mval & 0x0004) >> 2 ;   
+      i2cdata[1] = (mval & 0x0002) >> 1 ;    
+      i2cdata[0] = (mval & 0x0001)      ;   
+      I2Cbytesend(mapped, i2cdata);
+      I2Cslaveack(mapped);
+   
+      I2Cslaveack(mapped);
+      I2Cstop(mapped);
+   
+      usleep(10000);
+      usleep(10000);   
+   
+    }   // end <16
+
+      
+    // ************* read back the serial number from addr 7 ***********************
 
      // 2 bytes: ctrl, addr  write
    I2Cstart(mapped);
    ctrl[0] = 0;   // R/W*         // write starting addr to read from
    I2Cbytesend(mapped, ctrl);
    I2Cslaveack(mapped);
-    mval = 0x07;   // addr 7 = serial number
+   mval = 0x07;   // addr 7 = serial number
    i2cdata[7] = (mval & 0x0080) >> 7 ;    
    i2cdata[6] = (mval & 0x0040) >> 6 ;    
    i2cdata[5] = (mval & 0x0020) >> 5 ;    
@@ -292,9 +294,7 @@ int main( int argc, char *argv[] ) {
    i2cdata[0] = (mval & 0x0001)      ;   
    I2Cbytesend(mapped, i2cdata);
    I2Cslaveack(mapped);
-     usleep(300);
-
-
+   usleep(300);
 
     // read data bytes 
    mval = 0;
@@ -309,8 +309,6 @@ int main( int argc, char *argv[] ) {
          mval = mval + (1<<(k+8));
    I2Cmasterack(mapped);
 
-//   usleep(100);
-//   I2Cslaveack(mapped);
    I2Cbytereceive(mapped, i2cdata);
    for( k = 0; k < 8; k ++ )
       if(i2cdata[k])
@@ -319,19 +317,22 @@ int main( int argc, char *argv[] ) {
    I2Cmasternoack(mapped);
    I2Cstop(mapped);
 
-   printf("I2C read serial number %d\n",mval);
-
-        usleep(10000); 
+   printf("I2C read serial number: %d\n",mval);
+   usleep(10000); 
    
-           mval = rev & 0xF;   // register address  : 7 = unique id all zeros
-         i2cdata[7] = (mval & 0x0080) >> 7 ;    
-         i2cdata[6] = (mval & 0x0040) >> 6 ;    
-         i2cdata[5] = (mval & 0x0020) >> 5 ;    
-         i2cdata[4] = (mval & 0x0010) >> 4 ;
-         i2cdata[3] = (mval & 0x0008) >> 3 ;    
-         i2cdata[2] = (mval & 0x0004) >> 2 ;   
-         i2cdata[1] = (mval & 0x0002) >> 1 ;    
-         i2cdata[0] = (mval & 0x0001)      ;   
+
+   
+   // ************* read requested addr (-16 if > 16) ***********************
+   
+   mval = addr & 0xF;   // register address  : 7 = unique id all zeros
+   i2cdata[7] = (mval & 0x0080) >> 7 ;    
+   i2cdata[6] = (mval & 0x0040) >> 6 ;    
+   i2cdata[5] = (mval & 0x0020) >> 5 ;    
+   i2cdata[4] = (mval & 0x0010) >> 4 ;
+   i2cdata[3] = (mval & 0x0008) >> 3 ;    
+   i2cdata[2] = (mval & 0x0004) >> 2 ;   
+   i2cdata[1] = (mval & 0x0002) >> 1 ;    
+   i2cdata[0] = (mval & 0x0001)      ;   
 
    // 2 bytes: ctrl, addr  write
    I2Cstart(mapped);
@@ -340,11 +341,9 @@ int main( int argc, char *argv[] ) {
    I2Cslaveack(mapped);
    I2Cbytesend(mapped, i2cdata);     // address 0  = temp value
    I2Cslaveack(mapped);
-
-     usleep(300);
-
-
-    // read data bytes
+   usleep(300);
+  
+   // read data bytes
    mval = 0;
    ctrl[0] = 1;   // R/W*         // now read 
    usleep(100);
@@ -357,8 +356,6 @@ int main( int argc, char *argv[] ) {
          mval = mval + (1<<(k+8));
    I2Cmasterack(mapped);
 
- //  usleep(100);
- //  I2Cslaveack(mapped);
    I2Cbytereceive(mapped, i2cdata);
    for( k = 0; k < 8; k ++ )
       if(i2cdata[k])
@@ -367,14 +364,16 @@ int main( int argc, char *argv[] ) {
    I2Cmasternoack(mapped);
    I2Cstop(mapped);
 
-   printf("I2C read test 0x%04X\n",mval);
-   printf("if temperature (addr=0), temp (C) %f\n",mval*0.0078125);
+   printf("I2C read from 0x%02X:  0x%04X\n",addr & 0xF,mval);
+   printf("if temperature (addr=0x00), temp (C) %f\n",mval*0.0078125);
 
 
 
    
  
  // clean up  
+ mapped[AAUXCTRL] = 0;
+
  flock( fd, LOCK_UN );
  munmap(map_addr, size);
  close(fd);

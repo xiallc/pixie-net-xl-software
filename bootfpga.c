@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------
- * Copyright (c) 2018 XIA LLC
+ * Copyright (c) 2019 XIA LLC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, 
@@ -121,7 +121,6 @@ int main( void ) {
   mapped[0x6] = mval;	
   mval = mapped[AMZ_CSROUTH];	
   printf("0x1 read: 0x%x\n\n",mval);
-
   */
 
   // progb toggle
@@ -142,7 +141,6 @@ int main( void ) {
 
   // check INIT, continue when high
   // Initialize counter1 to 0. If mval.15==0, finished clearing communication FPGA 
-  //mapped[AOUTBLOCK] = OB_MZ_EVREG;	  // read/write from/to MZ event block
   mval = mapped[AMZ_CSROUTL];	
 //  printf("ACSROUT read: 0x%x\n",mval);
   counter1 = 0;
@@ -167,44 +165,36 @@ int main( void ) {
 
   
   // download configuration data
-  //mapped[AOUTBLOCK] = OB_MZ_IOREG;	  // read/write from/to MZ IO block
   printf("Starting FPGA download\n Percent done: ");
 
    for( j=0; j < N_FPGA_BYTES/2; j++)      
    {
       mapped[AFPGACONF] = confdata[j];
-       mval = mapped[AAUXCTRL];	    // read for delay
-       mval = mapped[AAUXCTRL];	
-       mval = mapped[AAUXCTRL];	
-     // if( j % 65536 ==0)  { printf  ("\rprogress %d %% ", j/N_FPGA_BYTES*2); fflush(stdout); }
-     if( j % (N_FPGA_BYTES/10) ==0)  { printf  ("%d",200*j/N_FPGA_BYTES); fflush(stdout); }
-     if( j % 65536 ==0)  { printf  ("_"); fflush(stdout); }
+      mval = mapped[AAUXCTRL];	    // read for delay
+      mval = mapped[AAUXCTRL];	
+      mval = mapped[AAUXCTRL];	
+      if( j % (N_FPGA_BYTES/10) ==0)  { printf  ("%d",200*j/N_FPGA_BYTES); fflush(stdout); }
+      if( j % 65536 ==0)  { printf  ("_"); fflush(stdout); }
 
-  //    usleep(1);
    } 
     printf(" done\n");
 
    
   // check DONE, ok when high
   // If mval.14==0, configuration ok
-//  mapped[AOUTBLOCK] = OB_MZ_EVREG;	  // read/write from/to MZ event block
   mval = mapped[AMZ_CSROUTL];	
   if( (mval& 0x4000) != 0x4000) {
-         printf("ERROR: Programming FPGA not successful.\n");
-          flock( fd, LOCK_UN );
-          munmap(map_addr, size);      
-          close(fd);
-         return(-3);
+      printf("ERROR: Programming FPGA not successful.\n");
+      flock( fd, LOCK_UN );
+      munmap(map_addr, size);      
+      close(fd);
+      return(-3);
   } else {
     printf("Programming FPGA successful !\n");
   }
 
-  
-
  
  // clean up  
-//  mapped[AOUTBLOCK] = OB_MZ_EVREG;	  // read/write from/to MZ IO block
-
  flock( fd, LOCK_UN );
  munmap(map_addr, size);
  close(fd);

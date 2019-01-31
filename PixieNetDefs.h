@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------
- * Copyright (c) 2018 XIA LLC
+ * Copyright (c) 2019 XIA LLC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, 
@@ -204,41 +204,46 @@
 #define CS_MZ   0x00
 #define CS_K0   0x04
 #define CS_K1   0x08
-#define AMZ_FIRSTDAC  0x10
-#define AMZ_EXAFWR 0x18
-#define AMZ_EXAFRD 0x19
-#define AMZ_EXDWR  0x1A
-#define AMZ_EXDRD  0x1B
+#define AMZ_FIRSTDAC 0x10
+#define AMZ_EXAFWR   0x18
+#define AMZ_EXAFRD   0x19
+#define AMZ_EXDWR    0x1A
+#define AMZ_EXDRD    0x1B
 #define AMZ_CSROUTL  0x20
 #define AMZ_CSROUTH  0x21
 #define AMZ_BRDINFO  0x22
-#define AMZ_SYSREV  0x28
-#define AMZ_RS      0x20
+#define AMZ_SYSREV   0x28
+#define AMZ_RS       0x20
+#define AMZ_RS_TT    0x2B
 
-#define AK7_P16REG00 0x40
-#define AK7_P16REG01 0x44
-#define AK7_P16REG02 0x48
-#define AK7_P16REG03 0x4C
-#define AK7_P16REG05 0x4E
-#define AK7_P16REG06 0x52
-#define AK7_P16REG07 0x56
-#define AK7_P16REG13 0x5A
-#define AK7_P16REG17 0x5C
-#define AK7_MEMADDR 0x010
-#define AK7_PAGE 0x03
+#define AK7_P16REG00   0x40
+#define AK7_P16REG01   0x44
+#define AK7_P16REG02   0x48
+#define AK7_P16REG03   0x4C
+#define AK7_P16REG05   0x4E
+#define AK7_P16REG06   0x52
+#define AK7_P16REG07   0x56
+#define AK7_P16REG13   0x5A
+#define AK7_P16REG17   0x5C
+#define AK7_MEMADDR    0x010
+#define AK7_PAGE       0x03
+#define AK7_ADCSPI     0x05
+#define AK7_ADCBITSLIP 0x06
 #define AK7_SYSSYTATUS 0x81
-#define AK7_HDRMEM_A 0xD9
-#define AK7_HDRMEM_B 0xDA
-#define AK7_HDRMEM_C 0xDB
-#define AK7_HDRMEM_D 0xDC
-#define AK7_TRCMEM_A 0xDD
-#define AK7_TRCMEM_B 0xDE
-#define AK7_BLLOCK 0xD4
-#define AK7_BLSTART 0xC8
-#define AK7_SYS_RS 0x80
-#define AK7_CHN_RS_CT 0xC0
+#define AK7_ADCFRAME   0x86
+#define AK7_HDRMEM_A   0xD9
+#define AK7_HDRMEM_B   0xDA
+#define AK7_HDRMEM_C   0xDB
+#define AK7_HDRMEM_D   0xDC
+#define AK7_TRCMEM_A   0xDD
+#define AK7_TRCMEM_B   0xDE
+#define AK7_BLLOCK     0xD4
+#define AK7_BLSTART    0xC8
+#define AK7_SYS_RS     0x80
+#define AK7_CHN_RS_CT  0xC0
+#define AK7_ADC        0xC4
 #define AK7_CHN_RS_NTRIG 0xD0
-#define AK7_CHN_RS_NOUT 0xD0
+#define AK7_CHN_RS_NOUT  0xD5
 
 // program control constants
 #define LINESZ                1024  // max number of characters in ini file line
@@ -262,6 +267,7 @@
 #define CHAN_HEAD_LENGTH_100  10    // number of 32bit words in P16 0x100 run type
 #define WATERMARK     0x12345678    // for LM QC routine
 #define EORMARK       0x01000002    // End Of Run
+#define SLOWREAD               1    // address write transfers data too slowly, read twice
 
 // channel hit pattern & info in LM data
 #define HIT_ACCEPT            5     //  result of local coincidence test & pileup & veto & rangebad

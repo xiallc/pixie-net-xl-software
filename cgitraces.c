@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------
- * Copyright (c) 2017 XIA LLC
+ * Copyright (c) 2019 XIA LLC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, 
@@ -57,7 +57,7 @@ int main(void) {
   int k,ch;
   FILE * fil;
   unsigned int adc[4][NTRACE_SAMPLES];
-  unsigned int chsel, regno;
+  unsigned int chsel;
   char line[LINESZ];
 
 
@@ -83,24 +83,22 @@ int main(void) {
 
    // read 8K samples from ADC register 
    // at this point, no guarantee that sampling is truly periodic
-
-    mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
-    chsel = 0x100;        // channel 0
-    regno = 4 ;               // register 4  = ADC
-
-    for(ch=0;ch<4;ch++) {
-
-   mapped[AMZ_EXAFWR] = 3;     // write to  k7's addr        addr 3 = channel/syste, select    
-   mapped[AMZ_EXDWR] = chsel+ch;                                //  0x100  =channel 0                  
-
-  for(k=0;k<NTRACE_SAMPLES;k++) {
-      mapped[AMZ_EXAFRD] = regno+0xC0;     // write to  k7's addr
-        usleep(1);
-      adc[ch][k] = mapped[AMZ_EXDRD]; 
-
-  }       //    edn for NTRACE_SAMPLES
-
-  } // end for channels
+   
+   mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
+   chsel = 0x100;        // channel 0
+   
+   for(ch=0;ch<4;ch++) {
+   
+      mapped[AMZ_EXAFWR] = AK7_PAGE;     // write to  k7's addr        addr 3 = channel/syste, select    
+      mapped[AMZ_EXDWR] = chsel+ch;                                //  0x100  =channel 0                  
+      
+      for(k=0;k<NTRACE_SAMPLES;k++) {
+         mapped[AMZ_EXAFRD] = AK7_ADC;     // write to  k7's addr
+         //        usleep(1);
+         adc[ch][k] = mapped[AMZ_EXDRD];    
+      }       //    end for NTRACE_SAMPLES
+   
+   } // end for channels
 
 
 

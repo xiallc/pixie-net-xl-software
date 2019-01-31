@@ -74,9 +74,9 @@ int main(void) {
   double elm, q;
   //double cfdlev, tmpD, bscale;
   time_t starttime, currenttime;
-  unsigned int startTS, w0, w1, revsn;
+  unsigned int w0, w1, revsn;
   //unsigned int startTS, m, c0, c1, c2, c3, w0, w1, tmpI, revsn;
-  unsigned int tmp0, tmp1, tmp2, tmp3;
+  unsigned int tmp0, tmp1; // tmp2, tmp3;
   unsigned int hdr[32];
   unsigned int out0, out1, out2, out3, trace_staddr, tracewrite;
   unsigned int evstats, R1, timeL, timeH, hit;
@@ -203,10 +203,7 @@ int main(void) {
    eventcount = 0;
    starttime = time(NULL);                         // capture OS start time
    if( (RunType==0x100) ||  (RunType==0x400) )  {    // list mode runtypes    
-      if(SyncT) mapped[ARTC_CLR] = 1;              // write to reset time counter
-      mapped[AOUTBLOCK] = 2;
-      startTS = mapped[AREALTIME];
-
+   
       if(RunType==0x100){
         // write a 0x100 header  -- actually there is no header, just events
         fil = fopen("LMdata.bin","wb");
@@ -243,15 +240,15 @@ int main(void) {
    // this is a bit in a MZ register tied to a line to both FPGAs
    // falling edge of nLive clears counters and memory address pointers
    
-   mapped[AOUTBLOCK] = CS_K0;	 // select FPGA 0 
 
     // ********************** Run Loop **********************
    do {
 
- 
+    
       //----------- Periodically read BL and update average -----------
       // this will be moved into the FPGA soon
       if(loopcount % BLREADPERIOD == 0) {  //|| (loopcount ==0) ) {     // sometimes 0 mod N not zero and first few events have wrong E? watch
+         mapped[AOUTBLOCK] = CS_K0;	 // select FPGA 0 
          for( ch=0; ch < NCHANNEL_PER_K7; ch++) {
             // read raw BL sums 
             mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
@@ -259,23 +256,30 @@ int main(void) {
 
             mapped[AMZ_EXAFRD] = AK7_BLLOCK;    // read from 0xD4 to lock BL registers (no data)
             tmp0 = mapped[AMZ_EXDRD];
+             if(SLOWREAD) 
 
             mapped[AMZ_EXAFRD] = AK7_BLSTART+0;        // lsum low 16 bit
             tmp0 =  mapped[AMZ_EXDRD];
+            if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
             mapped[AMZ_EXAFRD] = AK7_BLSTART+1;        // lsum high 16 bit
             tmp1 =  mapped[AMZ_EXDRD];
+            if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
             lsum = tmp0 + (tmp1<<16); 
 
             mapped[AMZ_EXAFRD] = AK7_BLSTART+2;        // tsum low 16 bit
             tmp0 =  mapped[AMZ_EXDRD];
+             if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
             mapped[AMZ_EXAFRD] = AK7_BLSTART+3;        // tsum high 16 bit
             tmp1 =  mapped[AMZ_EXDRD];
+             if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
             tsum = tmp0 + (tmp1<<16); 
 
             mapped[AMZ_EXAFRD] = AK7_BLSTART+6;        // gsum low 16 bit
             tmp0 =  mapped[AMZ_EXDRD];
+             if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
             mapped[AMZ_EXAFRD] = AK7_BLSTART+7;        // gsum high 16 bit, unlock
             tmp1 =  mapped[AMZ_EXDRD];
+             if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
             gsum = tmp0 + (tmp1<<16); 
 
             if (tsum>0)		// tum=0 indicates bad baseline
@@ -299,25 +303,19 @@ int main(void) {
             }       // end tsum >0 check
          }          // end for loop
       }             // end periodicity check
-     
+         
       
       // -----------poll for events -----------
       // if data ready. read out, compute E, increment MCA *********
 
+      mapped[AOUTBLOCK] = CS_K0;	 // select FPGA 0 
       mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
       mapped[AMZ_EXDWR]  = 0x0;          //                         0x0  = system  page
  
-
- //     mapped[AMZ_EXAFRD] = 0x81;     // write to  k7's addr for read -> reading from 0x85 system status register
-  //      usleep(1);
-  //    evstats = mapped[AMZ_EXDRD];   // bits set for every channel that has data in header memory
-    //  printf( "K7 0 read from 0x81: 0x%X\n", evstats );
-
-
       // Read Header DPM status
       mapped[AMZ_EXAFRD] = AK7_SYSSYTATUS;     // write to  k7's addr for read -> reading from 0x85 system status register
-//        usleep(1);      // required?
       evstats = mapped[AMZ_EXDRD];   // bits set for every channel that has data in header memory
+      if(SLOWREAD)  evstats = mapped[AMZ_EXDRD];   
 
       // event readout compatible with P16 DSP code
       // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
@@ -327,13 +325,7 @@ int main(void) {
          {
             R1 = 1 << ch;
             if(evstats & R1)	{	 //  if there is an event in the header memory for this channel
-             //     mapped[AMZ_EXAFWR] = AK7_MEMADDR;     // specify   K7's addr     addr 4 = memory address
-             //     mapped[AMZ_EXDWR]  = 0x123; //HMaddr[ch];      //  take data from top of memory as remembered in C variable
-
-             //     HMaddr[ch] += 8;              // increment remembered header address, roll over if necessary
-             //     if(HMaddr[ch] >= 512)
-             //        HMaddr[ch] = HMaddr[ch] - 512;
-
+   
                   mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
                   mapped[AMZ_EXDWR]  = 0x100+ch;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
                  
@@ -341,26 +333,28 @@ int main(void) {
                   // dummy reads
                      mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
                      hdr[0] = mapped[AMZ_EXDRD];      // read 16 bits
-                     mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
-                     hdr[0] = mapped[AMZ_EXDRD];      // read 16 bits
-                     }
-            
+                  }            
 
                   // read 8 64bit words from header
                   for( k=0; k < 8; k++)
                   {
                      mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
                      hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
+                      if(SLOWREAD)  hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
                      mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
                      hdr[4*k+2] = mapped[AMZ_EXDRD];      // read 16 bits
+                      if(SLOWREAD)  hdr[4*k+2] = mapped[AMZ_EXDRD];      // read 16 bits
                      mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
                      hdr[4*k+1] = mapped[AMZ_EXDRD];      // read 16 bits
+                      if(SLOWREAD)  hdr[4*k+1] = mapped[AMZ_EXDRD];      // read 16 bits
                      mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
                      hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
+                      if(SLOWREAD)   hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
                      // the next 8 words only need to be read if QDCs are enabled
                   }
 
-             /*     printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
+              /*     printf( "Event count %d\n",eventcount );
+                  printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
                   printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
                   printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
                   printf( "Read 3 H-L: 0x %X %X %X %X\n",hdr[15], hdr[14], hdr[13], hdr[12] );
@@ -368,7 +362,7 @@ int main(void) {
                   printf( "Read 5 H-L: 0x %X %X %X %X\n",hdr[23], hdr[22], hdr[21], hdr[20] );
                   printf( "Read 6 H-L: 0x %X %X %X %X\n",hdr[27], hdr[26], hdr[25], hdr[24] );
                   printf( "Read 7 H-L: 0x %X %X %X %X\n",hdr[31], hdr[30], hdr[29], hdr[28] );
-            */
+              */ 
                 
                   out0   = hdr[0]+(hdr[1]<<16);  // preliminary, more bits to be filled in
                   timeL  = hdr[4]+(hdr[5]<<16); 
@@ -384,7 +378,8 @@ int main(void) {
                   // TODO: add pileup (and other) acceptance check
 
                   // waveform read (if accepted)
-                  // TODO: free trace memory by reading from last address (just set the address)
+                  // TODO: free trace memory by reading from last address (just set the address) if rejected
+              //    if(0) {
                   if( (TL[ch] >0) && ( CCSRA[ch] & (1<<CCSRA_TRACEENA)) )  {   // check if TL >0 and traces are recorded (bit 8 of CCSRA)
                     tracewrite = 1;
                  //   printf( "N samples %d, start addr 0x%X \n", TL[ch], trace_staddr);
@@ -394,8 +389,10 @@ int main(void) {
                     {
                         mapped[AMZ_EXAFRD] = AK7_TRCMEM_A;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
                         w0 = mapped[AMZ_EXDRD];      // read 16 bits
+                        if(SLOWREAD)  w0 = mapped[AMZ_EXDRD];
                         mapped[AMZ_EXAFRD] = AK7_TRCMEM_B;     // write to  k7's addr for read -> reading from AK7_TRCMEM_B channel header memory, high 16bit and addr increase
                         w1 = mapped[AMZ_EXDRD];      // read 16 bits  , increments trace memory address
+                        if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
                 
                        // re-order 2 sample words from 32bit FIFO
                        wf[k] = w0+(w1<<16);
@@ -454,8 +451,7 @@ int main(void) {
           
                        if( tracewrite )  {   // previously checked if TL >0 and traces are recorded (bit 8 of CCSRA)                          
                           fwrite( wf, TL[ch]/2, 4, fil );                        
-                       }   // end trace write
-                   
+                       }   // end trace write                   
                   }      // 0x100     
 
                    if(RunType==0x400)   {
@@ -505,22 +501,16 @@ int main(void) {
         {
        
             // 1) Run Statistics 
-           mapped[AOUTBLOCK] = CS_MZ;
 
-        /*     // for debug purposes, print to std out so we see what's going on
-            k = 3;    // no loop for now
-            {
-              m  = mapped[ARS0_MOD+k];
-              c0 = mapped[ARS0_CH0+k];
-              c1 = mapped[ARS0_CH1+k];
-              c2 = mapped[ARS0_CH2+k];
-              c3 = mapped[ARS0_CH3+k];
-              printf("%s,%u,%s,%u,%u,%u,%u\n ","RunTime",m,"COUNTTIME",c0,c1,c2,c3);        
-            }
-           */  
+            // for debug purposes, print to std out so we see what's going on
+            mapped[AOUTBLOCK] = CS_MZ;
+            tmp0 = mapped[AMZ_RS_TT+0];   // address offset by 1?
+            tmp1 = mapped[AMZ_RS_TT+1];
+            printf("%s %4.5G \n","Total_Time",((double)tmp0*65536+(double)tmp1*TWOTO32)*1e-9);    
+           //  printf("%s %d %d \n","Total_Time",tmp0,tmp1);    
+
             // print (small) set of RS to file, visible to web
             read_print_runstats_XL_2x4(1, 0, mapped);
-            mapped[AOUTBLOCK] = CS_MZ;     // read from event registers
       
 
             // 2) MCA
@@ -534,23 +524,21 @@ int main(void) {
 
         }
 
-          // ----------- loop housekeeping -----------
-
-
-
+        
+        
+        // ----------- loop housekeeping -----------
 
          loopcount ++;
          currenttime = time(NULL);
-    //           usleep(100);
-    //           printf( "currenttime: %d\n", currenttime );
       } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-   //   } while (eventcount <= 20); // run for a fixed number of events   
+    //  } while (eventcount <= 230); // run for a fixed number of events   
 
 
 
    // ********************** Run Stop **********************
 
    // set nLive bit to stop run
+    mapped[AOUTBLOCK] = CS_MZ;	 // select MZ
     mapped[ACSRIN] = 0x0000; // all off       
    // todo: there may be events left in the buffers. need to stop, then keep reading until nothing left
                       
