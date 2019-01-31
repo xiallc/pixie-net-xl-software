@@ -64,7 +64,7 @@ int main(void) {
   FILE * fil;
 
   unsigned int RunType, SyncT, ReqRunTime, PollTime;
-  unsigned int SL[NCHANNELS], CCSRA[NCHANNELS];
+  unsigned int SL[NCHANNELS], CCSRA[NCHANNELS], PILEUPCTRL[NCHANNELS];
   //unsigned int SG[NCHANNELS];
   float Tau[NCHANNELS], Dgain[NCHANNELS];
   unsigned int BLavg[NCHANNELS], BLcut[NCHANNELS], Binfactor[NCHANNELS], TL[NCHANNELS];
@@ -78,7 +78,7 @@ int main(void) {
   //unsigned int startTS, m, c0, c1, c2, c3, w0, w1, tmpI, revsn;
   unsigned int tmp0, tmp1; // tmp2, tmp3;
   unsigned int hdr[32];
-  unsigned int out0, out1, out2, out3, trace_staddr, tracewrite;
+  unsigned int out0, out1, out2, out3, trace_staddr, tracewrite, pileup;
   unsigned int evstats, R1, timeL, timeH, hit;
   //unsigned int evstats, R1, hit, timeL, timeH, psa0, psa1, cfd0;
   //unsigned int psa_base, psa_Q0, psa_Q1, psa_ampl, psa_R;
@@ -124,7 +124,7 @@ int main(void) {
   //CW           = (int)floor(fippiconfig.COINCIDENCE_WINDOW*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
 
   if( (RunType==0x100) || (RunType==0x400) || (RunType==0x301)  ) {      // check run type
-   // 0x100, 0x400 are ok
+   // 0x100, 0x400, 0x301 are ok
   } else {
       printf( "This function only support runtypes 0x100 (P16) or 0x400 or 0x301 \n");
       return(-1);
@@ -135,7 +135,8 @@ int main(void) {
       SL[k]          = (int)floor(fippiconfig.ENERGY_RISETIME[k]*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
 //    SG[k]          = (int)floor(fippiconfig.ENERGY_FLATTOP[k]*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
       Dgain[k]       = fippiconfig.DIG_GAIN[k];
-      TL[k]          = BLOCKSIZE_100*(int)floor(fippiconfig.TRACE_LENGTH[k]*ADC_CLK_MHZ/BLOCKSIZE_100);       // multiply time in us *  # ticks per us = time in ticks, multiple of 4
+   //   TL[k]          = BLOCKSIZE_100*(int)floor(fippiconfig.TRACE_LENGTH[k]*ADC_CLK_MHZ/BLOCKSIZE_100);       // multiply time in us *  # ticks per us = time in ticks, multiple of 4
+      TL[k]          = MULT_TL*(int)floor(fippiconfig.TRACE_LENGTH[k]*ADC_CLK_MHZ/MULT_TL);
       Binfactor[k]   = fippiconfig.BINFACTOR[k];
       Tau[k]         = fippiconfig.TAU[k];
       BLcut[k]       = fippiconfig.BLCUT[k];
@@ -145,6 +146,7 @@ int main(void) {
       if(BLavg[k]>MAX_BLAVG)  BLavg[k] = MAX_BLAVG;
       BLbad[k] = MAX_BADBL;   // initialize to indicate no good BL found yet
       CCSRA[k]       =  fippiconfig.CHANNEL_CSRA[k]; 
+      PILEUPCTRL[k] =  ( CCSRA[k] & (1<<CCSRA_PILEUPCTRL) ) >0;   // if bit set, only allow "single" non-piledup events
    }
 
 
@@ -373,18 +375,31 @@ int main(void) {
                   gsum = hdr[20]+(hdr[21]<<16);
                   trace_staddr = hdr[25]>>3;     // tmp2,3 + ext TS. tmp1[15:3] = trace start. rest = cfdout 1
               //    printf( "time Low: 0x%08X = %0f ms \n",timeL,timeL*13.333/1000000 );
+                  pileup = (out0 & 0x8000000)>>31;   // extract pileup bit
 
     
-                  // TODO: add pileup (and other) acceptance check
+              if( (PILEUPCTRL[k]==0)     || (PILEUPCTRL[k]==1 && !pileup )    )
+              {    // either don't care  OR pilup test required and  pileup bit not set
 
                   // waveform read (if accepted)
-                  // TODO: free trace memory by reading from last address (just set the address) if rejected
               //    if(0) {
                   if( (TL[ch] >0) && ( CCSRA[ch] & (1<<CCSRA_TRACEENA)) )  {   // check if TL >0 and traces are recorded (bit 8 of CCSRA)
                     tracewrite = 1;
                  //   printf( "N samples %d, start addr 0x%X \n", TL[ch], trace_staddr);
                     mapped[AMZ_EXAFWR] = AK7_MEMADDR+ch;     // specify   K7's addr     addr 4 = memory address
                     mapped[AMZ_EXDWR]  = trace_staddr;      //  take data from location recorded in trace memory
+
+                    // dummy read
+                  //   if(  eventcount==0) {
+                       mapped[AMZ_EXAFRD] = AK7_TRCMEM_A;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
+                       w0 = mapped[AMZ_EXDRD];      // read 16 bits
+                       if(SLOWREAD)  w0 = mapped[AMZ_EXDRD];
+                       mapped[AMZ_EXAFRD] = AK7_TRCMEM_B;     // write to  k7's addr for read -> reading from AK7_TRCMEM_B channel header memory, high 16bit and addr increase
+                       w1 = mapped[AMZ_EXDRD];      // read 16 bits  , increments trace memory address
+                       if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
+                  //  }
+
+
                     for( k=0; k < (TL[ch]/2); k++)
                     {
                         mapped[AMZ_EXAFRD] = AK7_TRCMEM_A;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
@@ -455,7 +470,7 @@ int main(void) {
                   }      // 0x100     
 
                    if(RunType==0x400)   {
-                       hit = (1<<ch);
+                       hit = (1<<ch) + 0x20 + (0x100<<ch);
                        TraceBlks = (int)floor(TL[ch]/BLOCKSIZE_400);
                        memcpy( buffer2 + 0, &(hit), 4 );
                        memcpy( buffer2 + 4, &(TraceBlks), 2 );
@@ -485,10 +500,13 @@ int main(void) {
                   }      // 0x400
                   
                   eventcount++;             
-     //          }
-     //          else { // event not acceptable (piled up 
-     //             R1 = mapped[chaddr+CA_REJECT];		// read this register to advance event FIFOs without incrementing Nout etc
-     //          }
+               }
+               else { // event not acceptable (piled up 
+                    // header memory already advanced, now also advance trace memory address
+                    mapped[AMZ_EXAFWR] = AK7_MEMADDR+ch;             // specify   K7's trace memory address
+                    mapped[AMZ_EXDWR]  = trace_staddr+TL[ch]/2 ;     //  advance to end of this event's trace
+                    // no write out
+               }
             }     // end event in this channel
          }        //end for ch
       }           // end event in any channel

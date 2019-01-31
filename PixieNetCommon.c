@@ -189,7 +189,7 @@ int hwinfo( volatile unsigned int *mapped )
    int k;
 
   // ---------------- read EEPROM ---------------------------
-    mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
+  mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
   saveaux = mapped[AAUXCTRL];	
   saveaux = saveaux & 0xFF8F;    // clear the I2C select bits
   mval = saveaux | I2C_SELMAIN;    // set bit 4-6 to select MZ I2C pins

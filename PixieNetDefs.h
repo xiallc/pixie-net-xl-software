@@ -77,7 +77,7 @@
 #define GAIN_HIGH 5          // gain limits
 #define GAIN_LOW 2
 #define MAX_TL 4092           // max length of captured waveform and pre-trigger delay
-#define MULT_TL 2             // trace lenght must be a multiple of this number
+#define MULT_TL 32             // trace lenght must be a multiple of this number
 #define TWEAK_UD 0           // adjustment to pre-trigger delay for internal pipelining
 #define MAX_BFACT 16
 #define MAX_PSATH 2044
