@@ -78,7 +78,7 @@ int main(void) {
   //unsigned int startTS, m, c0, c1, c2, c3, w0, w1, tmpI, revsn;
   unsigned int tmp0, tmp1; // tmp2, tmp3;
   unsigned int hdr[32];
-  unsigned int out0, out1, out2, out3, trace_staddr, tracewrite, pileup;
+  unsigned int out0, out1, out2, out3, trace_staddr, tracewrite, pileup, exttsL, exttsH;
   unsigned int evstats, R1, timeL, timeH, hit;
   //unsigned int evstats, R1, hit, timeL, timeH, psa0, psa1, cfd0;
   //unsigned int psa_base, psa_Q0, psa_Q1, psa_ampl, psa_R;
@@ -376,6 +376,8 @@ int main(void) {
                   trace_staddr = hdr[25]>>3;     // tmp2,3 + ext TS. tmp1[15:3] = trace start. rest = cfdout 1
               //    printf( "time Low: 0x%08X = %0f ms \n",timeL,timeL*13.333/1000000 );
                   pileup = (out0 & 0x8000000)>>31;   // extract pileup bit
+                  exttsL = hdr[26]+(hdr[27]<<16);
+                  exttsH = hdr[30];
 
     
               if( (PILEUPCTRL[k]==0)     || (PILEUPCTRL[k]==1 && !pileup )    )
@@ -460,8 +462,8 @@ int main(void) {
                        memcpy( buffer2 + 24, &(gsum), 4 );
                        memcpy( buffer2 + 28, &(out3), 4 );      // BL
 
-                       memcpy( buffer2 + 32, &(out3), 4 );      // ext TS
-                       memcpy( buffer2 + 36, &(out3), 4 );      // ext TS
+                       memcpy( buffer2 + 32, &(exttsL), 4 );      // ext TS
+                       memcpy( buffer2 + 36, &(exttsH), 4 );      // ext TS
                        fwrite( buffer2, 1, CHAN_HEAD_LENGTH_100*4, fil );
           
                        if( tracewrite )  {   // previously checked if TL >0 and traces are recorded (bit 8 of CCSRA)                          
@@ -487,8 +489,8 @@ int main(void) {
                        memcpy( buffer2 + 30, &(out3), 2 );  
                        memcpy( buffer2 + 32, &(out3), 2 );      // debug
                        memcpy( buffer2 + 34, &(out3), 2 );   
-                       memcpy( buffer2 + 36, &(out3), 4 );      // debug
-                       memcpy( buffer2 + 40, &(out3), 4 );   
+                       memcpy( buffer2 + 36, &(exttsL), 4 );      // debug
+                       memcpy( buffer2 + 40, &(exttsH), 4 );   
                        // no checksum  for now
                        memcpy( buffer2 + 60, &(wm), 4 );
                        fwrite( buffer2, 1, CHAN_HEAD_LENGTH_400*2, fil );

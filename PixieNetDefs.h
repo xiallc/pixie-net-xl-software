@@ -256,12 +256,12 @@
 #define I2C_SELDB1            0x0040     // select bit for I2C I/O (write to AUX_CTRL), PX desk DB1 I2C
 #define N_PL_IN_PAR           16    // number of input parameters for system and each channel
 #define N_PL_RS_PAR           32    // number of runstats parameters for system and each channel
-#define N_USED_RS_PAR         20    // not all RS parapmeters are used, can save some readout and printout cycles
+#define N_USED_RS_PAR         21    // not all RS parapmeters are used, can save some readout and printout cycles
 #define MAX_PAR_NAME_LENGTH   65    // Maximum length of parameter names
 #define BLREADPERIOD          20
 #define MIN_POLL_TIME         1000
 #define BLOCKSIZE_400         32    // waveform block size (# 16bit words) in run type 0x400
-#define BLOCKSIZE_100         2    // waveform block size (# 16bit words) in run type 0x400
+#define BLOCKSIZE_100         2     // waveform block size (# 16bit words) in run type 0x100
 #define FILE_HEAD_LENGTH_400  32    // file header size (# 16bit words) in run type 0x400
 #define CHAN_HEAD_LENGTH_400  32    // event/channel header size (# 16bit words) in run type 0x400
 #define CHAN_HEAD_LENGTH_100  10    // number of 32bit words in P16 0x100 run type

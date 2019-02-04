@@ -740,7 +740,7 @@ int read_print_runstats_XL_2x4(int mode, int dest, volatile unsigned int *mapped
   // Run stats PL Parameter names applicable to a Pixie module 
 char Controller_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
  //  "reserved",    // dummy read
-   "CSROUT",		//0 
+   "CSROUT",		//0     (BEGIN HEX)
    "reserved", 
    "reserved", 
    "reserved", 
@@ -750,19 +750,19 @@ char Controller_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    "SysTime", 
    "FW_VERSION", 
    "HW_VERSION", 
-   "TotalTime", 	   //10
+   "reserved", 	   //10
    "TotalTime",
    "TotalTime", 
    "TotalTime", 
-   "SNUM", 
-   "T_BOARD", 
-   "T_ZYNQ", 
-   "PCB_SNUM",
-   "PCB_VERSION",
-   "reserved",		   
-   "reserved",         //20
-   "reserved",
-   "reserved",
+   "reserved", 
+   "reserved", 
+   "reserved", 
+   "PCB_VERSION", 
+   "PCB_SNUM",       // 18 (BEGIN DECIMAL)
+   "SNUM",	
+   "T_BOARD",         //20 
+   "T_ZYNQ",            
+   "reserved",        // 22 (BEGIN HEX)
    "reserved",
    "reserved",
    "reserved",
@@ -778,7 +778,7 @@ char Controller_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    // Run stats PL Parameter names applicable to a Pixie module 
 char System_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
 //   "reserved",    // dummy read
-   "CSROUT",		//0 
+   "CSROUT",		//0  (BEGIN HEX)
    "sysstatus", 
    "dpmstatus", 
    "dpmstatus", 
@@ -791,25 +791,25 @@ char System_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    "RunTime", 	   //10
    "reserved",
    "FW_VERSION", 
-   "reserved", 
-    "reserved",
-   "T_ADC", 
-   "T_WR", 
-   "reserved",
-   "reserved", 
-   "reserved",
-   "reserved",		    
-   "reserved",        //20
-   "reserved",
-   "reserved",
-   "reserved",
+   "WR_TM_TAI", 
+   "WR_TM_TAI",
+   "WR_TM_TAI", 
+   "WR_TM_CYC", 
+   "WR_TM_CYC",
+   "T_ADC",          // 18 (BEGIN DECIMAL)
+   "T_WR",
+   "reserved",		    //20 
+   "reserved",       
+   "reserved",        // 22 (BEGIN HEX)
    "reserved",
    "reserved",
    "reserved",
    "reserved",
    "reserved",
-   "reserved",	    
-   "reserved"       //30
+   "reserved",
+   "reserved",
+   "reserved",	      //30
+   "reserved"      
 };
 
  // Run stats PL Parameter names applicable to a Pixie channel 
@@ -1029,27 +1029,25 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    {
       // ----------------- read I2C values (slow) to substitute some unused values
 
-
-      // a dummy I2C operation required for the TMP116 I/O?
-      co[15]    = (unsigned int)board_temperature(mapped,I2C_SELMAIN);
-      sy[0][15] = (unsigned int)board_temperature(mapped,I2C_SELDB0);
-      sy[1][15] = (unsigned int)board_temperature(mapped,I2C_SELDB1);
-  //    printf("T_board %d, T_DB0 %d, T_DB1 %d\n", co[15], sy[0][15], sy[1][15]); 
-      co[16]    = (int)zynq_temperature();
       revsn  = hwinfo(mapped);
-      co[18] = (revsn>>16) & 0xFFFF;    // pcb rev from TMP116
-      co[17] = revsn & 0xFFFF;          // s/n from TMP116
+      co[17] = (revsn>>16) & 0xFFFF;    // pcb rev from TMP116
+      co[18] = revsn & 0xFFFF;          // s/n from TMP116
+      co[19]    = co[10];  // repeat s/n stored in MZ memory as item 19 (decimal print)
+      co[20]    = (unsigned int)board_temperature(mapped,I2C_SELMAIN);
+      co[21]    = (int)zynq_temperature();
+
+      sy[0][18] = (unsigned int)board_temperature(mapped,I2C_SELDB0);
+      sy[1][18] = (unsigned int)board_temperature(mapped,I2C_SELDB1);
+  //    printf("T_board %d, T_DB0 %d, T_DB1 %d\n", co[15], sy[0][15], sy[1][15]); 
+      
       lastrs = N_USED_RS_PAR;
    }
-
-
-
 
   
    // print raw values also
    for( k = 0; k < lastrs; k ++ )
    {
-      if(k==14 || k==15 || k==16 || k==17) {   // print decimals for some parameters
+      if(k==18 || k==19 || k==20 || k==21) {   // print decimals for some parameters
          if(dest != 1) 
          {
             fprintf(fil,"%s,%u,",Controller_PLRS_Names[k],co[k]);
