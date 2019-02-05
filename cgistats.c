@@ -97,9 +97,9 @@ int main(void) {
  //    printf("{ParameterCo:\"test\", Controller:123, ParameterSy:\"test\",System0:234, System1:342,"); 
  //     printf("ParameterCh:\"test\", Channel0:1, Channel1:1, Channel2:1, Channel3:1, Channel4:1, Channel5:1, Channel6:1, Channel7:1},  \n");
 
-  mapped[AOUTBLOCK] = CS_MZ;
+  mapped[AMZ_DEVICESEL] = CS_MZ;
   read_print_runstats_XL_2x4(0, 1, mapped);
-  mapped[AOUTBLOCK] = CS_MZ;
+  mapped[AMZ_DEVICESEL] = CS_MZ;
   printf("  ];                 \n");
 
 

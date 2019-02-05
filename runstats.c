@@ -75,9 +75,9 @@ int main(void) {
 
   // ************** XIA code begins **************************
   
-  mapped[AOUTBLOCK] = CS_MZ;
+  mapped[AMZ_DEVICESEL] = CS_MZ;
   read_print_runstats_XL_2x4(0, 0, mapped);
-  mapped[AOUTBLOCK] = CS_MZ;
+  mapped[AMZ_DEVICESEL] = CS_MZ;
 
    
  // clean up  

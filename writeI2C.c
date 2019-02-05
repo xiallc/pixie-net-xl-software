@@ -132,7 +132,7 @@ int main( int argc, char *argv[] ) {
    }
    
 
-  mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
+  mapped[AMZ_DEVICESEL] = CS_MZ;	  // read/write from/to MZ IO block
   if(dev==0) mval = I2C_SELMAIN ;          // set bit 4 to select MZ I2C pins
   if(dev==1) mval = I2C_SELDB0 ;
   if(dev==2) mval = I2C_SELDB1 ;

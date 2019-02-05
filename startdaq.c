@@ -236,19 +236,31 @@ int main(void) {
     }
 
     // Run Start Control
-   mapped[AOUTBLOCK] = CS_MZ;	 // select MZ
+   mapped[AMZ_DEVICESEL] = CS_MZ;	 // select MZ
    if(SyncT==1)
       mapped[ARTC_CLR] = 0x0001; // any write will create a pulse to clear timers
 
 
 
-   if(WR_RTCtrl==1)     // RunEnable/Live set via WR time comparison
+   if(WR_RTCtrl==1)     // RunEnable/Live set via WR time comparison  (if startT < WR time < stopT => RunEnable=1) 
    {
-      tmp0 = mapped[AK7_WR_TM_TAI+0];    // read current time
-      tmp1 = mapped[AK7_WR_TM_TAI+1];
-      tmp2 = mapped[AK7_WR_TM_TAI+2];
+      mapped[AMZ_DEVICESEL] = CS_K0;	      // specify which K7 
+      mapped[AMZ_EXAFWR] = AK7_PAGE;   // specify   K7's addr:    PAGE register
+      mapped[AMZ_EXDWR]  = 0x000;      //  PAGE 0: system, page 0x10n = channel n
+
+      // get current WR time
+      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+0;   
+      tmp0 =  mapped[AMZ_EXDRD];
+      if(SLOWREAD)      tmp0 =  mapped[AMZ_EXDRD];
+      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+1;   
+      tmp1 =  mapped[AMZ_EXDRD];
+      if(SLOWREAD)      tmp1 =  mapped[AMZ_EXDRD];
+      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+2;   
+      tmp2 =  mapped[AMZ_EXDRD];
+      if(SLOWREAD)      tmp2 =  mapped[AMZ_EXDRD];
       WR_tm_tai = tmp0 +  65536*tmp1 + TWOTO32*tmp2;
 
+      //find next "round" time point 
       WR_tm_tai_next = WR_TAI_STEP*(unsigned long long)floor(WR_tm_tai/WR_TAI_STEP)+ WR_TAI_STEP;   // next coarse time step
      // if( WR_tm_tai_next - WR_tm_tai < WR_TAI_MARGIN)                                          // if too close, 
      //       WR_tm_tai_next = WR_tm_tai_next + WR_TAI_STEP;                                     // one more step   
@@ -256,19 +268,33 @@ int main(void) {
     
       WR_tm_tai_start =  WR_tm_tai_next;
       WR_tm_tai_stop  =  WR_tm_tai_next + ReqRunTime;
+      ReqRunTime = ReqRunTime + WR_TAI_STEP;    // increase time for local DAQ counter accordingly
 
-      mapped[AK7_WR_TM_TAI_START+0] =  WR_tm_tai_start      & 0x00000000FFFF;
-      mapped[AK7_WR_TM_TAI_START+1] = (WR_tm_tai_start>>16) & 0x00000000FFFF;
-      mapped[AK7_WR_TM_TAI_START+2] = (WR_tm_tai_start>>32) & 0x00000000FFFF;
-      mapped[AK7_WR_TM_TAI_START+0] =  WR_tm_tai_stop       & 0x00000000FFFF;
-      mapped[AK7_WR_TM_TAI_START+1] = (WR_tm_tai_stop>>16)  & 0x00000000FFFF;
-      mapped[AK7_WR_TM_TAI_START+2] = (WR_tm_tai_stop>>32)  & 0x00000000FFFF;
+      printf( "Current time %llu\n",WR_tm_tai );
+      printf( "Start time %llu\n",WR_tm_tai_start );
+      printf( "Stop time %llu\n",WR_tm_tai_stop );
+
+      // write start/stop to K7
+      mapped[AMZ_EXAFWR] =  AK7_WR_TM_TAI_START+0;   // specify   K7's addr:    WR start time register
+      mapped[AMZ_EXDWR]  =  WR_tm_tai_start      & 0x00000000FFFF;
+      mapped[AMZ_EXAFWR] =  AK7_WR_TM_TAI_START+1;   // specify   K7's addr:    WR start time register
+      mapped[AMZ_EXDWR]  =  (WR_tm_tai_start>>16) & 0x00000000FFFF;
+      mapped[AMZ_EXAFWR] =  AK7_WR_TM_TAI_START+2;   // specify   K7's addr:    WR start time register
+      mapped[AMZ_EXDWR]  =  (WR_tm_tai_start>>32) & 0x00000000FFFF;
+
+      mapped[AMZ_EXAFWR] =  AK7_WR_TM_TAI_STOP+0;   // specify   K7's addr:    WR stop time register
+      mapped[AMZ_EXDWR]  =  WR_tm_tai_stop      & 0x00000000FFFF;
+      mapped[AMZ_EXAFWR] =  AK7_WR_TM_TAI_STOP+1;   // specify   K7's addr:    WR stop time register
+      mapped[AMZ_EXDWR]  =  (WR_tm_tai_stop>>16) & 0x00000000FFFF;
+      mapped[AMZ_EXAFWR] =  AK7_WR_TM_TAI_STOP+2;   // specify   K7's addr:    WR stop time register
+      mapped[AMZ_EXDWR]  =  (WR_tm_tai_stop>>32) & 0x00000000FFFF;   
    }  
    
-   
-   mapped[ACSRIN] = 0x0001; // RunEnable=1 > nLive=0 (DAQ on)
+   mapped[AMZ_DEVICESEL] = CS_MZ;	 // select MZ
+   mapped[AMZ_CSRIN] = 0x0001; // RunEnable=1 > nLive=0 (DAQ on)
    // this is a bit in a MZ register tied to a line to both FPGAs
    // falling edge of nLive clears counters and memory address pointers
+   // line ignored for WR_RTCtrl in K7, but stull usefule for TotalTime in MZ  
    
 
     // ********************** Run Loop **********************
@@ -278,7 +304,7 @@ int main(void) {
       //----------- Periodically read BL and update average -----------
       // this will be moved into the FPGA soon
       if(loopcount % BLREADPERIOD == 0) {  //|| (loopcount ==0) ) {     // sometimes 0 mod N not zero and first few events have wrong E? watch
-         mapped[AOUTBLOCK] = CS_K0;	 // select FPGA 0 
+         mapped[AMZ_DEVICESEL] = CS_K0;	 // select FPGA 0 
          for( ch=0; ch < NCHANNEL_PER_K7; ch++) {
             // read raw BL sums 
             mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
@@ -338,7 +364,7 @@ int main(void) {
       // -----------poll for events -----------
       // if data ready. read out, compute E, increment MCA *********
 
-      mapped[AOUTBLOCK] = CS_K0;	 // select FPGA 0 
+      mapped[AMZ_DEVICESEL] = CS_K0;	 // select FPGA 0 
       mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
       mapped[AMZ_EXDWR]  = 0x0;          //                         0x0  = system  page
  
@@ -551,7 +577,7 @@ int main(void) {
             // 1) Run Statistics 
 
             // for debug purposes, print to std out so we see what's going on
-            mapped[AOUTBLOCK] = CS_MZ;
+            mapped[AMZ_DEVICESEL] = CS_MZ;
             tmp0 = mapped[AMZ_RS_TT+0];   // address offset by 1?
             tmp1 = mapped[AMZ_RS_TT+1];
             printf("%s %4.5G \n","Total_Time",((double)tmp0*65536+(double)tmp1*TWOTO32)*1e-9);    
@@ -585,9 +611,30 @@ int main(void) {
 
    // ********************** Run Stop **********************
 
+   /* debug */
+
+      mapped[AMZ_DEVICESEL] = CS_K0;	      // specify which K7 
+      mapped[AMZ_EXAFWR] = AK7_PAGE;   // specify   K7's addr:    PAGE register
+      mapped[AMZ_EXDWR]  = 0x000;      //  PAGE 0: system, page 0x10n = channel n
+
+         // get current time
+      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+0;   
+      tmp0 =  mapped[AMZ_EXDRD];
+      if(SLOWREAD)      tmp0 =  mapped[AMZ_EXDRD];
+      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+1;   
+      tmp1 =  mapped[AMZ_EXDRD];
+      if(SLOWREAD)      tmp1 =  mapped[AMZ_EXDRD];
+      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+2;   
+      tmp2 =  mapped[AMZ_EXDRD];
+      if(SLOWREAD)      tmp2 =  mapped[AMZ_EXDRD];
+      WR_tm_tai = tmp0 +  65536*tmp1 + TWOTO32*tmp2;
+
+      printf( "Current time %llu\n",WR_tm_tai );
+      /* end debug */
+
    // set nLive bit to stop run
-    mapped[AOUTBLOCK] = CS_MZ;	 // select MZ
-    mapped[ACSRIN] = 0x0000; // all off       
+    mapped[AMZ_DEVICESEL] = CS_MZ;	 // select MZ
+    mapped[AMZ_CSRIN] = 0x0000; // all off       
    // todo: there may be events left in the buffers. need to stop, then keep reading until nothing left
                       
    // final save MCA and RS
@@ -599,13 +646,13 @@ int main(void) {
    }
    fclose(filmca);
 
-   mapped[AOUTBLOCK] = CS_MZ;
+   mapped[AMZ_DEVICESEL] = CS_MZ;
    read_print_runstats_XL_2x4(0, 0, mapped);
-   mapped[AOUTBLOCK] = CS_MZ;
+   mapped[AMZ_DEVICESEL] = CS_MZ;
 
  
  // clean up  
- if( (RunType==0x100) )  { 
+ if( (RunType==0x100) ||  (RunType==0x400) )  { 
    fclose(fil);
  }
  flock( fd, LOCK_UN );

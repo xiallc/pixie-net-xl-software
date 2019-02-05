@@ -204,50 +204,60 @@
 #define CS_MZ   0x00
 #define CS_K0   0x04
 #define CS_K1   0x08
-#define AMZ_FIRSTDAC 0x10
-#define AMZ_EXAFWR   0x18
-#define AMZ_EXAFRD   0x19
-#define AMZ_EXDWR    0x1A
-#define AMZ_EXDRD    0x1B
-#define AMZ_CSROUTL  0x20
-#define AMZ_CSROUTH  0x21
-#define AMZ_BRDINFO  0x22
-#define AMZ_SYSREV   0x28
-#define AMZ_RS       0x20
-#define AMZ_RS_TT    0x2B
 
-#define AK7_P16REG00   0x40
-#define AK7_P16REG01   0x44
-#define AK7_P16REG02   0x48
-#define AK7_P16REG03   0x4C
-#define AK7_P16REG05   0x4E
-#define AK7_P16REG06   0x52
-#define AK7_P16REG07   0x56
-#define AK7_P16REG13   0x5A
-#define AK7_P16REG17   0x5C
-#define AK7_MEMADDR    0x010
-#define AK7_PAGE       0x03
-#define AK7_ADCSPI     0x05
-#define AK7_ADCBITSLIP 0x06
-#define AK7_SYSSYTATUS 0x81
-#define AK7_ADCFRAME   0x86
-#define AK7_HDRMEM_A   0xD9
-#define AK7_HDRMEM_B   0xDA
-#define AK7_HDRMEM_C   0xDB
-#define AK7_HDRMEM_D   0xDC
-#define AK7_TRCMEM_A   0xDD
-#define AK7_TRCMEM_B   0xDE
-#define AK7_BLLOCK     0xD4
-#define AK7_BLSTART    0xC8
-#define AK7_SYS_RS     0x80
-#define AK7_CHN_RS_CT  0xC0
-#define AK7_ADC        0xC4
-#define AK7_CHN_RS_NTRIG 0xD0
-#define AK7_CHN_RS_NOUT  0xD5
+// addresses in MZ controller - direct read/write
+#define AMZ_CSRIN     0x00
+#define AMZ_DEVICESEL 0x03
+#define AMZ_FIRSTDAC  0x10
+#define AMZ_EXAFWR    0x18
+#define AMZ_EXAFRD    0x19
+#define AMZ_EXDWR     0x1A
+#define AMZ_EXDRD     0x1B
+#define AMZ_CSROUTL   0x20
+#define AMZ_CSROUTH   0x21
+#define AMZ_BRDINFO   0x22
+#define AMZ_SYSREV    0x28
+#define AMZ_RS        0x20
+#define AMZ_RS_TT     0x2B
 
-#define AK7_WR_TM_TAI       0x8D
-#define AK7_WR_TM_TAI_START 0x07
-#define AK7_WR_TM_TAI_STOP  0x0A
+// addresses in K7 -- read/write via AMZ_EX___
+#define AK7_SCSRIN            0x00
+#define AK7_PAGE              0x03
+#define AK7_ADCSPI            0x05
+#define AK7_ADCBITSLIP        0x06
+#define AK7_WR_TM_TAI_START   0x07
+#define AK7_WR_TM_TAI_STOP    0x0A
+#define AK7_MEMADDR           0x10
+
+#define AK7_P16REG00          0x40
+#define AK7_P16REG01          0x44
+#define AK7_P16REG02          0x48
+#define AK7_P16REG03          0x4C
+#define AK7_P16REG05          0x4E
+#define AK7_P16REG06          0x52
+#define AK7_P16REG07          0x56
+#define AK7_P16REG13          0x5A
+#define AK7_P16REG17          0x5C
+
+#define AK7_SYSSYTATUS        0x81
+#define AK7_ADCFRAME          0x86
+#define AK7_WR_TM_TAI         0x8D
+
+#define AK7_HDRMEM_A          0xD9
+#define AK7_HDRMEM_B          0xDA
+#define AK7_HDRMEM_C          0xDB
+#define AK7_HDRMEM_D          0xDC
+#define AK7_TRCMEM_A          0xDD
+#define AK7_TRCMEM_B          0xDE
+#define AK7_BLLOCK            0xD4
+#define AK7_BLSTART           0xC8
+#define AK7_SYS_RS            0x80
+#define AK7_CHN_RS_CT         0xC0
+#define AK7_ADC               0xC4
+#define AK7_CHN_RS_NTRIG      0xD0
+#define AK7_CHN_RS_NOUT       0xD5
+
+ 
 #define WR_TAI_STEP    10
 
 // program control constants
@@ -307,6 +317,9 @@
 #define CCSRC_MODVETOSEL    4  // Module veto selection - 1: module validation trigger; 0: front panel module veto
 #define CCSRC_EXTTSENA      5  // External timestamps in event header - 1: enable; 0: disable
 
+// other CSR bits
+#define WRC_RUNTIME         0  // if set, Enable WR run time control
+
 // P16 Fippi register bits
 #define FiPPI_HALT          0   // Halt Fippi (lower 32-bit word)
 #define FiPPI_INVRT         1   // Polarity (lower 32-bit word)
@@ -321,4 +334,7 @@
 #define FiPPI_GROUP			8	// Group trigger
 #define FiPPI_LIVE			9	// Individual live time measurement
 #define SelExtFastTrig		12	// Select external trigger to record event, instead of local fast trigger
+
+// other FW control register bits
+#define SCSR_WRRUNTIMECTRL			1	// Enable WR run time Control
 

@@ -101,7 +101,7 @@ int main( int argc, char *argv[] ) {
 
 /*  // LVDS drive strength
 
-   mapped[AOUTBLOCK] = CS_K0;	      // select FPGA 0 
+   mapped[AMZ_DEVICESEL] = CS_K0;	      // select FPGA 0 
    mapped[AMZ_EXAFWR] = AK7_ADCSPI; // write to  k7's addr     addr 5 = SPI
    mval = 0 << 15;                  // SPI write (high bit=0)
    mval = mval + (0x02 << 8);       // SPI reg address  (bit 13:8)
@@ -115,7 +115,7 @@ int main( int argc, char *argv[] ) {
 
  do {
       // read frame 
-      mapped[AOUTBLOCK] = CS_K0;	            // select FPGA 0 
+      mapped[AMZ_DEVICESEL] = CS_K0;	            // select FPGA 0 
       chsel = 0x000;                         // sys range
       mapped[AMZ_EXAFWR] = AK7_PAGE;         // write to  k7's addr        addr 3 = channel/system, select    
       mapped[AMZ_EXDWR] = chsel;             //  0x000  = system page                
@@ -194,7 +194,7 @@ int main( int argc, char *argv[] ) {
 
 
  
-  mapped[AOUTBLOCK] = CS_MZ;	  // deselect FPGA 0  
+  mapped[AMZ_DEVICESEL] = CS_MZ;	  // deselect FPGA 0  
  
  // clean up  
  flock( fd, LOCK_UN );

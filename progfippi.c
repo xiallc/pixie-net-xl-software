@@ -155,12 +155,12 @@ int main(void) {
       return -400;
     }
 
-       if(fippiconfig.SLOT_ID > MAX_SLOT_ID) {
+   if(fippiconfig.SLOT_ID > MAX_SLOT_ID) {
       printf("Invalid SLOT_ID = %d, must be < %d\n",fippiconfig.SLOT_ID,MAX_SLOT_ID);
       return -400;
     }
 
-       if(fippiconfig.MODULE_ID > MAX_MODULE_ID) {
+   if(fippiconfig.MODULE_ID > MAX_MODULE_ID) {
        // todo: check for valid module type numbers
       printf("Invalid CRATE_ID = %d, must be < %d\n",fippiconfig.MODULE_ID,MAX_MODULE_ID);
       return -400;
@@ -169,6 +169,12 @@ int main(void) {
    // AUX CTRL:
     if(fippiconfig.AUX_CTRL > 65535) {
       printf("Invalid AUX_CTRL = 0x%x\n",fippiconfig.AUX_CTRL);
+      return -2700;
+    }
+
+   //  WR_RUNTIME_CTRL:
+    if(fippiconfig.WR_RUNTIME_CTRL > 1) {
+      printf("Invalid WR_RUNTIME_CTRL = 0x%x\n",fippiconfig.WR_RUNTIME_CTRL);
       return -2700;
     }
 
@@ -501,11 +507,12 @@ int main(void) {
 
    // -------------- now package  and write -------------------
 
-   mapped[AOUTBLOCK] = CS_MZ;	  // select MicroZed Controller
+   // CONTROLLER REGISTERS IN MZ
+   mapped[AMZ_DEVICESEL] = CS_MZ;	  // select MicroZed Controller
 
   
   // first, set CSR run control options   
-  mapped[ACSRIN] = 0x0000; // all off)
+  mapped[AMZ_CSRIN] = 0x0000; // all off)
 
   mval =  fippiconfig.AUX_CTRL  & 0x00FF;  // upper bits reserved (yellow LED)
   mval = mval + 0x0100;     // set bit 8: yellow LED on
@@ -514,15 +521,31 @@ int main(void) {
 
 
 
-   
+    // SYSTEM REGISTERS IN K7
     
-   mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
+   mapped[AMZ_DEVICESEL] = CS_K0;	  // select FPGA 0 
 
+   mapped[AMZ_EXAFWR] = AK7_PAGE;   // specify   K7's addr:    PAGE register
+   mapped[AMZ_EXDWR]  = 0x000;      //  PAGE 0: system, page 0x10n = channel n
+
+
+     reglo = 0;                          // write 0 to reset
+     mapped[AMZ_EXAFWR] = AK7_SCSRIN;    // write to  k7's addr to select register for write
+     mapped[AMZ_EXDWR]  = reglo;        // write lower 16 bit
+
+   reglo = reglo + setbit(fippiconfig.WR_RUNTIME_CTRL,WRC_RUNTIME, SCSR_WRRUNTIMECTRL   );      // check for bit enabling WR runtime control
+   mapped[AMZ_EXAFWR] = AK7_SCSRIN;    // write to  k7's addr to select register for write
+   mapped[AMZ_EXDWR]  = reglo;        // write lower 16 bit
+
+   // Note: no "module" registers as this is confusing (2 K7 in this "desktop module", no system FPGA)
+
+
+    // CHANNEL REGISTERS IN K7
     for( k = 0; k < NCHANNEL_PER_K7 ; k ++ )
     {
 
-       mapped[AMZ_EXAFWR] = AK7_PAGE;     // write to  k7's addr to select PAGE register
-       mapped[AMZ_EXDWR]  = 0x100+k;      // write to select a channel page     
+      mapped[AMZ_EXAFWR] = AK7_PAGE;   // specify   K7's addr:    PAGE register
+      mapped[AMZ_EXDWR]  = 0x100 +k;      //  PAGE 0: system, page 0x10n = channel n
 
 
      // ......... P16 Reg 0  .......................            
@@ -532,7 +555,7 @@ int main(void) {
       reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_POLARITY,      FiPPI_INVRT   );     
       reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_VETOENA,       FiPPI_VETOENA   );     
       reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_EXTTRIGSEL,    FiPPI_EXTTRIGSEL   );     
-      reglo = reglo + (SFR<<4);                               //  Store SlowFilterRange in bits [6:4] 
+      reglo = reglo + (SFR<<4);                        //  Store SlowFilterRange in bits [6:4] 
       mval = 129-SL[k];
       reglo = reglo + (mval<<7);                       //  SlowLength in bits [13:7]
       mval = 129-SL[k]-SG[k];
@@ -726,7 +749,7 @@ int main(void) {
 
    // --------------------------- DACs -----------------------------------
 
-    mapped[AOUTBLOCK] = CS_MZ;	  // select MZ controller
+    mapped[AMZ_DEVICESEL] = CS_MZ;	  // select MZ controller
 
    for( k = 0; k < NCHANNELS_PRESENT; k ++ )
    {
@@ -825,7 +848,7 @@ int main(void) {
       }    // end for
 
       // I2C write for 4 channels
-       mapped[AOUTBLOCK] = CS_MZ;	  // select MZ controller
+       mapped[AMZ_DEVICESEL] = CS_MZ;	  // select MZ controller
        mapped[AAUXCTRL] = I2C_SELDB0;	  // select bit 5 -> DB0 I2C        // XXXXXX
 
        // first 8 bits
@@ -904,7 +927,7 @@ int main(void) {
       }    // end for
 
       // I2C write for 4 channels
-       mapped[AOUTBLOCK] = CS_MZ;	  // select MZ controller
+       mapped[AMZ_DEVICESEL] = CS_MZ;	  // select MZ controller
        mapped[AAUXCTRL] = I2C_SELDB1;	  // select bit 6 -> DB1 I2C        // XXXXXX
 
        // first 8 bits
@@ -989,7 +1012,7 @@ int main(void) {
 
      */ 
 
-  mapped[AOUTBLOCK] = CS_MZ;	  // select MicroZed Controller
+  mapped[AMZ_DEVICESEL] = CS_MZ;	  // select MicroZed Controller
 
   mval =  fippiconfig.AUX_CTRL  & 0x00FF;  // upper bits reserved (yellow LED)
   mval = mval + 0x0000;     // clr bit 8: yellow LED off
@@ -998,10 +1021,10 @@ int main(void) {
  
 
   // toggle nLive to clear memories
-      mapped[AOUTBLOCK] = CS_MZ;	 // select MZ
-   mapped[ACSRIN] = 0x0001; // RunEnable=1 > nLive=0 (DAQ on)
-       mapped[AOUTBLOCK] = CS_MZ;	 // select MZ
-   mapped[ACSRIN] = 0x0000; // RunEnable=1 > nLive=0 (DAQ on)
+   mapped[AMZ_DEVICESEL] = CS_MZ;	 // select MZ
+   mapped[AMZ_CSRIN] = 0x0001; // RunEnable=1 > nLive=0 (DAQ on)
+   mapped[AMZ_DEVICESEL] = CS_MZ;	 // select MZ
+   mapped[AMZ_CSRIN] = 0x0000; // RunEnable=1 > nLive=0 (DAQ on)
 
 
      

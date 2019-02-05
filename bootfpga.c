@@ -112,7 +112,7 @@ int main( void ) {
  
    // ************************ FPGA programming  *********************************
 
-  mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ 
+  mapped[AMZ_DEVICESEL] = CS_MZ;	  // read/write from/to MZ 
 
  /* // test read write
   mval = mapped[0x1];	

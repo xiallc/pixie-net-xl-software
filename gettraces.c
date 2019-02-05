@@ -81,7 +81,7 @@ int main(void) {
    
    // read 8K samples from ADC register 
    // at this point, no guarantee that sampling is truly periodic
-   mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
+   mapped[AMZ_DEVICESEL] = CS_K0;	  // select FPGA 0 
    chsel = 0x100;        // channel 0
    
    for(ch=0;ch<4;ch++) {

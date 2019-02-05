@@ -154,7 +154,7 @@ void I2Cbytereceive(volatile unsigned int *mapped, unsigned int *data) {
       mval = 2;   // set SCL      
       mapped[AI2CREG] = mval; 
       usleep(I2CWAIT);
-   //   mapped[AOUTBLOCK] = OB_EVREG;          
+   //   mapped[AMZ_DEVICESEL] = OB_EVREG;          
       mval = mapped[AMZ_CSROUTL];
    //   printf("CSRout %x I2Cwait %d \n",mval,I2CWAIT);
       if(mval & 0x4)          // test for SDA out bit
@@ -173,9 +173,9 @@ void I2Cbytereceive(volatile unsigned int *mapped, unsigned int *data) {
  // returns 2^bitf if bit bitc of par is 1 
  { 
    unsigned int ret;
-        ret = par & (1 << bitc);     // bitwise and or parameter with ccsra bit
-        ret = ret >> bitc;                 // shift down to bit 0 
-        ret = ret << bitf;                 // shift up to fippi bit
+        ret = par & (1 << bitc);     // bitwise AND parameter with csr (= input) bit
+        ret = ret >> bitc;           // shift down to bit 0 
+        ret = ret << bitf;           // shift up to fippi (= output) bit
         return (ret);
   }
 
@@ -189,13 +189,13 @@ int hwinfo( volatile unsigned int *mapped )
    int k;
 
   // ---------------- read EEPROM ---------------------------
-  mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
+  mapped[AMZ_DEVICESEL] = CS_MZ;	  // read/write from/to MZ IO block
   saveaux = mapped[AAUXCTRL];	
   saveaux = saveaux & 0xFF8F;    // clear the I2C select bits
   mval = saveaux | I2C_SELMAIN;    // set bit 4-6 to select MZ I2C pins
   mapped[AAUXCTRL] = mval;
 
-//   mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
+//   mapped[AMZ_DEVICESEL] = CS_MZ;	  // read/write from/to MZ IO block
 //  mval = mapped[AAUXCTRL];	
 //  mval = mval | 0x0010;    // set bit 4 to select MZ I2C pins
 //  mapped[AAUXCTRL] = mval;
@@ -299,7 +299,7 @@ float board_temperature( volatile unsigned int *mapped, unsigned int I2Csel )
    int k;
 
   // ---------------- read EEPROM ---------------------------
-  mapped[AOUTBLOCK] = CS_MZ;	  // read/write from/to MZ IO block
+  mapped[AMZ_DEVICESEL] = CS_MZ;	  // read/write from/to MZ IO block
   saveaux = mapped[AAUXCTRL];	
   saveaux = saveaux & 0xFF8F;    // clear the I2C select bits
   mval = saveaux | I2Csel;    // set bit 4-6 to select MZ I2C pins
@@ -537,7 +537,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
   // read _used_ RS values (32bit) from FPGA 
   // at this point, raw binary values; later conversion into count rates etc
 
- //   mapped[AOUTBLOCK] = OB_RSREG;		// switch reads to run statistics block of addresses
+ //   mapped[AMZ_DEVICESEL] = OB_RSREG;		// switch reads to run statistics block of addresses
  // must be done by calling function
    for( k = 0; k < N_USED_RS_PAR; k ++ )
    {
@@ -865,7 +865,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
   // at this point, raw binary values; later conversion into count rates etc
 
   // read controller data
-  mapped[AOUTBLOCK] = CS_MZ;
+  mapped[AMZ_DEVICESEL] = CS_MZ;
   for( k = 0; k < 16; k ++ )
   {
       co[k] =  mapped[AMZ_RS+k];
@@ -874,7 +874,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
 
 
   // read from K7 - 0 
-  mapped[AOUTBLOCK] = CS_K0;
+  mapped[AMZ_DEVICESEL] = CS_K0;
 
   // read system data
   mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
@@ -911,7 +911,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
   }
 
   // read from K7 - 1 
-  mapped[AOUTBLOCK] = CS_K1;
+  mapped[AMZ_DEVICESEL] = CS_K1;
 
   // read system data
   mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
