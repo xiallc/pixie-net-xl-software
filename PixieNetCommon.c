@@ -1078,6 +1078,8 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
       }
    }  // end for
 
+ //   printf("lastrs %d, k %d \n", lastrs, k); 
+
    
       
        

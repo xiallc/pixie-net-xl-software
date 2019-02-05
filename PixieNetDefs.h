@@ -245,6 +245,11 @@
 #define AK7_CHN_RS_NTRIG 0xD0
 #define AK7_CHN_RS_NOUT  0xD5
 
+#define AK7_WR_TM_TAI       0x8D
+#define AK7_WR_TM_TAI_START 0x07
+#define AK7_WR_TM_TAI_STOP  0x0A
+#define WR_TAI_STEP    10
+
 // program control constants
 #define LINESZ                1024  // max number of characters in ini file line
 #define I2CWAIT               4     // us between I2C clock toggles
@@ -256,7 +261,7 @@
 #define I2C_SELDB1            0x0040     // select bit for I2C I/O (write to AUX_CTRL), PX desk DB1 I2C
 #define N_PL_IN_PAR           16    // number of input parameters for system and each channel
 #define N_PL_RS_PAR           32    // number of runstats parameters for system and each channel
-#define N_USED_RS_PAR         21    // not all RS parapmeters are used, can save some readout and printout cycles
+#define N_USED_RS_PAR         22    // not all RS parapmeters are used, can save some readout and printout cycles
 #define MAX_PAR_NAME_LENGTH   65    // Maximum length of parameter names
 #define BLREADPERIOD          20
 #define MIN_POLL_TIME         1000

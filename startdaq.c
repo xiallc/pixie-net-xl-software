@@ -63,7 +63,7 @@ int main(void) {
   FILE * filmca;
   FILE * fil;
 
-  unsigned int RunType, SyncT, ReqRunTime, PollTime;
+  unsigned int RunType, SyncT, ReqRunTime, PollTime, WR_RTCtrl;
   unsigned int SL[NCHANNELS], CCSRA[NCHANNELS], PILEUPCTRL[NCHANNELS];
   //unsigned int SG[NCHANNELS];
   float Tau[NCHANNELS], Dgain[NCHANNELS];
@@ -76,7 +76,8 @@ int main(void) {
   time_t starttime, currenttime;
   unsigned int w0, w1, revsn;
   //unsigned int startTS, m, c0, c1, c2, c3, w0, w1, tmpI, revsn;
-  unsigned int tmp0, tmp1; // tmp2, tmp3;
+  unsigned int tmp0, tmp1, tmp2; //, tmp3;
+  unsigned long long WR_tm_tai, WR_tm_tai_start, WR_tm_tai_stop, WR_tm_tai_next;
   unsigned int hdr[32];
   unsigned int out0, out1, out2, out3, trace_staddr, tracewrite, pileup, exttsL, exttsH;
   unsigned int evstats, R1, timeL, timeH, hit;
@@ -118,6 +119,7 @@ int main(void) {
   // assign to local variables, including any rounding/discretization
   //Accept       = fippiconfig.ACCEPT_PATTERN;
   RunType      = fippiconfig.RUN_TYPE;
+  WR_RTCtrl    = fippiconfig.WR_RUNTIME_CTRL;
   SyncT        = fippiconfig.SYNC_AT_START;
   ReqRunTime   = fippiconfig.REQ_RUNTIME;
   PollTime     = fippiconfig.POLL_TIME;
@@ -237,7 +239,33 @@ int main(void) {
    mapped[AOUTBLOCK] = CS_MZ;	 // select MZ
    if(SyncT==1)
       mapped[ARTC_CLR] = 0x0001; // any write will create a pulse to clear timers
-   else 
+
+
+
+   if(WR_RTCtrl==1)     // RunEnable/Live set via WR time comparison
+   {
+      tmp0 = mapped[AK7_WR_TM_TAI+0];    // read current time
+      tmp1 = mapped[AK7_WR_TM_TAI+1];
+      tmp2 = mapped[AK7_WR_TM_TAI+2];
+      WR_tm_tai = tmp0 +  65536*tmp1 + TWOTO32*tmp2;
+
+      WR_tm_tai_next = WR_TAI_STEP*(unsigned long long)floor(WR_tm_tai/WR_TAI_STEP)+ WR_TAI_STEP;   // next coarse time step
+     // if( WR_tm_tai_next - WR_tm_tai < WR_TAI_MARGIN)                                          // if too close, 
+     //       WR_tm_tai_next = WR_tm_tai_next + WR_TAI_STEP;                                     // one more step   
+     // probably bogus. a proper scheme to ensure multiple modules start at the same time should be implemented on the DAQ network master 
+    
+      WR_tm_tai_start =  WR_tm_tai_next;
+      WR_tm_tai_stop  =  WR_tm_tai_next + ReqRunTime;
+
+      mapped[AK7_WR_TM_TAI_START+0] =  WR_tm_tai_start      & 0x00000000FFFF;
+      mapped[AK7_WR_TM_TAI_START+1] = (WR_tm_tai_start>>16) & 0x00000000FFFF;
+      mapped[AK7_WR_TM_TAI_START+2] = (WR_tm_tai_start>>32) & 0x00000000FFFF;
+      mapped[AK7_WR_TM_TAI_START+0] =  WR_tm_tai_stop       & 0x00000000FFFF;
+      mapped[AK7_WR_TM_TAI_START+1] = (WR_tm_tai_stop>>16)  & 0x00000000FFFF;
+      mapped[AK7_WR_TM_TAI_START+2] = (WR_tm_tai_stop>>32)  & 0x00000000FFFF;
+   }  
+   
+   
    mapped[ACSRIN] = 0x0001; // RunEnable=1 > nLive=0 (DAQ on)
    // this is a bit in a MZ register tied to a line to both FPGAs
    // falling edge of nLive clears counters and memory address pointers

@@ -117,6 +117,8 @@ typedef struct PixieNetFippiConfig {
   Bit0 : pulser enabled   */
   unsigned int AUX_CTRL;
 
+   unsigned int WR_RUNTIME_CTRL; // if 1, use WR time counters to determine start/stop of run
+
   /* SYS_U## : reserved parameters  */
 
   // ***** end of system parameters ********************************************
