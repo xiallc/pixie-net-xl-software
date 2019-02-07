@@ -54,10 +54,10 @@ int main(void) {
   void *map_addr;
   int size = 4096;
   volatile unsigned int *mapped;
-  int k,ch;
+  int k,ch, k7;
   FILE * fil;
-  unsigned int adc[4][NTRACE_SAMPLES];
-  unsigned int chsel;
+  unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
+  unsigned int adc[NCHANNEL_PER_K7*N_K7_FPGAS][NTRACE_SAMPLES];
   char line[LINESZ];
 
 
@@ -84,21 +84,22 @@ int main(void) {
    // read 8K samples from ADC register 
    // at this point, no guarantee that sampling is truly periodic
    
-   mapped[AMZ_DEVICESEL] = CS_K0;	  // select FPGA 0 
-   chsel = 0x100;        // channel 0
-   
-   for(ch=0;ch<4;ch++) {
-   
-      mapped[AMZ_EXAFWR] = AK7_PAGE;     // write to  k7's addr        addr 3 = channel/syste, select    
-      mapped[AMZ_EXDWR] = chsel+ch;                                //  0x100  =channel 0                  
+   for(k7=0;k7<N_K7_FPGAS;k7++)
+   {
+      mapped[AMZ_DEVICESEL] = cs[k7];	            // select FPGA 
       
-      for(k=0;k<NTRACE_SAMPLES;k++) {
-         mapped[AMZ_EXAFRD] = AK7_ADC;     // write to  k7's addr
-         //        usleep(1);
-         adc[ch][k] = mapped[AMZ_EXDRD];    
-      }       //    end for NTRACE_SAMPLES
-   
-   } // end for channels
+      for(ch=0;ch<NCHANNEL_PER_K7;ch++) {
+      
+         mapped[AMZ_EXAFWR] = AK7_PAGE;     // write to  k7's addr        addr 3 = channel/syste, select    
+         mapped[AMZ_EXDWR] = PAGE_CHN+ch;                                //  0x100  =channel 0                  
+         
+         for(k=0;k<NTRACE_SAMPLES;k++) {
+            mapped[AMZ_EXAFRD] = AK7_ADC;     // write to  k7's addr
+            //        usleep(1);
+            adc[ch+k7*NCHANNEL_PER_K7][k] = mapped[AMZ_EXDRD];    
+         }       //    end for NTRACE_SAMPLES      
+      } // end for channels
+   }  // end for K7s
 
 
 
@@ -111,16 +112,33 @@ int main(void) {
    }   
    
    fgets(line, LINESZ, fil);        // read from template, the line listing the ADC.csv file. This is not printed
-   printf("       \"sample,adc0,adc1,adc2,adc3\\n\"  +  \n");
+   printf("       \"sample,adc0,adc1,adc2,adc3,adc4,adc5,adc6,adc7\\n\"  +  \n");
 
    // print the data
    for( k = 0; k < NTRACE_SAMPLES; k ++ )
    {
+      printf("%d",k);                  // sample number
+      for(k7=0;k7<N_K7_FPGAS;k7++)
+         for(ch=0;ch<NCHANNEL_PER_K7;ch++) {
+             printf(",%d",adc[ch+k7*NCHANNEL_PER_K7][k]);    // print channel data
+      printf("\\n \"  + \n");
+   }
+
+   // dummy line: comma, not + required in last line
+   printf("%d",k);                  // sample number
+   for(k7=0;k7<N_K7_FPGAS;k7++)
+      for(ch=0;ch<NCHANNEL_PER_K7;ch++) {
+          printf(",%d",adc[ch+k7*NCHANNEL_PER_K7][k-1]);    // print channel data
+   printf("\\n \"  , \n");
+
+   /*
+   {
         printf("      \"%d,%d,%d,%d,%d\\n \"  + \n",k,adc[0][k],adc[1][k],adc[2][k],adc[3][k]);
    }
-   // comma, not + requred in last line
+   // comma, not + required in last line
    printf("      \"%d,%d,%d,%d,%d\\n \"  ,  \n",k,adc[0][k-1],adc[1][k-1],adc[2][k-1],adc[3][k-1]);
- 
+    */
+
    // finish printing the webpage
    for( k = 41; k < 80; k ++ )
    {

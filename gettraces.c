@@ -53,10 +53,10 @@ int main(void) {
   void *map_addr;
   int size = 4096;
   volatile unsigned int *mapped;
-  int k,ch;
+  int k,ch, k7;
   FILE * fil;
-  unsigned int adc[4][NTRACE_SAMPLES];
-  unsigned int chsel;
+  unsigned int adc[NCHANNEL_PER_K7*N_K7_FPGAS][NTRACE_SAMPLES];
+  unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
 
 
   // *************** PS/PL IO initialization *********************
@@ -81,31 +81,36 @@ int main(void) {
    
    // read 8K samples from ADC register 
    // at this point, no guarantee that sampling is truly periodic
-   mapped[AMZ_DEVICESEL] = CS_K0;	  // select FPGA 0 
-   chsel = 0x100;        // channel 0
-   
-   for(ch=0;ch<4;ch++) {
-   
-      mapped[AMZ_EXAFWR] = AK7_PAGE;     // write to  k7's addr        addr 3 = channel/syste, select    
-      mapped[AMZ_EXDWR] = chsel+ch;                                //  0x100  =channel 0                  
+   for(k7=0;k7<N_K7_FPGAS;k7++)
+   {
+      mapped[AMZ_DEVICESEL] =  cs[k7];	            // select FPGA 
       
-      for(k=0;k<NTRACE_SAMPLES;k++) {
-         mapped[AMZ_EXAFRD] = AK7_ADC;     // write to  k7's addr
-         //      usleep(1);
-         adc[ch][k] = mapped[AMZ_EXDRD]; 
-      }       //    end for NTRACE_SAMPLES
-   
-   } // end for channels
+      for(ch=0;ch<NCHANNEL_PER_K7;ch++) {
+      
+         mapped[AMZ_EXAFWR] = AK7_PAGE;     // write to  k7's addr        addr 3 = channel/syste, select    
+         mapped[AMZ_EXDWR] = PAGE_CHN+ch;                                //  0x100  =channel 0                  
+         
+         for(k=0;k<NTRACE_SAMPLES;k++) {
+            mapped[AMZ_EXAFRD] = AK7_ADC;     // write to  k7's addr
+            //      usleep(1);
+            adc[ch+k7*NCHANNEL_PER_K7][k] = mapped[AMZ_EXDRD]; 
+         }       //    end for NTRACE_SAMPLES 
+      } // end for channels
+   } //end for K7s
 
   // open the output file
   fil = fopen("ADC.csv","w");
-  fprintf(fil,"sample,adc0,adc1,adc2,adc3\n");
+  fprintf(fil,"sample,adc0,adc1,adc2,adc3,adc4,adc5,adc6,adc7\n");
 
   //  write to file
   for( k = 0; k < NTRACE_SAMPLES; k ++ )
   {
-       fprintf(fil,"%d,%d,%d,%d,%d\n ",k,adc[0][k],adc[1][k],adc[2][k],adc[3][k]);
-  }
+      fprintf(fil,"%d",k);                  // sample number
+      for(k7=0;k7<N_K7_FPGAS;k7++)
+         for(ch=0;ch<NCHANNEL_PER_K7;ch++) {
+             fprintf(fil,",%d",adc[ch+k7*NCHANNEL_PER_K7][k]);    // print channel data
+      fprintf(fil,"\n");
+   }
  
  
  // clean up  

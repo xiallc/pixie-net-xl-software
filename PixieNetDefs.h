@@ -19,9 +19,9 @@
  *     specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
- * CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, 
+ * CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIITED WARRANTIES, 
  * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+ * MERCHANTABILY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
  * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE 
  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
@@ -38,94 +38,96 @@
 #define PN_BOARD_VERSION_12_250_A 0xA990    
 #define PN_BOARD_VERSION_12_250_B 0xA991  
 #define PN_BOARD_VERSION_12_250_B_PTP 0xA981  
-#define ADC_CLK_MHZ 75
-#define SYSTEM_CLOCK_MHZ 75
-#define FILTER_CLOCK_MHZ 75
-#define NCHANNELS 32                   // number of channels in parameter files (=max)
-#define NCHANNELS_PRESENT 8
-#define NCHANNEL_PER_K7   4
+#define ADC_CLK_MHZ        75
+#define SYSTEM_CLOCK_MHZ   75
+#define FILTER_CLOCK_MHZ   75
+#define NCHANNELS          32          // number of channels in parameter files (=max)
+#define NCHANNELS_PRESENT  8           // actual number of channels per module (should be variable)
+#define NCHANNEL_PER_K7    4           // actual number of channels per K7 (should be variable)
+#define NCHANNEL_MAX400    4           // maximum number of channels recorded in a single 0x400 .bin file
+#define N_K7_FPGAS         2
 #define V_OFFSET_MAX			1.25			// Pixie voltage offset maximum
 #define MAX_MCA_BINS       32768
 #define WEB_MCA_BINS       4096
-#define MCA2D_BINS       100 // in each dimension
+#define MCA2D_BINS         100         // in each dimension
 #define WEB_LOGEBIN        3
-#define DACWAIT 20  // usleep cycles to wait for DAC programming
-#define DACSETTLE 80000  // usleep cycles to wait for DAC stable output after filter
-#define NTRACE_SAMPLES 8192
-#define TWOTO32   4294967296
-#define ICRSCALE 15        // factor between current ICR read and ICR in cps
-#define N_FPGA_BYTES 6022736
+#define DACWAIT            20          // usleep cycles to wait for DAC programming
+#define DACSETTLE          80000       // usleep cycles to wait for DAC stable output after filter
+#define NTRACE_SAMPLES     8192
+#define TWOTO32            4294967296
+#define ICRSCALE           15         // factor between current ICR read and ICR in cps
+#define N_FPGA_BYTES       6022736
 
 
 // Limits for settings
-#define MAX_CRATE_ID 15
-#define MAX_SLOT_ID 15
-#define MAX_MODULE_ID 15
-#define MIN_CW 5             // Coinc Window limits
-#define MAX_CW 511
-#define MIN_SFR 1             // FR limits
-#define MAX_SFR 6
-#define MIN_FFR 0             // FR limits
-#define MAX_FFR 0
-#define MIN_SL 2             // energy filter limits
-#define MIN_SG 3
-#define MAX_SLSG 127
-#define MIN_FL 2             // trigger filter limits
-#define MIN_FG 0
-#define MAX_FLFG 127
-#define MAX_TH 65536
-#define GAIN_HIGH 5          // gain limits
-#define GAIN_LOW 2
-#define MAX_TL 4092           // max length of captured waveform and pre-trigger delay
-#define MULT_TL 32             // trace lenght must be a multiple of this number
-#define TWEAK_UD 0           // adjustment to pre-trigger delay for internal pipelining
-#define MAX_BFACT 16
-#define MAX_PSATH 2044
-#define MAX_GW 255
-#define MAX_GD 255
-#define MAX_CD 255
-#define MAX_QDCL  60          // length of QDC sum samples
-#define MAX_QDCLD 250         // length plus delay of QDC sum, in samples
-#define MAX_BLAVG 16
-#define MAX_BADBL 20
-#define DB01_GAIN0  1.6
-#define DB01_GAIN1  2.4
-#define DB01_GAIN2  3.5
-#define DB01_GAIN3  5.4
-#define DB01_GAIN4  6.7
-#define DB01_GAIN5  9.9
-#define DB01_GAIN6  14.7
-#define DB01_GAIN7  22.6
+#define MAX_CRATE_ID    15
+#define MAX_SLOT_ID     15
+#define MAX_MODULE_ID   15
+#define MIN_CW          5             // Coinc Window limits
+#define MAX_CW          511
+#define MIN_SFR         1             // FR limits
+#define MAX_SFR         6
+#define MIN_FFR         0             // FR limits
+#define MAX_FFR         0
+#define MIN_SL          2             // energy filter limits
+#define MIN_SG          3
+#define MAX_SLSG        127
+#define MIN_FL          2             // trigger filter limits
+#define MIN_FG          0
+#define MAX_FLFG        127
+#define MAX_TH          65536
+#define GAIN_HIGH       5          // gain limits
+#define GAIN_LOW        2
+#define MAX_TL          4092           // max length of captured waveform and pre-trigger delay
+#define MULT_TL         32             // trace lenght must be a multiple of this number
+#define TWEAK_UD        0           // adjustment to pre-trigger delay for internal pipelining
+#define MAX_BFACT       16
+#define MAX_PSATH       2044
+#define MAX_GW          255
+#define MAX_GD          255
+#define MAX_CD          255
+#define MAX_QDCL        60          // length of QDC sum samples
+#define MAX_QDCLD       250         // length plus delay of QDC sum, in samples
+#define MAX_BLAVG       16
+#define MAX_BADBL       20
+#define DB01_GAIN0      1.6
+#define DB01_GAIN1      2.4
+#define DB01_GAIN2      3.5
+#define DB01_GAIN3      5.4
+#define DB01_GAIN4      6.7
+#define DB01_GAIN5      9.9
+#define DB01_GAIN6      14.7
+#define DB01_GAIN7      22.6
 
 // maxima for P16 style parameters
-#define FASTTRIGBACKLEN_MAX 4095
-#define FASTTRIGBACKLEN_MIN_100MHZFIPCLK 1
-#define FASTTRIGBACKLEN_MIN_125MHZFIPCLK 2
-#define CFDDELAY_MAX 63
-#define CFDDELAY_MIN 1
-#define CFDSCALE_MAX 7
-#define CFDSCALE_MIN 0
-#define CFDTHRESH_MAX 65535
-#define CFDTHRESH_MIN 1
-#define EXTTRIGSTRETCH_MAX 4095
-#define EXTTRIGSTRETCH_MIN 1
-#define VETOSTRETCH_MAX 4095
-#define VETOSTRETCH_MIN 1
-#define EXTDELAYLEN_MAX_REVBCD 255
-#define EXTDELAYLEN_MAX_REVF 511
-#define EXTDELAYLEN_MIN 0
-#define FASTTRIGBACKDELAY_MAX_REVBCD 255
-#define FASTTRIGBACKDELAY_MAX_REVF 511
-#define FASTTRIGBACKDELAY_MIN 0
-#define QDCLEN_MAX 32767
-#define QDCLEN_MIN 1
-#define TRACELEN_MIN_500MHZADC		10
-#define TRACELEN_MIN_250OR100MHZADC	4
-#define TRACEDELAY_MAX 1023
-#define CHANTRIGSTRETCH_MAX 4095
-#define CHANTRIGSTRETCH_MIN 1
-#define MIN_XDT_MOST 6
-#define MIN_XDT_250 8
+#define FASTTRIGBACKLEN_MAX               4095
+#define FASTTRIGBACKLEN_MIN_100MHZFIPCLK  1
+#define FASTTRIGBACKLEN_MIN_125MHZFIPCLK  2
+#define CFDDELAY_MAX                      63
+#define CFDDELAY_MIN                      1
+#define CFDSCALE_MAX                      7
+#define CFDSCALE_MIN                      0
+#define CFDTHRESH_MAX                     65535
+#define CFDTHRESH_MIN                     1
+#define EXTTRIGSTRETCH_MAX                4095
+#define EXTTRIGSTRETCH_MIN                1
+#define VETOSTRETCH_MAX                   4095
+#define VETOSTRETCH_MIN                   1
+#define EXTDELAYLEN_MAX_REVBCD            255
+#define EXTDELAYLEN_MAX_REVF              511
+#define EXTDELAYLEN_MIN                   0
+#define FASTTRIGBACKDELAY_MAX_REVBCD      255
+#define FASTTRIGBACKDELAY_MAX_REVF        511
+#define FASTTRIGBACKDELAY_MIN             0
+#define QDCLEN_MAX                        32767
+#define QDCLEN_MIN                        1
+#define TRACELEN_MIN_500MHZADC		      10
+#define TRACELEN_MIN_250OR100MHZADC	      4
+#define TRACEDELAY_MAX                    1023
+#define CHANTRIGSTRETCH_MAX               4095
+#define CHANTRIGSTRETCH_MIN               1
+#define MIN_XDT_MOST                      6
+#define MIN_XDT_250                       8
 
 // system reg addr defines
 // block 0
@@ -204,6 +206,8 @@
 #define CS_MZ   0x00
 #define CS_K0   0x04
 #define CS_K1   0x08
+#define PAGE_SYS = 0x000   // page number for system registers = 0x000
+#define PAGE_CHN = 0x100   // page number for channel registers = 0x100+ch
 
 // addresses in MZ controller - direct read/write
 #define AMZ_CSRIN     0x00
@@ -261,28 +265,28 @@
 #define WR_TAI_STEP    10
 
 // program control constants
-#define LINESZ                1024  // max number of characters in ini file line
-#define I2CWAIT               4     // us between I2C clock toggles
-#define SDA                   1     // bit definitions for I2C I/O
-#define SCL                   2     // bit definitions for I2C I/O
-#define SDAENA                4     // bit definitions for I2C I/O
-#define I2C_SELMAIN           0x0010     // select bit for I2C I/O (write to AUX_CTRL), PX desk main I2C
-#define I2C_SELDB0            0x0020     // select bit for I2C I/O (write to AUX_CTRL), PX desk DB0 I2C
-#define I2C_SELDB1            0x0040     // select bit for I2C I/O (write to AUX_CTRL), PX desk DB1 I2C
-#define N_PL_IN_PAR           16    // number of input parameters for system and each channel
-#define N_PL_RS_PAR           32    // number of runstats parameters for system and each channel
-#define N_USED_RS_PAR         22    // not all RS parapmeters are used, can save some readout and printout cycles
-#define MAX_PAR_NAME_LENGTH   65    // Maximum length of parameter names
+#define LINESZ                1024        // max number of characters in ini file line
+#define I2CWAIT               4           // us between I2C clock toggles
+#define SDA                   1           // bit definitions for I2C I/O
+#define SCL                   2           // bit definitions for I2C I/O
+#define SDAENA                4           // bit definitions for I2C I/O
+#define I2C_SELMAIN           0x0010      // select bit for I2C I/O (write to AUX_CTRL), PX desk main I2C
+#define I2C_SELDB0            0x0020      // select bit for I2C I/O (write to AUX_CTRL), PX desk DB0 I2C
+#define I2C_SELDB1            0x0040      // select bit for I2C I/O (write to AUX_CTRL), PX desk DB1 I2C
+#define N_PL_IN_PAR           16          // number of input parameters for system and each channel
+#define N_PL_RS_PAR           32          // number of runstats parameters for system and each channel
+#define N_USED_RS_PAR         22          // not all RS parapmeters are used, can save some readout and printout cycles
+#define MAX_PAR_NAME_LENGTH   65          // Maximum length of parameter names
 #define BLREADPERIOD          20
 #define MIN_POLL_TIME         1000
-#define BLOCKSIZE_400         32    // waveform block size (# 16bit words) in run type 0x400
-#define BLOCKSIZE_100         2     // waveform block size (# 16bit words) in run type 0x100
-#define FILE_HEAD_LENGTH_400  32    // file header size (# 16bit words) in run type 0x400
-#define CHAN_HEAD_LENGTH_400  32    // event/channel header size (# 16bit words) in run type 0x400
-#define CHAN_HEAD_LENGTH_100  10    // number of 32bit words in P16 0x100 run type
-#define WATERMARK     0x12345678    // for LM QC routine
-#define EORMARK       0x01000002    // End Of Run
-#define SLOWREAD               1    // address write transfers data too slowly, read twice
+#define BLOCKSIZE_400         32          // waveform block size (# 16bit words) in run type 0x400
+#define BLOCKSIZE_100         2           // waveform block size (# 16bit words) in run type 0x100
+#define FILE_HEAD_LENGTH_400  32          // file header size (# 16bit words) in run type 0x400
+#define CHAN_HEAD_LENGTH_400  32          // event/channel header size (# 16bit words) in run type 0x400
+#define CHAN_HEAD_LENGTH_100  10          // number of 32bit words in P16 0x100 run type
+#define WATERMARK     0x12345678          // for LM QC routine
+#define EORMARK       0x01000002          // End Of Run
+#define SLOWREAD               1          // address write transfers data too slowly, read twice
 
 // channel hit pattern & info in LM data
 #define HIT_ACCEPT            5     //  result of local coincidence test & pileup & veto & rangebad

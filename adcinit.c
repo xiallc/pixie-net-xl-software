@@ -61,12 +61,13 @@ int main( int argc, char *argv[] ) {
   volatile unsigned int *mapped;
 
   unsigned int mval = 0;
-  unsigned int k, trys;
+  unsigned int trys;
   unsigned int upper, lower;
-  unsigned int chsel, frame; // regno;
+  unsigned int frame; // regno;
 
  unsigned int adc[NCHANNEL_PER_K7][14];
- int ch;
+ unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
+ int k, k7, ch; 
  unsigned int goodframe = 0x87;     // depends on FPGA compile?
  printf("Target frame pattern is 0x%02x\n",goodframe); 
 
@@ -110,83 +111,85 @@ int main( int argc, char *argv[] ) {
    usleep(5);
  */
 
- trys = 0;
- frame= 0;
-
- do {
-      // read frame 
-      mapped[AMZ_DEVICESEL] = CS_K0;	            // select FPGA 0 
-      chsel = 0x000;                         // sys range
-      mapped[AMZ_EXAFWR] = AK7_PAGE;         // write to  k7's addr        addr 3 = channel/system, select    
-      mapped[AMZ_EXDWR] = chsel;             //  0x000  = system page                
-      mapped[AMZ_EXAFRD] = AK7_ADCFRAME;     // write register address to  K7
-      usleep(1);
-      frame = mapped[AMZ_EXDRD]; 
-      printf( "frame pattern is 0x%x (try %d) \n", frame, trys);
- 
-
-      // todo: make test pattern optional
-      for(k=0;k<14;k++) {
-      
-         // set up test pattern            
-         if(k<8) {
-            upper = 0x0;
-            lower = (1<<k);
-         } else {
-            upper = (1<<(k-8));
-            lower = 0x0;
-         }         
-      
-         mapped[AMZ_EXAFWR] = AK7_ADCSPI;    // write to  k7's addr     addr 5 = SPI
-         mval = 0 << 15;                     // SPI write (high bit=0)
-         mval = mval + (0x03 << 8);          // SPI reg address  (bit 13:8)
-         mval = mval + 0x80 +upper;          // test pattern on, pattern bits [13:8]  = 0A
-         mapped[AMZ_EXDWR] = mval;           //  write to ADC SPI
-         usleep(5);
-         
-         mapped[AMZ_EXAFWR] = AK7_ADCSPI;    // write to  k7's addr     addr 5 = SPI
-         mval = 0 << 15;                     // SPI write (high bit=0)
-         mval = mval + (0x04 << 8);          // SPI reg address  (bit 14:8)
-         mval = mval + lower;                // test pattern on, pattern bits [7:0]  = BC
-         mapped[AMZ_EXDWR] = mval;           //  write to ADC SPI              
-         usleep(5);
-         //  printf( "test pattern is 0x%x \n", (addr<<8));
-
-         // read 1 sample from ADC register          
-         chsel = 0x100;               // start with channel 0        
-         for(ch=0;ch<NCHANNEL_PER_K7;ch++) {    
-            mapped[AMZ_EXAFWR] = AK7_PAGE;     // write to  k7's addr        addr 3 = channel/syste, select    
-            mapped[AMZ_EXDWR] = chsel+ch;      //  0x100+ch  = page channel ch                         
-            mapped[AMZ_EXAFRD] = AK7_ADC;      // write register address to  K7
-            usleep(1);
-            adc[ch][k] = mapped[AMZ_EXDRD];      
-         } // end for channels
-         
-      //   printf( "test pattern 0x%04x: adc0 0x%04x, adc1 0x%04x, adc2 0x%04x, adc3 0x%04x \n", (upper<<8)+lower, adc[0][k],adc[1][k],adc[2][k],adc[3][k] );
-      }    // end for tespatterns
-      
-      
-      // turn testpattern off again
-      mapped[AMZ_EXAFWR] = AK7_ADCSPI;       // write to  k7's addr     addr 5 = SPI
-      mval = 0 << 15;                        // SPI write (high bit=0)
-      mval = mval + (0x03 << 8);             // SPI reg address  (bit 13:8)
-      mval = mval + 0;                       // test pattern off
-      mapped[AMZ_EXDWR] = mval;              //  write to ADC SPI
-      usleep(5);
-
-
-      if(frame!=goodframe) {
-         // trigger a bitslip        
-         chsel = 0x000;                         // sys page        
+ for(k7=0;k7<N_K7_FPGAS;k7++)
+ {
+    trys = 0;
+    frame= 0;
+   
+    do {
+         // read frame 
+         mapped[AMZ_DEVICESEL] = cs[k7];	            // select FPGA  
          mapped[AMZ_EXAFWR] = AK7_PAGE;         // write to  k7's addr        addr 3 = channel/system, select    
-         mapped[AMZ_EXDWR] = chsel;             //  0x000  = system page                           
-         mapped[AMZ_EXAFWR] = AK7_ADCBITSLIP;   // write register address to  K7
-         mapped[AMZ_EXDWR] = chsel;             // any write will do
-      }
-
-       trys = trys+1;
-
-    } while(frame!=goodframe && trys<7);
+         mapped[AMZ_EXDWR] = PAGE_SYS;             //  0x000  = system page                
+         mapped[AMZ_EXAFRD] = AK7_ADCFRAME;     // write register address to  K7
+         usleep(1);
+         frame = mapped[AMZ_EXDRD]; 
+         printf( "K7 %d: frame pattern is 0x%x (try %d) \n", k7, frame, trys);
+    
+   
+         if(0) {
+         // todo: make test pattern optional
+         for(k=0;k<14;k++) {
+         
+            // set up test pattern            
+            if(k<8) {
+               upper = 0x0;
+               lower = (1<<k);
+            } else {
+               upper = (1<<(k-8));
+               lower = 0x0;
+            }         
+         
+            mapped[AMZ_EXAFWR] = AK7_ADCSPI;    // write to  k7's addr     addr 5 = SPI
+            mval = 0 << 15;                     // SPI write (high bit=0)
+            mval = mval + (0x03 << 8);          // SPI reg address  (bit 13:8)
+            mval = mval + 0x80 +upper;          // test pattern on, pattern bits [13:8]  = 0A
+            mapped[AMZ_EXDWR] = mval;           //  write to ADC SPI
+            usleep(5);
+            
+            mapped[AMZ_EXAFWR] = AK7_ADCSPI;    // write to  k7's addr     addr 5 = SPI
+            mval = 0 << 15;                     // SPI write (high bit=0)
+            mval = mval + (0x04 << 8);          // SPI reg address  (bit 14:8)
+            mval = mval + lower;                // test pattern on, pattern bits [7:0]  = BC
+            mapped[AMZ_EXDWR] = mval;           //  write to ADC SPI              
+            usleep(5);
+            //  printf( "test pattern is 0x%x \n", (addr<<8));
+   
+            // read 1 sample from ADC register                               
+            for(ch=0;ch<NCHANNEL_PER_K7;ch++) {    
+               mapped[AMZ_EXAFWR] = AK7_PAGE;     // write to  k7's addr        addr 3 = channel/syste, select    
+               mapped[AMZ_EXDWR] = PAGE_CHN+ch;   //  0x100+ch  = page channel ch                         
+               mapped[AMZ_EXAFRD] = AK7_ADC;      // write register address to  K7
+               usleep(1);
+               adc[ch][k] = mapped[AMZ_EXDRD];      
+            } // end for channels
+            
+            printf( "test pattern 0x%04x: adc0 0x%04x, adc1 0x%04x, adc2 0x%04x, adc3 0x%04x \n", (upper<<8)+lower, adc[0][k],adc[1][k],adc[2][k],adc[3][k] );
+         }    // end for tespatterns
+         } // end disable if
+         
+         
+         // turn testpattern off again
+         mapped[AMZ_EXAFWR] = AK7_ADCSPI;       // write to  k7's addr     addr 5 = SPI
+         mval = 0 << 15;                        // SPI write (high bit=0)
+         mval = mval + (0x03 << 8);             // SPI reg address  (bit 13:8)
+         mval = mval + 0;                       // test pattern off
+         mapped[AMZ_EXDWR] = mval;              //  write to ADC SPI
+         usleep(5);
+   
+   
+         if(frame!=goodframe) {
+            // trigger a bitslip         
+            mapped[AMZ_EXAFWR] = AK7_PAGE;         // write to  k7's addr        addr 3 = channel/system, select    
+            mapped[AMZ_EXDWR] = PAGE_SYS;             //  0x000  = system page                           
+            mapped[AMZ_EXAFWR] = AK7_ADCBITSLIP;   // write register address to  K7
+            mapped[AMZ_EXDWR] = 0;             // any write will do
+         }
+   
+          trys = trys+1;
+   
+       } while(frame!=goodframe && trys<7);
+   } // end for K7s
          
 
 

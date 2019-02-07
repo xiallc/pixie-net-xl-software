@@ -85,7 +85,7 @@ int main(void) {
   }
   
 
-  unsigned int  mval, dac, reglo, reghi, pafl;
+  unsigned int mval, dac, reglo, reghi, pafl;
   unsigned int CW, SFR, FFR, SL[NCHANNELS], SG[NCHANNELS], FL[NCHANNELS], FG[NCHANNELS], TH[NCHANNELS];
   unsigned int PSAM, TL[NCHANNELS], TD[NCHANNELS];
   unsigned int i2cdata[8];
@@ -93,6 +93,8 @@ int main(void) {
   unsigned int sw1bit[NCHANNEL_PER_K7] = {8, 2, 5, 10};
   unsigned int gnbit[NCHANNEL_PER_K7] = {9, 12, 1, 3};
   unsigned int i2cgain[16] = {0}; 
+  unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
+  int ch, k7;    // loop counter better be signed int
 
 
   // *************** PS/PL IO initialization *********************
@@ -520,234 +522,236 @@ int main(void) {
   if(mapped[AAUXCTRL] != mval) printf("Error writing AUX_CTRL register\n");
 
 
-
-    // SYSTEM REGISTERS IN K7
-    
-   mapped[AMZ_DEVICESEL] = CS_K0;	  // select FPGA 0 
-
-   mapped[AMZ_EXAFWR] = AK7_PAGE;   // specify   K7's addr:    PAGE register
-   mapped[AMZ_EXDWR]  = 0x000;      //  PAGE 0: system, page 0x10n = channel n
+  for(k7=0;k7<N_K7_FPGAS;k7++)
+  {
+      mapped[AMZ_DEVICESEL] = =  cs[k7];	// select FPGA 
 
 
-     reglo = 0;                          // write 0 to reset
-     mapped[AMZ_EXAFWR] = AK7_SCSRIN;    // write to  k7's addr to select register for write
-     mapped[AMZ_EXDWR]  = reglo;        // write lower 16 bit
-
-   reglo = reglo + setbit(fippiconfig.WR_RUNTIME_CTRL,WRC_RUNTIME, SCSR_WRRUNTIMECTRL   );      // check for bit enabling WR runtime control
-   mapped[AMZ_EXAFWR] = AK7_SCSRIN;    // write to  k7's addr to select register for write
-   mapped[AMZ_EXDWR]  = reglo;        // write lower 16 bit
-
-   // Note: no "module" registers as this is confusing (2 K7 in this "desktop module", no system FPGA)
-
-
-    // CHANNEL REGISTERS IN K7
-    for( k = 0; k < NCHANNEL_PER_K7 ; k ++ )
-    {
-
-      mapped[AMZ_EXAFWR] = AK7_PAGE;   // specify   K7's addr:    PAGE register
-      mapped[AMZ_EXDWR]  = 0x100 +k;      //  PAGE 0: system, page 0x10n = channel n
-
-
-     // ......... P16 Reg 0  .......................            
-
-      // package
-      reglo = 0;     // halt bit 0
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_POLARITY,      FiPPI_INVRT   );     
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_VETOENA,       FiPPI_VETOENA   );     
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_EXTTRIGSEL,    FiPPI_EXTTRIGSEL   );     
-      reglo = reglo + (SFR<<4);                        //  Store SlowFilterRange in bits [6:4] 
-      mval = 129-SL[k];
-      reglo = reglo + (mval<<7);                       //  SlowLength in bits [13:7]
-      mval = 129-SL[k]-SG[k];
-      reglo = reglo + (mval<<14);                //  SlowLength + SlowGap in bits [20:14]
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_CHANTRIGSEL,   FiPPI_CHANTRIGSEL   );     
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_SYNCDATAACQ,   FiPPI_SYNCDATAACQ   );     
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRC[k],CCSRC_GROUPTRIGSEL,  FiPPI_GROUPTRIGSEL   );    
-      mval = 129-FL[k]-FG[k];
-      reglo = reglo +( mval<<25) ;               // 128 - (FastLength - 1) in bits [31:25] 
-          
-      reghi = 0;
-      reghi = 129 - FL[k] - FG[k];                          // 128 - (FastLength + FastGap - 1)
-      reghi = reghi & 0x7F;                                 // Keep only bits [6:0]
-      reghi = reghi + (TH[k]<<7);                             // Threshold in [22:7]   
-      reghi = reghi + (fippiconfig.CFD_DELAY[k] <<23);        //  CFDDelay in [28:23]       // in samples!
-      reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[k],CCSRC_CHANVETOSEL,   FiPPI_CHANVETOSEL);     
-      reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[k],CCSRC_MODVETOSEL,    FiPPI_MODVETOSEL );     
-      reghi = reghi + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_ENARELAY,      FiPPI_ENARELAY   );     
-
-      //printf("Reg 0 high 0x%08X, low 0x%08X \n",reghi, reglo);
-      // now write 
-      mapped[AMZ_EXAFWR] = AK7_P16REG00+0;                  // write to  k7's addr to select channel's register N
-      mapped[AMZ_EXDWR]  = reglo & 0xFFFF;                  // write lower 16 bit
-      mapped[AMZ_EXAFWR] = AK7_P16REG00+1;                  // write to  k7's addr to select channel's register N+1
-      mapped[AMZ_EXDWR]  = reglo >> 16;                     // write next 16 bit
-      mapped[AMZ_EXAFWR] = AK7_P16REG00+2;                  // write to  k7's addr to select channel's register N+2
-      mapped[AMZ_EXDWR]  = reghi & 0xFFFF;                  // write next 16 bit
-      mapped[AMZ_EXAFWR] = AK7_P16REG00+3;                  // write to  k7's addr to select channel's register N+3
-      mapped[AMZ_EXDWR]  = reghi >> 16;                     // write highest 16 bit
-
-
-       // ......... P16 Reg 1  .......................    
+      // SYSTEM REGISTERS IN K7
+      // Note: no "module" registers as this is confusing (2 K7 in this "desktop module", no system FPGA)
         
-      // package
-      reglo = 129 - SG[k];                                 //  SlowGap in bits [6:0]
-      mval = (2*SL[k]+SG[k]+1);
-      reglo = reglo + (mval<<7);                 // Store RBDEL_SF = (SlowLength + SlowGap + SlowLength + 1) in bits [18:7] of Fipreg1 lo
-      mval =  8192 - ((SL[k]+SG[k])<<SFR); 
-      reglo = reglo + (mval <<19); // Peaksep= SL+SG; store 8192 - PeakSep * 2^SlowFilterRange  in bits [31:19] of Fipreg1 lo
-         
-      if(SFR==1) PSAM = SL[k]+SG[k] -3;
-      if(SFR==2) PSAM = SL[k]+SG[k] -2;
-      if(SFR==3) PSAM = SL[k]+SG[k] -2;
-      if(SFR==4) PSAM = SL[k]+SG[k] -1;
-      if(SFR==5) PSAM = SL[k]+SG[k] -0;
-      if(SFR==6) PSAM = SL[k]+SG[k] +1;
-      reghi = 0;
-      reghi = 8192 - (PSAM<<SFR);                             // Peaksample = SL+SG - a bit ; store 8192 - Peaksample * 2^SlowFilterRange  in bits [44:32] of Fipreg1 
-      mval = 2*FL[k]+FG[k]+2;
-      reghi = reghi + ( mval<<13 );                // Store RBDEL_TF = (FastLength + FastGap + FastLength + 2) in bits [56:45] of Fipreg1
-      reghi = reghi + ( fippiconfig.CFD_SCALE[k] <<25 );        //  Store CFDScale[3:0] in bits [60:57] of Fipreg1
-  
-      // now write 
-       mapped[AMZ_EXAFWR] = AK7_P16REG01+0;                 // write to  k7's addr to select channel's register N    
-       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;                 // write lower 16 bit                                    
-       mapped[AMZ_EXAFWR] = AK7_P16REG01+1;                 // write to  k7's addr to select channel's register N+1  
-       mapped[AMZ_EXDWR]  = reglo >> 16;                    // write next 16 bit                                     
-       mapped[AMZ_EXAFWR] = AK7_P16REG01+2;                 // write to  k7's addr to select channel's register N+2  
-       mapped[AMZ_EXDWR]  = reghi & 0xFFFF;                 // write next 16 bit                                     
-       mapped[AMZ_EXAFWR] = AK7_P16REG01+3;                 // write to  k7's addr to select channel's register N+3  
-       mapped[AMZ_EXDWR]  = reghi >> 16;                    // write highest 16 bit                                  
-
-
-       // ......... P16 Reg 2  .......................    
-        
-      // package
-      reglo = 4096 - (int)(fippiconfig.CHANTRIG_STRETCH[k]*FILTER_CLOCK_MHZ);               //  ChanTrigStretch goes into [11:0] of FipReg2   // in us
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_FTRIGSEL,   SelExtFastTrig   );     
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_TRACEENA,    13   );     
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_CFDMODE,     14   );   
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_QDCENA,      15   );  
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_GLOBTRIG,    16   );     
-      reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[k],CCSRA_CHANTRIG,    17   );     
-      mval = 4096 - (int)(fippiconfig.VETO_STRETCH[k]*FILTER_CLOCK_MHZ);
-      reglo = reglo + (mval <<20);       //Store VetoStretch in bits [31:20] of Fipreg2   // in us
-      
-      reghi = (4096 - (int)(fippiconfig.FASTTRIG_BACKLEN[k]*FILTER_CLOCK_MHZ)) <<8;            //  FastTrigBackLen goes into [19:8] ([51:40] in 64 bit)   // in us
-      reghi = reghi + ( (4096 - (int)(fippiconfig.EXTTRIG_STRETCH[k]*FILTER_CLOCK_MHZ)) <<20);   //  ExtTrigStretch goes into [31:20] ([63:52] in 64 bit)   // in us
- 
-      // now write 
-       mapped[AMZ_EXAFWR] = AK7_P16REG02+0;                          // write to  k7's addr to select channel's register N    
-       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;                          // write lower 16 bit                                    
-       mapped[AMZ_EXAFWR] = AK7_P16REG02+1;                          // write to  k7's addr to select channel's register N+1  
-       mapped[AMZ_EXDWR]  = reglo >> 16;                             // write next 16 bit                                     
-       mapped[AMZ_EXAFWR] = AK7_P16REG02+2;                          // write to  k7's addr to select channel's register N+2  
-       mapped[AMZ_EXDWR]  = reghi & 0xFFFF;                          // write next 16 bit                                     
-       mapped[AMZ_EXAFWR] = AK7_P16REG02+3;                          // write to  k7's addr to select channel's register N+3  
-       mapped[AMZ_EXDWR]  = reghi >> 16;                             // write highest 16 bit                                  
-
-         // ......... P16 Reg 5  .......................    
-        
-      // package
-      reglo = (int)(fippiconfig.FTRIGOUT_DELAY[k]*FILTER_CLOCK_MHZ);        //  FtrigoutDelay goes into [8:0] of FipReg5             // in us
-                                                                                                 
-      reghi = (int)(fippiconfig.EXTERN_DELAYLEN[k]*FILTER_CLOCK_MHZ);       //Store EXTERN_DELAYLEN in bits [8:0] of FipReg5 hi      // in us
-     
-      mval = SL[k]+SG[k];                                            // psep       TODO: check trace related delays. 
-      mval = (mval-1) << SFR;                                        // trigger delay
-      pafl = (mval>> SFR) + TD[k];                                     // paf length   // check units!
-      mval = pafl - mval;                                           //delay from DSP computation
-      if( (fippiconfig.CHANNEL_CSRA[k]  & 0x0400) >0 )  //(1<<CCSRA_CFDMODE) >0  )      
-         mval = mval + FL[k] + FG[k];                                // add CFD delay if necessary
-
-     //    mval = mval+75;
-     mval = TD[k];
-      reghi = reghi +  (mval<<9);                                      // trace delay (Capture_FIFOdelaylen )
+      mapped[AMZ_EXAFWR] = AK7_PAGE;      // specify   K7's addr:    PAGE register
+      mapped[AMZ_EXDWR]  = PAGE_SYS;      //  PAGE 0: system, page 0x10n = channel n  
    
-      // now write 
-       mapped[AMZ_EXAFWR] = AK7_P16REG05+0;                          // write to  k7's addr to select channel's register N        
-       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;                          // write lower 16 bit                                        
-       mapped[AMZ_EXAFWR] = AK7_P16REG05+1;                          // write to  k7's addr to select channel's register N+1      
-       mapped[AMZ_EXDWR]  = reglo >> 16;                             // write next 16 bit                                         
-       mapped[AMZ_EXAFWR] = AK7_P16REG05+2;                          // write to  k7's addr to select channel's register N+2      
-       mapped[AMZ_EXDWR]  = reghi & 0xFFFF;                          // write next 16 bit                                         
-       mapped[AMZ_EXAFWR] = AK7_P16REG05+3;                          // write to  k7's addr to select channel's register N+3      
-       mapped[AMZ_EXDWR]  = reghi >> 16;                             // write highest 16 bit                                      
-
-
-      // ......... P16 Reg 6  .......................    
-        
-      reglo = fippiconfig.QDCLen0[k];                    //  QDC       // in samples
-      reglo = reglo + (fippiconfig.QDCLen1[k]<<16);        //  QDC       // in samples                                                                                 
-      reghi = fippiconfig.QDCLen2[k];                    //  QDC       // in samples
-      reghi = reghi + (fippiconfig.QDCLen3[k]<<16);        //  QDC       // in samples      
-      
-         // now write 
-       mapped[AMZ_EXAFWR] = AK7_P16REG06+0;              // write to  k7's addr to select channel's register N        
-       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;              // write lower 16 bit                                        
-       mapped[AMZ_EXAFWR] = AK7_P16REG06+1;              // write to  k7's addr to select channel's register N+1      
-       mapped[AMZ_EXDWR]  = reglo >> 16;                 // write next 16 bit                                         
-       mapped[AMZ_EXAFWR] = AK7_P16REG06+2;              // write to  k7's addr to select channel's register N+2      
-       mapped[AMZ_EXDWR]  = reghi & 0xFFFF;              // write next 16 bit                                         
-       mapped[AMZ_EXAFWR] = AK7_P16REG06+3;              // write to  k7's addr to select channel's register N+3      
-       mapped[AMZ_EXDWR]  = reghi >> 16;                 // write highest 16 bit                                      
-
+      // ................ WR runtime control > system CSR register .............................
+      reglo = 0;                          // write 0 to reset
+      mapped[AMZ_EXAFWR] = AK7_SCSRIN;    // write to  k7's addr to select register for write
+      mapped[AMZ_EXDWR]  = reglo;         // write lower 16 bit
+   
+      reglo = reglo + setbit(fippiconfig.WR_RUNTIME_CTRL,WRC_RUNTIME, SCSR_WRRUNTIMECTRL   );      // check for bit enabling WR runtime control
+      mapped[AMZ_EXAFWR] = AK7_SCSRIN;    // write to  k7's addr to select register for write
+      mapped[AMZ_EXDWR]  = reglo;        // write lower 16 bit
+   
     
-       // ......... P16 Reg 7  .......................    
-        
-       reglo = fippiconfig.QDCLen4[k];                    //  QDC       // in samples
-       reglo = reglo + (fippiconfig.QDCLen5[k]<<16);        //  QDC       // in samples                                                                               
-       reghi = fippiconfig.QDCLen6[k];                    //  QDC       // in samples
-       reghi = reghi + (fippiconfig.QDCLen7[k]<<16);        //  QDC       // in samples     
+   
+      // CHANNEL REGISTERS IN K7
+      for( k = 0; k < NCHANNEL_PER_K7 ; k ++ )
+      {
       
+         mapped[AMZ_EXAFWR] = AK7_PAGE;         // specify   K7's addr:    PAGE register
+         mapped[AMZ_EXDWR]  = PAGE_CHN +k;      // PAGE 0: system, page 0x10n = channel n
+         ch = k+k7*NCHANNEL_PER_K7;             // pre-compute channel number for data source         
+         
+         // ......... P16 Reg 0  .......................            
+         
+         // package
+         reglo = 0;     // halt bit 0
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_POLARITY,      FiPPI_INVRT   );     
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_VETOENA,       FiPPI_VETOENA   );     
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_EXTTRIGSEL,    FiPPI_EXTTRIGSEL   );     
+         reglo = reglo + (SFR<<4);                        //  Store SlowFilterRange in bits [6:4] 
+         mval = 129-SL[ch];
+         reglo = reglo + (mval<<7);                       //  SlowLength in bits [13:7]
+         mval = 129-SL[ch]-SG[ch];
+         reglo = reglo + (mval<<14);                //  SlowLength + SlowGap in bits [20:14]
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_CHANTRIGSEL,   FiPPI_CHANTRIGSEL   );     
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_SYNCDATAACQ,   FiPPI_SYNCDATAACQ   );     
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_GROUPTRIGSEL,  FiPPI_GROUPTRIGSEL   );    
+         mval = 129-FL[ch]-FG[ch];
+         reglo = reglo +( mval<<25) ;               // 128 - (FastLength - 1) in bits [31:25] 
+          
+         reghi = 0;
+         reghi = 129 - FL[ch] - FG[ch];                          // 128 - (FastLength + FastGap - 1)
+         reghi = reghi & 0x7F;                                 // Keep only bits [6:0]
+         reghi = reghi + (TH[ch]<<7);                             // Threshold in [22:7]   
+         reghi = reghi + (fippiconfig.CFD_DELAY[ch] <<23);        //  CFDDelay in [28:23]       // in samples!
+         reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_CHANVETOSEL,   FiPPI_CHANVETOSEL);     
+         reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_MODVETOSEL,    FiPPI_MODVETOSEL );     
+         reghi = reghi + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_ENARELAY,      FiPPI_ENARELAY   );     
+         
+         //printf("Reg 0 high 0x%08X, low 0x%08X \n",reghi, reglo);
          // now write 
-       mapped[AMZ_EXAFWR] = AK7_P16REG07+0;              // write to  k7's addr to select channel's register N        
-       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;              // write lower 16 bit                                        
-       mapped[AMZ_EXAFWR] = AK7_P16REG07+1;              // write to  k7's addr to select channel's register N+1      
-       mapped[AMZ_EXDWR]  = reglo >> 16;                 // write next 16 bit                                         
-       mapped[AMZ_EXAFWR] = AK7_P16REG07+2;              // write to  k7's addr to select channel's register N+2      
-       mapped[AMZ_EXDWR]  = reghi & 0xFFFF;              // write next 16 bit                                         
-       mapped[AMZ_EXAFWR] = AK7_P16REG07+3;              // write to  k7's addr to select channel's register N+3      
-       mapped[AMZ_EXDWR]  = reghi >> 16;                 // write highest 16 bit                                      
-
-       // ......... P16 Reg 13  .......................    
-        
-       reglo = fippiconfig.CFD_THRESHOLD[k];             //  CFDThresh       // in steps
-        
+         mapped[AMZ_EXAFWR] = AK7_P16REG00+0;                  // write to  k7's addr to select channel's register N
+         mapped[AMZ_EXDWR]  = reglo & 0xFFFF;                  // write lower 16 bit
+         mapped[AMZ_EXAFWR] = AK7_P16REG00+1;                  // write to  k7's addr to select channel's register N+1
+         mapped[AMZ_EXDWR]  = reglo >> 16;                     // write next 16 bit
+         mapped[AMZ_EXAFWR] = AK7_P16REG00+2;                  // write to  k7's addr to select channel's register N+2
+         mapped[AMZ_EXDWR]  = reghi & 0xFFFF;                  // write next 16 bit
+         mapped[AMZ_EXAFWR] = AK7_P16REG00+3;                  // write to  k7's addr to select channel's register N+3
+         mapped[AMZ_EXDWR]  = reghi >> 16;                     // write highest 16 bit
+         
+         
+         // ......... P16 Reg 1  .......................    
+         
+         // package
+         reglo = 129 - SG[ch];                                 //  SlowGap in bits [6:0]
+         mval = (2*SL[ch]+SG[ch]+1);
+         reglo = reglo + (mval<<7);                 // Store RBDEL_SF = (SlowLength + SlowGap + SlowLength + 1) in bits [18:7] of Fipreg1 lo
+         mval =  8192 - ((SL[ch]+SG[ch])<<SFR); 
+         reglo = reglo + (mval <<19); // Peaksep= SL+SG; store 8192 - PeakSep * 2^SlowFilterRange  in bits [31:19] of Fipreg1 lo
+         
+         if(SFR==1) PSAM = SL[ch]+SG[ch] -3;
+         if(SFR==2) PSAM = SL[ch]+SG[ch] -2;
+         if(SFR==3) PSAM = SL[ch]+SG[ch] -2;
+         if(SFR==4) PSAM = SL[ch]+SG[ch] -1;
+         if(SFR==5) PSAM = SL[ch]+SG[ch] -0;
+         if(SFR==6) PSAM = SL[ch]+SG[ch] +1;
+         reghi = 0;
+         reghi = 8192 - (PSAM<<SFR);                             // Peaksample = SL+SG - a bit ; store 8192 - Peaksample * 2^SlowFilterRange  in bits [44:32] of Fipreg1 
+         mval = 2*FL[ch]+FG[ch]+2;
+         reghi = reghi + ( mval<<13 );                // Store RBDEL_TF = (FastLength + FastGap + FastLength + 2) in bits [56:45] of Fipreg1
+         reghi = reghi + ( fippiconfig.CFD_SCALE[ch] <<25 );        //  Store CFDScale[3:0] in bits [60:57] of Fipreg1
+         
          // now write 
-       mapped[AMZ_EXAFWR] = AK7_P16REG13+0;              // write to  k7's addr to select channel's register N
-       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;              // write lower 16 bit
-       mapped[AMZ_EXAFWR] = AK7_P16REG13+1;              // write to  k7's addr to select channel's register N+1
-       mapped[AMZ_EXDWR]  = reglo >> 16;                 // write next 16 bit
-
-
-       // ......... P16 Reg 17 (Info)  .......................    
-        
-       reglo = k;                                        // channel
-       reglo = reglo + (fippiconfig.SLOT_ID<<4);           // slot     // use for K7 0/1
-       reglo = reglo + (fippiconfig.CRATE_ID<<8);          // crate
-       reglo = reglo + (fippiconfig.MODULE_ID<<12);        // module type 
+         mapped[AMZ_EXAFWR] = AK7_P16REG01+0;                 // write to  k7's addr to select channel's register N    
+         mapped[AMZ_EXDWR]  = reglo & 0xFFFF;                 // write lower 16 bit                                    
+         mapped[AMZ_EXAFWR] = AK7_P16REG01+1;                 // write to  k7's addr to select channel's register N+1  
+         mapped[AMZ_EXDWR]  = reglo >> 16;                    // write next 16 bit                                     
+         mapped[AMZ_EXAFWR] = AK7_P16REG01+2;                 // write to  k7's addr to select channel's register N+2  
+         mapped[AMZ_EXDWR]  = reghi & 0xFFFF;                 // write next 16 bit                                     
+         mapped[AMZ_EXAFWR] = AK7_P16REG01+3;                 // write to  k7's addr to select channel's register N+3  
+         mapped[AMZ_EXDWR]  = reghi >> 16;                    // write highest 16 bit                                  
+         
+         
+         // ......... P16 Reg 2  .......................    
+         
+         // package
+         reglo = 4096 - (int)(fippiconfig.CHANTRIG_STRETCH[ch]*FILTER_CLOCK_MHZ);               //  ChanTrigStretch goes into [11:0] of FipReg2   // in us
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_FTRIGSEL,   SelExtFastTrig   );     
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_TRACEENA,    13   );     
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_CFDMODE,     14   );   
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_QDCENA,      15   );  
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_GLOBTRIG,    16   );     
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_CHANTRIG,    17   );     
+         mval = 4096 - (int)(fippiconfig.VETO_STRETCH[ch]*FILTER_CLOCK_MHZ);
+         reglo = reglo + (mval <<20);       //Store VetoStretch in bits [31:20] of Fipreg2   // in us
+         
+         reghi = (4096 - (int)(fippiconfig.FASTTRIG_BACKLEN[ch]*FILTER_CLOCK_MHZ)) <<8;            //  FastTrigBackLen goes into [19:8] ([51:40] in 64 bit)   // in us
+         reghi = reghi + ( (4096 - (int)(fippiconfig.EXTTRIG_STRETCH[ch]*FILTER_CLOCK_MHZ)) <<20);   //  ExtTrigStretch goes into [31:20] ([63:52] in 64 bit)   // in us
+         
+         // now write 
+         mapped[AMZ_EXAFWR] = AK7_P16REG02+0;                          // write to  k7's addr to select channel's register N    
+         mapped[AMZ_EXDWR]  = reglo & 0xFFFF;                          // write lower 16 bit                                    
+         mapped[AMZ_EXAFWR] = AK7_P16REG02+1;                          // write to  k7's addr to select channel's register N+1  
+         mapped[AMZ_EXDWR]  = reglo >> 16;                             // write next 16 bit                                     
+         mapped[AMZ_EXAFWR] = AK7_P16REG02+2;                          // write to  k7's addr to select channel's register N+2  
+         mapped[AMZ_EXDWR]  = reghi & 0xFFFF;                          // write next 16 bit                                     
+         mapped[AMZ_EXAFWR] = AK7_P16REG02+3;                          // write to  k7's addr to select channel's register N+3  
+         mapped[AMZ_EXDWR]  = reghi >> 16;                             // write highest 16 bit                                  
+         
+         // ......... P16 Reg 5  .......................    
+         
+         // package
+         reglo = (int)(fippiconfig.FTRIGOUT_DELAY[ch]*FILTER_CLOCK_MHZ);        //  FtrigoutDelay goes into [8:0] of FipReg5             // in us                                                                                                    
+         
+         reghi = (int)(fippiconfig.EXTERN_DELAYLEN[ch]*FILTER_CLOCK_MHZ);       //Store EXTERN_DELAYLEN in bits [8:0] of FipReg5 hi      // in us      
+         /*   bogus trace delay computation from C code?
+         mval = SL[ch]+SG[ch];                                            // psep       TODO: check trace related delays. 
+         mval = (mval-1) << SFR;                                        // trigger delay
+         pafl = (mval>> SFR) + TD[ch];                                     // paf length   // check units!
+         mval = pafl - mval;                                           //delay from DSP computation
+         if( (fippiconfig.CHANNEL_CSRA[ch]  & 0x0400) >0 )  //(1<<CCSRA_CFDMODE) >0  )      
+         mval = mval + FL[ch] + FG[ch];                                // add CFD delay if necessary
+         */ 
+         mval = TD[ch];
+         reghi = reghi +  (mval<<9);                                      // trace delay (Capture_FIFOdelaylen )
+         
+         // now write 
+         mapped[AMZ_EXAFWR] = AK7_P16REG05+0;                          // write to  k7's addr to select channel's register N        
+         mapped[AMZ_EXDWR]  = reglo & 0xFFFF;                          // write lower 16 bit                                        
+         mapped[AMZ_EXAFWR] = AK7_P16REG05+1;                          // write to  k7's addr to select channel's register N+1      
+         mapped[AMZ_EXDWR]  = reglo >> 16;                             // write next 16 bit                                         
+         mapped[AMZ_EXAFWR] = AK7_P16REG05+2;                          // write to  k7's addr to select channel's register N+2      
+         mapped[AMZ_EXDWR]  = reghi & 0xFFFF;                          // write next 16 bit                                         
+         mapped[AMZ_EXAFWR] = AK7_P16REG05+3;                          // write to  k7's addr to select channel's register N+3      
+         mapped[AMZ_EXDWR]  = reghi >> 16;                             // write highest 16 bit                                      
+         
+         
+         // ......... P16 Reg 6  .......................    
+         
+         reglo = fippiconfig.QDCLen0[ch];                    //  QDC       // in samples
+         reglo = reglo + (fippiconfig.QDCLen1[ch]<<16);        //  QDC       // in samples                                                                                 
+         reghi = fippiconfig.QDCLen2[ch];                    //  QDC       // in samples
+         reghi = reghi + (fippiconfig.QDCLen3[ch]<<16);        //  QDC       // in samples      
+         
+         // now write 
+         mapped[AMZ_EXAFWR] = AK7_P16REG06+0;              // write to  k7's addr to select channel's register N        
+         mapped[AMZ_EXDWR]  = reglo & 0xFFFF;              // write lower 16 bit                                        
+         mapped[AMZ_EXAFWR] = AK7_P16REG06+1;              // write to  k7's addr to select channel's register N+1      
+         mapped[AMZ_EXDWR]  = reglo >> 16;                 // write next 16 bit                                         
+         mapped[AMZ_EXAFWR] = AK7_P16REG06+2;              // write to  k7's addr to select channel's register N+2      
+         mapped[AMZ_EXDWR]  = reghi & 0xFFFF;              // write next 16 bit                                         
+         mapped[AMZ_EXAFWR] = AK7_P16REG06+3;              // write to  k7's addr to select channel's register N+3      
+         mapped[AMZ_EXDWR]  = reghi >> 16;                 // write highest 16 bit                                      
+         
+         
+         // ......... P16 Reg 7  .......................    
+         
+         reglo = fippiconfig.QDCLen4[ch];                    //  QDC       // in samples
+         reglo = reglo + (fippiconfig.QDCLen5[ch]<<16);        //  QDC       // in samples                                                                               
+         reghi = fippiconfig.QDCLen6[ch];                    //  QDC       // in samples
+         reghi = reghi + (fippiconfig.QDCLen7[ch]<<16);        //  QDC       // in samples     
+         
+         // now write 
+         mapped[AMZ_EXAFWR] = AK7_P16REG07+0;              // write to  k7's addr to select channel's register N        
+         mapped[AMZ_EXDWR]  = reglo & 0xFFFF;              // write lower 16 bit                                        
+         mapped[AMZ_EXAFWR] = AK7_P16REG07+1;              // write to  k7's addr to select channel's register N+1      
+         mapped[AMZ_EXDWR]  = reglo >> 16;                 // write next 16 bit                                         
+         mapped[AMZ_EXAFWR] = AK7_P16REG07+2;              // write to  k7's addr to select channel's register N+2      
+         mapped[AMZ_EXDWR]  = reghi & 0xFFFF;              // write next 16 bit                                         
+         mapped[AMZ_EXAFWR] = AK7_P16REG07+3;              // write to  k7's addr to select channel's register N+3      
+         mapped[AMZ_EXDWR]  = reghi >> 16;                 // write highest 16 bit                                      
+         
+         // ......... P16 Reg 13  .......................    
+         
+         reglo = fippiconfig.CFD_THRESHOLD[ch];             //  CFDThresh       // in steps
+         
+         // now write 
+         mapped[AMZ_EXAFWR] = AK7_P16REG13+0;              // write to  k7's addr to select channel's register N
+         mapped[AMZ_EXDWR]  = reglo & 0xFFFF;              // write lower 16 bit
+         mapped[AMZ_EXAFWR] = AK7_P16REG13+1;              // write to  k7's addr to select channel's register N+1
+         mapped[AMZ_EXDWR]  = reglo >> 16;                 // write next 16 bit
+         
+         
+         // ......... P16 Reg 17 (Info)  .......................    
+         
+         reglo = k;                                        // channel
+         reglo = reglo + (fippiconfig.SLOT_ID<<4);           // slot     // use for K7 0/1
+         reglo = reglo + (fippiconfig.CRATE_ID<<8);          // crate
+         reglo = reglo + (fippiconfig.MODULE_ID<<12);        // module type 
                                                          // [15:20] reserved for mod address (always 0?)                                           
-       reghi = TL[k];                 
+         reghi = TL[ch];                 
+         
+         // now write 
+         mapped[AMZ_EXAFWR] = AK7_P16REG17+0;               // write to  k7's addr to select channel's register N      
+         mapped[AMZ_EXDWR]  = reglo & 0xFFFF;               // write lower 16 bit                                      
+         mapped[AMZ_EXAFWR] = AK7_P16REG17+1;               // write to  k7's addr to select channel's register N+1    
+         mapped[AMZ_EXDWR]  = reglo >> 16;                  // write next 16 bit                                       
+         mapped[AMZ_EXAFWR] = AK7_P16REG17+2;               // write to  k7's addr to select channel's register N+2    
+         mapped[AMZ_EXDWR]  = reghi & 0xFFFF;               // write next 16 bit                                       
+         mapped[AMZ_EXAFWR] = AK7_P16REG17+3;               // write to  k7's addr to select channel's register N+3    
+         mapped[AMZ_EXDWR]  = reghi >> 16;                  // write highest 16 bit                                    
+         
+      }  // end for NCHANNEL_PER_K7
 
-       // now write 
-       mapped[AMZ_EXAFWR] = AK7_P16REG17+0;               // write to  k7's addr to select channel's register N      
-       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;               // write lower 16 bit                                      
-       mapped[AMZ_EXAFWR] = AK7_P16REG17+1;               // write to  k7's addr to select channel's register N+1    
-       mapped[AMZ_EXDWR]  = reglo >> 16;                  // write next 16 bit                                       
-       mapped[AMZ_EXAFWR] = AK7_P16REG17+2;               // write to  k7's addr to select channel's register N+2    
-       mapped[AMZ_EXDWR]  = reghi & 0xFFFF;               // write next 16 bit                                       
-       mapped[AMZ_EXAFWR] = AK7_P16REG17+3;               // write to  k7's addr to select channel's register N+3    
-       mapped[AMZ_EXDWR]  = reghi >> 16;                  // write highest 16 bit                                    
-
-
-
-    }  // end for NCHANNEL_PER_K7
+    } //end for K7s
 
   
 
 
 
    // --------------------------- DACs -----------------------------------
+   // DACs are all controlled by MZ controller
 
     mapped[AMZ_DEVICESEL] = CS_MZ;	  // select MZ controller
 
@@ -829,7 +833,7 @@ int main(void) {
          
          =>  unsigned int sw0bit[NCHANNEL_PER_K7] = {6, 11, 4, 0};       // these arrays encode the mapping of gain bits to I2C signals
              unsigned int sw1bit[NCHANNEL_PER_K7] = {8, 2, 5, 10};
-             unsigned int gnbit[NCHANNEL_PER_K7] = {9, 12, 1, 3};
+             unsigned int gnbit[NCHANNEL_PER_K7]  = {9, 12, 1, 3};
        */
 
        // ............. set the bits for 4 channels  ................. 
@@ -1012,19 +1016,19 @@ int main(void) {
 
      */ 
 
-  mapped[AMZ_DEVICESEL] = CS_MZ;	  // select MicroZed Controller
+  mapped[AMZ_DEVICESEL] = CS_MZ;	            // select MicroZed Controller
 
-  mval =  fippiconfig.AUX_CTRL  & 0x00FF;  // upper bits reserved (yellow LED)
-  mval = mval + 0x0000;     // clr bit 8: yellow LED off
+  mval =  fippiconfig.AUX_CTRL  & 0x00FF;    // upper bits reserved (yellow LED)
+  mval = mval + 0x0000;                      // clr bit 8: yellow LED off
   mapped[AAUXCTRL] = mval;
   if(mapped[AAUXCTRL] != mval) printf("Error writing AUX_CTRL register\n");
  
 
   // toggle nLive to clear memories
-   mapped[AMZ_DEVICESEL] = CS_MZ;	 // select MZ
-   mapped[AMZ_CSRIN] = 0x0001; // RunEnable=1 > nLive=0 (DAQ on)
-   mapped[AMZ_DEVICESEL] = CS_MZ;	 // select MZ
-   mapped[AMZ_CSRIN] = 0x0000; // RunEnable=1 > nLive=0 (DAQ on)
+   mapped[AMZ_DEVICESEL] = CS_MZ;	      // select MZ
+   mapped[AMZ_CSRIN] = 0x0001;            // RunEnable=1 > nLive=0 (DAQ on)
+   mapped[AMZ_DEVICESEL] = CS_MZ;	      // select MZ
+   mapped[AMZ_CSRIN] = 0x0000;            // RunEnable=1 > nLive=0 (DAQ on)
 
 
      
