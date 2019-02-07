@@ -226,6 +226,7 @@
 
 // addresses in K7 -- read/write via AMZ_EX___
 #define AK7_SCSRIN            0x00
+#define AK7_ADCCTRL           0x02
 #define AK7_PAGE              0x03
 #define AK7_ADCSPI            0x05
 #define AK7_ADCBITSLIP        0x06
