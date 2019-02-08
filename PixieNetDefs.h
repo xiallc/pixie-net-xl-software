@@ -203,11 +203,11 @@
 
 
 // PN XL specific
-#define CS_MZ   0x00
-#define CS_K0   0x04
-#define CS_K1   0x08
-#define PAGE_SYS = 0x000   // page number for system registers = 0x000
-#define PAGE_CHN = 0x100   // page number for channel registers = 0x100+ch
+#define CS_MZ     0x00
+#define CS_K0     0x04
+#define CS_K1     0x08
+#define PAGE_SYS  0x000   // page number for system registers = 0x000
+#define PAGE_CHN  0x100   // page number for channel registers = 0x100+ch
 
 // addresses in MZ controller - direct read/write
 #define AMZ_CSRIN     0x00

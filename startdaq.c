@@ -97,7 +97,7 @@ int main(void) {
   unsigned int BLbad[NCHANNELS];
   onlinebin=MAX_MCA_BINS/WEB_MCA_BINS;
   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
-  int k7;
+  int k7, ch_k7;
 
 
   // ******************* read ini file and fill struct with values ********************
@@ -618,7 +618,7 @@ int main(void) {
 
                fprintf(filmca,"%d",k*onlinebin);                  // bin number
                for(k7=0;k7<N_K7_FPGAS;k7++)
-                  for(ch=0;ch<NCHANNEL_PER_K7;ch++) {
+                  for(ch=0;ch<NCHANNEL_PER_K7;ch++) 
                      fprintf(filmca,",%d",wmca[ch+k7*NCHANNEL_PER_K7][k]);    // print channel data
                fprintf(filmca,"\n");
 
@@ -672,9 +672,9 @@ int main(void) {
    for( k=0; k <MAX_MCA_BINS; k++)
    {
     //  fprintf(filmca,"%d,%u,%u,%u,%u\n ", k,mca[0][k],mca[1][k],mca[2][k],mca[3][k] );
-       fprintf(filmca,"%d",k*);                  // bin number
+       fprintf(filmca,"%d",k);                  // bin number
        for(k7=0;k7<N_K7_FPGAS;k7++)
-         for(ch=0;ch<NCHANNEL_PER_K7;ch++) {
+         for(ch=0;ch<NCHANNEL_PER_K7;ch++) 
             fprintf(filmca,",%d",mca[ch+k7*NCHANNEL_PER_K7][k]);    // print channel data
        fprintf(filmca,"\n");
    }

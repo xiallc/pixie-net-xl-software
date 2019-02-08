@@ -107,7 +107,7 @@ int main(void) {
   {
       fprintf(fil,"%d",k);                  // sample number
       for(k7=0;k7<N_K7_FPGAS;k7++)
-         for(ch=0;ch<NCHANNEL_PER_K7;ch++) {
+         for(ch=0;ch<NCHANNEL_PER_K7;ch++) 
              fprintf(fil,",%d",adc[ch+k7*NCHANNEL_PER_K7][k]);    // print channel data
       fprintf(fil,"\n");
    }

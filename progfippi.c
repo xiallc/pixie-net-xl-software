@@ -524,7 +524,7 @@ int main(void) {
 
   for(k7=0;k7<N_K7_FPGAS;k7++)
   {
-      mapped[AMZ_DEVICESEL] = =  cs[k7];	// select FPGA 
+      mapped[AMZ_DEVICESEL] =  cs[k7];	// select FPGA 
 
 
       // SYSTEM REGISTERS IN K7

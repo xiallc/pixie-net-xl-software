@@ -117,17 +117,17 @@ int main(void) {
    // print the data
    for( k = 0; k < NTRACE_SAMPLES; k ++ )
    {
-      printf("%d",k);                  // sample number
+      printf("\"%d",k);                  // sample number
       for(k7=0;k7<N_K7_FPGAS;k7++)
-         for(ch=0;ch<NCHANNEL_PER_K7;ch++) {
+         for(ch=0;ch<NCHANNEL_PER_K7;ch++) 
              printf(",%d",adc[ch+k7*NCHANNEL_PER_K7][k]);    // print channel data
       printf("\\n \"  + \n");
    }
 
    // dummy line: comma, not + required in last line
-   printf("%d",k);                  // sample number
+   printf("\"%d",k);                  // sample number
    for(k7=0;k7<N_K7_FPGAS;k7++)
-      for(ch=0;ch<NCHANNEL_PER_K7;ch++) {
+      for(ch=0;ch<NCHANNEL_PER_K7;ch++) 
           printf(",%d",adc[ch+k7*NCHANNEL_PER_K7][k-1]);    // print channel data
    printf("\\n \"  , \n");
 

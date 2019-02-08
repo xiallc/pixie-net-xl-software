@@ -711,7 +711,7 @@ int read_print_runstats_XL_2x4(int mode, int dest, volatile unsigned int *mapped
 // dest 1: print to stdout      -- useful for cgi
 // dest 2: print to both        -- currently fails if called by web client due to file write permissions
 
-  int k,q, lastrs;
+  int k, lastrs;
   FILE * fil;
   unsigned int co[N_PL_RS_PAR] ={0};
   unsigned int sy[N_K7_FPGAS][N_PL_RS_PAR]  ={{0}};  
@@ -895,7 +895,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
      for( ch = 0; ch < NCHANNEL_PER_K7; ch++ )
      {
          mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
-         mapped[AMZ_EXDWR]  = PAGE_CHN+q;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
+         mapped[AMZ_EXDWR]  = PAGE_CHN+ch;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
    
          for( k = 0; k < 3; k ++ )      // loop over number of time words
          {

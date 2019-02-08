@@ -61,7 +61,7 @@ int main(void) {
 
   unsigned int mins[NCHANNELS_PRESENT] = {4192,4192,4192,4192};
   unsigned int mint[NCHANNELS_PRESENT] = {4192,4192,4192,4192};
-  unsigned int readdr[NCHANNELS_PRESENT] = {AADC0,AADC1,AADC2,AADC3};
+ // unsigned int readdr[NCHANNELS_PRESENT] = {AADC0,AADC1,AADC2,AADC3};
   unsigned int targetdac[NCHANNELS_PRESENT] = {0,0,0,0};
   unsigned int targetBL[NCHANNELS_PRESENT] = {400,400,400,400};     // TODO: BL% read from ini file, compute 
   double dacadj;
@@ -109,6 +109,7 @@ int main(void) {
   if(revsn==17)  // TODO: figure out version ID and do some things only if necessary
   {
      printf("Checking for swapped channels ...\n");
+     for(k7=0;k7<N_K7_FPGAS;k7++)
      {
      
         for( ch = 0; ch < NCHANNEL_PER_K7; ch ++ )
