@@ -102,6 +102,15 @@ int main(void) {
    }  // end for K7s
 
 
+   // check for stuck channels - remove
+   for( k = 0; k < NTRACE_SAMPLES; k ++ )
+   {
+      for(k7=0;k7<N_K7_FPGAS;k7++)
+         for(ch=0;ch<NCHANNEL_PER_K7;ch++) 
+             if(adc[ch+k7*NCHANNEL_PER_K7][k] >65532)
+               adc[ch+k7*NCHANNEL_PER_K7][k] =12;
+   }
+
 
    // read the webpage template and print 
    fil = fopen("adcpage.html","r");

@@ -430,7 +430,7 @@ int main(void) {
                         // the next 8 words only need to be read if QDCs are enabled
                      }
    
-                 /*     printf( "Event count %d\n",eventcount );
+                   /*     printf( "Event count %d\n",eventcount );
                      printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
                      printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
                      printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
@@ -439,7 +439,7 @@ int main(void) {
                      printf( "Read 5 H-L: 0x %X %X %X %X\n",hdr[23], hdr[22], hdr[21], hdr[20] );
                      printf( "Read 6 H-L: 0x %X %X %X %X\n",hdr[27], hdr[26], hdr[25], hdr[24] );
                      printf( "Read 7 H-L: 0x %X %X %X %X\n",hdr[31], hdr[30], hdr[29], hdr[28] );
-                 */ 
+                   */
                    
                      out0   = hdr[0]+(hdr[1]<<16);  // preliminary, more bits to be filled in
                      timeL  = hdr[4]+(hdr[5]<<16); 
@@ -453,10 +453,14 @@ int main(void) {
                      pileup = (out0 & 0x8000000)>>31;   // extract pileup bit
                      exttsL = hdr[26]+(hdr[27]<<16);
                      exttsH = hdr[30];
+
+                    // printf( "channel %d, pileup %d, TL %d, exttsL %d \n",ch, pileup, TL[ch],exttsL); 
    
        
                  if( (PILEUPCTRL[k]==0)     || (PILEUPCTRL[k]==1 && !pileup )    )
                  {    // either don't care  OR pilup test required and  pileup bit not set
+
+                 //printf( "pileup test passed\n"); 
    
                      // waveform read (if accepted)
                  //    if(0) {
@@ -493,7 +497,8 @@ int main(void) {
                         tracewrite = 0;
                      }
    
-                                
+                            
+                     //printf( "start computing E\n"); 
                      // compute and histogram E
                      ph = C1[ch_k7]*(double)lsum+Cg[ch_k7]*(double)gsum+C0[ch_k7]*(double)tsum;
                     //  printf("ph %f, BLavg %f, E %f\n",ph,baseline[ch], ph-baseline[ch]);
@@ -502,6 +507,7 @@ int main(void) {
                      energy = (int)floor(ph);
                      //if ((hit & (1<< HIT_LOCALHIT))==0)	  	energy =0;	   // not a local hit -> 0
    
+                     //   printf( "now incrementing MCA, E = %d\n", energy); 
                      //  histogramming if E< max mcabin
                      bin = energy >> Binfactor[ch_k7];
                      if( (bin<MAX_MCA_BINS) && (bin>0) ) {
@@ -547,8 +553,12 @@ int main(void) {
                      }      // 0x100     
    
                       if(RunType==0x400 && ch_k7<NCHANNEL_MAX400)   {
+                   //     printf( "writing 0x400 record\n"); 
                           hit = (1<<ch) + 0x20 + (0x100<<ch);
-                          TraceBlks = (int)floor(TL[ch]/BLOCKSIZE_400);
+                          if(tracewrite==1)
+                              TraceBlks = (int)floor(TL[ch]/BLOCKSIZE_400);
+                          else 
+                              TraceBlks = 0;
                           memcpy( buffer2 + 0, &(hit), 4 );
                           memcpy( buffer2 + 4, &(TraceBlks), 2 );
                           memcpy( buffer2 + 6, &(NumPrevTraceBlks), 2 ); 
@@ -634,7 +644,7 @@ int main(void) {
          loopcount ++;
          currenttime = time(NULL);
       } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-    //  } while (eventcount <= 230); // run for a fixed number of events   
+    //  } while (eventcount <= 10); // run for a fixed number of events   
 
 
 
@@ -668,7 +678,7 @@ int main(void) {
                       
    // final save MCA and RS
    filmca = fopen("MCA.csv","w");
-   fprintf(filmca,"bin,MCAch0,MCAch1,MCAch2,MCAch3\n");
+   fprintf(filmca,"bin,MCAch0,MCAch1,MCAch2,MCAch3,MCAch4,MCAch5,MCAch6,MCAch7\n");
    for( k=0; k <MAX_MCA_BINS; k++)
    {
     //  fprintf(filmca,"%d,%u,%u,%u,%u\n ", k,mca[0][k],mca[1][k],mca[2][k],mca[3][k] );
