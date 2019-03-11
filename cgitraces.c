@@ -46,6 +46,7 @@
 
 #include "PixieNetDefs.h"
 #include "PixieNetCommon.h"
+#include "PixieNetConfig.h"
 
 
 int main(void) {		 
@@ -59,6 +60,7 @@ int main(void) {
   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
   unsigned int adc[NCHANNEL_PER_K7*N_K7_FPGAS][NTRACE_SAMPLES];
   char line[LINESZ];
+  unsigned int GOOD_CH[NCHANNELS];
 
 
   // *************** PS/PL IO initialization *********************
@@ -81,7 +83,31 @@ int main(void) {
 
    // **************** XIA code begins **********************
 
-   // read 8K samples from ADC register 
+   // ******************* read ini file and fill struct with values ********************
+  
+  PixieNetFippiConfig fippiconfig;		// struct holding the input parameters
+  const char *defaults_file = "defaults.ini";
+  int rval = init_PixieNetFippiConfig_from_file( defaults_file, 0, &fippiconfig );   // first load defaults, do not allow missing parameters (0)
+  if( rval != 0 )
+  {
+    printf( "Failed to parse FPGA settings from %s, rval=%d\n", defaults_file, rval );
+    return rval;
+  }
+  const char *settings_file = "settings.ini";
+  rval = init_PixieNetFippiConfig_from_file( settings_file, 2, &fippiconfig );   // second override with user settings, do allow missing and no warning (2)
+  if( rval != 0 )
+  {
+    printf( "Failed to parse FPGA settings from %s, rval=%d\n", settings_file, rval );
+    return rval;
+  }
+
+  for( k = 0; k < NCHANNELS; k ++ )
+  {
+      GOOD_CH[k]  =  ( fippiconfig.CHANNEL_CSRA[k] & (1<<CCSRA_GOOD) ) >0;  
+  }
+
+     
+   // ******************* read 8K samples from ADC register ********************
    // at this point, no guarantee that sampling is truly periodic
    
    for(k7=0;k7<N_K7_FPGAS;k7++)
@@ -93,23 +119,19 @@ int main(void) {
          mapped[AMZ_EXAFWR] = AK7_PAGE;     // write to  k7's addr        addr 3 = channel/syste, select    
          mapped[AMZ_EXDWR] = PAGE_CHN+ch;                                //  0x100  =channel 0                  
          
-         for(k=0;k<NTRACE_SAMPLES;k++) {
-            mapped[AMZ_EXAFRD] = AK7_ADC;     // write to  k7's addr
-            //        usleep(1);
-            adc[ch+k7*NCHANNEL_PER_K7][k] = mapped[AMZ_EXDRD];    
-         }       //    end for NTRACE_SAMPLES      
+         if(GOOD_CH[ch+k7*NCHANNEL_PER_K7]==1)
+            for(k=0;k<NTRACE_SAMPLES;k++) {
+               mapped[AMZ_EXAFRD] = AK7_ADC;     // write to  k7's addr
+               //        usleep(1);
+               adc[ch+k7*NCHANNEL_PER_K7][k] = mapped[AMZ_EXDRD];    
+            }       //    end for NTRACE_SAMPLES      
+          else
+            for(k=0;k<NTRACE_SAMPLES;k++) {
+               adc[ch+k7*NCHANNEL_PER_K7][k] = -1;    // non-good channels: set to -1 
+            }    //    end for NTRACE_SAMPLES 
       } // end for channels
    }  // end for K7s
 
-
-   // check for stuck channels - remove
-   for( k = 0; k < NTRACE_SAMPLES; k ++ )
-   {
-      for(k7=0;k7<N_K7_FPGAS;k7++)
-         for(ch=0;ch<NCHANNEL_PER_K7;ch++) 
-             if(adc[ch+k7*NCHANNEL_PER_K7][k] >65532)
-               adc[ch+k7*NCHANNEL_PER_K7][k] =12;
-   }
 
 
    // read the webpage template and print 

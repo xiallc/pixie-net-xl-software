@@ -196,11 +196,10 @@ namespace {
     const map<string,string>::const_iterator pos = label_to_values.find( label );
     if( pos == label_to_values.end() )
     {
-      if(ignore_missing==1)   {
-            cerr << label << " ";
-      } else {
+      if(ignore_missing==1)  
+            cerr << label << " ";  
+      if(ignore_missing==0) 
             cerr << "Parameter '" << label << "' was not in config file" << endl;
-      }
       return 1;
     }
     
@@ -226,11 +225,10 @@ namespace {
     const map<string,string>::const_iterator pos = label_to_values.find( label );
     if( pos == label_to_values.end() )
     {
-      if(ignore_missing==1)   {
+      if(ignore_missing==1)   
             cerr << label << " ";
-      } else {
+      if(ignore_missing==0) 
             cerr << "Parameter '" << label << "' was not in config file" << endl;
-      }
       return 1;
     }
     
@@ -498,7 +496,9 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
                                         int ignore_missing,                     
                                         struct PixieNetFippiConfig *config )
 {
-   // if ignore_missing == 1, missing parameters (parse_XXX returns 1) are ok
+   // if ignore_missing == 0, missing parameters (parse_XXX returns 1) give an error
+   // if ignore_missing == 1, missing parameters (parse_XXX returns 1) are ok, but a warning is printed
+   // if ignore_missing == 2, missing parameters (parse_XXX returns 1) are ok, no warning is printed
    // this is set for a second pass, after filling parameters with defaults
   bool bit, bits[NCHANNELS];
   int ret;

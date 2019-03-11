@@ -17,11 +17,11 @@ all: default
 %.o: %.cpp 
 	g++  $(CXXFLAGS) $(INCDIRS) -c $< -o $@
 	
-cgitraces.cgi: cgitraces.o PixieNetDefs.h
-	gcc cgitraces.o $(LIBS) -o cgitraces.cgi
+cgitraces.cgi: cgitraces.o PixieNetConfig.o PixieNetDefs.h
+	g++ cgitraces.o PixieNetConfig.o $(LIBS) -o cgitraces.cgi
 
-gettraces: gettraces.o PixieNetDefs.h
-	gcc gettraces.o $(LIBS) -o gettraces
+gettraces: gettraces.o PixieNetConfig.o PixieNetDefs.h
+	g++ gettraces.o PixieNetConfig.o $(LIBS) -o gettraces
 
 progfippi: progfippi.o PixieNetCommon.o PixieNetConfig.o PixieNetDefs.h
 	g++ progfippi.o PixieNetCommon.o PixieNetConfig.o $(LIBS) -o progfippi
