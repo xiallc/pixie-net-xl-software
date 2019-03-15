@@ -65,6 +65,8 @@ int main( int argc, char *argv[] ) {
   unsigned int mval = 0;
   unsigned int k;
 
+   unsigned long long mac;
+
 
   // *************** PS/PL IO initialization *********************
   // open the device for PD register I/O
@@ -89,6 +91,54 @@ int main( int argc, char *argv[] ) {
   }
 
   mapped = (unsigned int *) map_addr;
+
+    // ************************ test streamers *********************************
+
+     if( argc!=2)  {
+     printf( "please give arguments addr (0x###) for test read/write and value (decimal)  \n" );
+     return 2;
+   }
+
+   mac = strtoll(argv[1], NULL, 16);
+
+   printf( "Writing MAC %s\n", argv[1] );
+       printf( "Writing MAC %012llX\n", mac );
+       printf( " Equal to %02llX:%02llX:%02llX:%02llX:%02llX:%02llX\n", 
+            (mac>>40) &0x0000000000FF,
+            (mac>>32) &0x0000000000FF,
+            (mac>>24) &0x0000000000FF,
+            (mac>>16) &0x0000000000FF,
+            (mac>> 8) &0x0000000000FF,
+            (mac    ) &0x0000000000FF) ;
+
+      mapped[AMZ_DEVICESEL] = CS_K0;	      // specify which K7 
+      mapped[AMZ_EXAFWR] = AK7_PAGE;   // specify   K7's addr:    PAGE register
+      mapped[AMZ_EXDWR]  = PAGE_SYS;      //  PAGE 0: system, page 0x10n = channel n
+
+         mapped[AMZ_EXAFWR] =  AK7_WR_TM_TAI_STOP+3;   // specify   K7's addr:    WR stop time register
+         mapped[AMZ_EXDWR]  =  mac      & 0x00000000FFFF;
+         mapped[AMZ_EXAFWR] =  AK7_WR_TM_TAI_STOP+4;   // specify   K7's addr:    WR stop time register
+         mapped[AMZ_EXDWR]  =  (mac>>16) & 0x00000000FFFF;
+         mapped[AMZ_EXAFWR] =  AK7_WR_TM_TAI_STOP+5;   // specify   K7's addr:    WR stop time register
+         mapped[AMZ_EXDWR]  =  (mac>>32) & 0x00000000FFFF; 
+ 
+
+
+
+
+
+
+   
+  mapped[AOUTBLOCK] = CS_MZ;	  // deselect FPGA 0  
+ 
+ // clean up  
+ flock( fd, LOCK_UN );
+ munmap(map_addr, size);
+ close(fd);
+ return 0;
+
+ // end now
+
 
    // ************************ parse arguments *********************************
 
