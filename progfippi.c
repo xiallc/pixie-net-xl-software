@@ -85,7 +85,7 @@ int main(void) {
   }
   
 
-  unsigned int mval, dac, reglo, reghi, pafl;
+  unsigned int mval, dac, reglo, reghi;
   unsigned int CW, SFR, FFR, SL[NCHANNELS], SG[NCHANNELS], FL[NCHANNELS], FG[NCHANNELS], TH[NCHANNELS];
   unsigned int PSAM, TL[NCHANNELS], TD[NCHANNELS];
   unsigned int i2cdata[8];
@@ -500,6 +500,13 @@ int main(void) {
          printf("Invalid QDCLen7 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen7[k], QDCLEN_MIN, QDCLEN_MAX);
          return -4900-k;
       }
+
+      // EMIN can be used to cut outputs below a threshold of interest. TODO: use CSR bits to specify where cust occur      
+      if( (fippiconfig.EMIN[k] > 65535) || (fippiconfig.EMIN[k] < 0)  )  {
+         printf("Invalid EMIN = %d, must be between %d and %d \n",fippiconfig.EMIN[k], 0, 65535);
+         return -4900-k;
+      }
+
 
 
  
@@ -1044,9 +1051,15 @@ int main(void) {
      printf("MZ Zynq temperature: %d C \n",(int)zynq_temperature() );
 
    // ***** check HW info *********
-   k = hwinfo(mapped);
-   printf("Revision %04X, Serial Number %d \n",(k>>16) & 0xFFFF, k & 0xFFFF);
-//   if(k==0) printf("WARNING: HW may be incompatible with this SW/FW \n");
+   mval = hwinfo(mapped,I2C_SELMAIN);
+   printf("Main board Revision 0x%04X, Serial Number %d \n",(mval>>16) & 0xFFFF, mval & 0xFFFF);
+//   if(mval==0) printf("WARNING: HW may be incompatible with this SW/FW \n");
+
+   mval = hwinfo(mapped,I2C_SELDB0);
+   printf("DB0 Revision 0x%04X\n",(mval>>16) & 0xFFFF);
+
+   mval = hwinfo(mapped,I2C_SELDB1);
+   printf("DB1 Revision 0x%04X\n",(mval>>16) & 0xFFFF);
 
  
  // clean up  

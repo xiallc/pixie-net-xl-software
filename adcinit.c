@@ -128,44 +128,44 @@ int main( int argc, char *argv[] ) {
     
    
          if(0) {
-         // todo: make test pattern optional
-         for(k=0;k<14;k++) {
-         
-            // set up test pattern            
-            if(k<8) {
-               upper = 0x0;
-               lower = (1<<k);
-            } else {
-               upper = (1<<(k-8));
-               lower = 0x0;
-            }         
-         
-            mapped[AMZ_EXAFWR] = AK7_ADCSPI;    // write to  k7's addr     addr 5 = SPI
-            mval = 0 << 15;                     // SPI write (high bit=0)
-            mval = mval + (0x03 << 8);          // SPI reg address  (bit 13:8)
-            mval = mval + 0x80 +upper;          // test pattern on, pattern bits [13:8]  = 0A
-            mapped[AMZ_EXDWR] = mval;           //  write to ADC SPI
-            usleep(5);
+            // todo: make test pattern optional
+            for(k=0;k<14;k++) {
             
-            mapped[AMZ_EXAFWR] = AK7_ADCSPI;    // write to  k7's addr     addr 5 = SPI
-            mval = 0 << 15;                     // SPI write (high bit=0)
-            mval = mval + (0x04 << 8);          // SPI reg address  (bit 14:8)
-            mval = mval + lower;                // test pattern on, pattern bits [7:0]  = BC
-            mapped[AMZ_EXDWR] = mval;           //  write to ADC SPI              
-            usleep(5);
-            //  printf( "test pattern is 0x%x \n", (addr<<8));
-   
-            // read 1 sample from ADC register                               
-            for(ch=0;ch<NCHANNEL_PER_K7;ch++) {    
-               mapped[AMZ_EXAFWR] = AK7_PAGE;     // write to  k7's addr        addr 3 = channel/syste, select    
-               mapped[AMZ_EXDWR] = PAGE_CHN+ch;   //  0x100+ch  = page channel ch                         
-               mapped[AMZ_EXAFRD] = AK7_ADC;      // write register address to  K7
-               usleep(1);
-               adc[ch][k] = mapped[AMZ_EXDRD];      
-            } // end for channels
+               // set up test pattern            
+               if(k<8) {
+                  upper = 0x0;
+                  lower = (1<<k);
+               } else {
+                  upper = (1<<(k-8));
+                  lower = 0x0;
+               }         
             
-            printf( "test pattern 0x%04x: adc0 0x%04x, adc1 0x%04x, adc2 0x%04x, adc3 0x%04x \n", (upper<<8)+lower, adc[0][k],adc[1][k],adc[2][k],adc[3][k] );
-         }    // end for tespatterns
+               mapped[AMZ_EXAFWR] = AK7_ADCSPI;    // write to  k7's addr     addr 5 = SPI
+               mval = 0 << 15;                     // SPI write (high bit=0)
+               mval = mval + (0x03 << 8);          // SPI reg address  (bit 13:8)
+               mval = mval + 0x80 +upper;          // test pattern on, pattern bits [13:8]  = 0A
+               mapped[AMZ_EXDWR] = mval;           //  write to ADC SPI
+               usleep(5);
+               
+               mapped[AMZ_EXAFWR] = AK7_ADCSPI;    // write to  k7's addr     addr 5 = SPI
+               mval = 0 << 15;                     // SPI write (high bit=0)
+               mval = mval + (0x04 << 8);          // SPI reg address  (bit 14:8)
+               mval = mval + lower;                // test pattern on, pattern bits [7:0]  = BC
+               mapped[AMZ_EXDWR] = mval;           //  write to ADC SPI              
+               usleep(5);
+               //  printf( "test pattern is 0x%x \n", (addr<<8));
+      
+               // read 1 sample from ADC register                               
+               for(ch=0;ch<NCHANNEL_PER_K7;ch++) {    
+                  mapped[AMZ_EXAFWR] = AK7_PAGE;     // write to  k7's addr        addr 3 = channel/syste, select    
+                  mapped[AMZ_EXDWR] = PAGE_CHN+ch;   //  0x100+ch  = page channel ch                         
+                  mapped[AMZ_EXAFRD] = AK7_ADC;      // write register address to  K7
+                  usleep(1);
+                  adc[ch][k] = mapped[AMZ_EXDRD];      
+               } // end for channels
+               
+               printf( "test pattern 0x%04x: adc0 0x%04x, adc1 0x%04x, adc2 0x%04x, adc3 0x%04x \n", (upper<<8)+lower, adc[0][k],adc[1][k],adc[2][k],adc[3][k] );
+            }    // end for tespatterns
          } // end disable if
          
          
@@ -188,12 +188,18 @@ int main( int argc, char *argv[] ) {
    
           trys = trys+1;
    
-       } while(frame!=goodframe && trys<7);
+       } while(frame!=goodframe && trys<16);
+
+       if(frame==goodframe)
+         printf( "K7 %d: ADC initialized ok \n", k7);
+       else
+         printf( "K7 %d: ADC not initialized, try again? \n", k7);
+
    } // end for K7s
          
 
 
-   // todo: repeat for K7-1
+  
 
 
  

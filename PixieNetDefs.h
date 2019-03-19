@@ -38,6 +38,10 @@
 #define PN_BOARD_VERSION_12_250_A 0xA990    
 #define PN_BOARD_VERSION_12_250_B 0xA991  
 #define PN_BOARD_VERSION_12_250_B_PTP 0xA981  
+#define PNXL_DB_VARIANT_MASK  0x00F00000   // mask to extract DB variant from EEPROM HW info
+#define PNXL_DB01_14_75       0x00000000   // value for DB01 with 14/75 MHZ ADC
+#define PNXL_DB01_14_125      0x00100000   // value for DB01 with 14/125 MHZ ADC
+#define PNXL_DB02_12_250      0x00200000   // value for DB02 with 12/250 MHZ ADC
 #define ADC_CLK_MHZ        75
 #define SYSTEM_CLOCK_MHZ   75
 #define FILTER_CLOCK_MHZ   75

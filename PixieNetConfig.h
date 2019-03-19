@@ -267,6 +267,7 @@ typedef struct PixieNetFippiConfig {
   unsigned int QDCLen5[NCHANNELS];             //  ticks      iThemba QDC length #5 
   unsigned int QDCLen6[NCHANNELS];             //  ticks      iThemba QDC length #6 
   unsigned int QDCLen7[NCHANNELS];             //  ticks      iThemba QDC length #7 
+  unsigned int EMIN[NCHANNELS];                //  minimum Energy (in final DSP units) for histogramming or LM output
 
 } PixieNetFippiConfig;
 

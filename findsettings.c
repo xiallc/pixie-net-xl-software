@@ -68,8 +68,8 @@ int main(void) {
   // unsigned int targetBL[NCHANNELS_PRESENT] = {400,400,400,400};     // TODO: BL% read from ini file, compute 
   unsigned int targetBL[NCHANNELS_PRESENT] = {1600,1600,1600,1600};     // TODO: BL% read from ini file, compute 
   double dacadj;
-  unsigned int oldadc, adcchanged, saveaux;
-  int revsn, k7, ch_k7;
+  unsigned int oldadc, adcchanged, saveaux, revsn;
+  int k7, ch_k7;
   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
 
     unsigned int trys;
@@ -103,7 +103,7 @@ int main(void) {
   // ******************* Main code begins ********************
 
    // ***** check HW info *********
-   revsn = hwinfo(mapped);
+   revsn = hwinfo(mapped,I2C_SELMAIN);   // assuming all DBs are the same!
 
    //TODO  adjust max ADC per HW variant
    ADCmax = 16384;      // adjust 
@@ -116,7 +116,7 @@ int main(void) {
   mapped[AMZ_CSRIN] = 0x0000; // all off
 
   // ----------- swap channels 0<>1 and 2<>3 if necessary  -------------
-  if(revsn==17)  // TODO: figure out version ID and do some things only if necessary
+  if( (revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB02_12_250)  // if DB02, need to check for swapped channels from ADC
   {
      printf("Checking for swapped channels ...\n");
      for(k7=0;k7<N_K7_FPGAS;k7++)

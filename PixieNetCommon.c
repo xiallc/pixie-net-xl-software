@@ -180,8 +180,10 @@ void I2Cbytereceive(volatile unsigned int *mapped, unsigned int *data) {
   }
 
 
-int hwinfo( volatile unsigned int *mapped )
+unsigned int hwinfo( volatile unsigned int *mapped, unsigned int I2Csel)
 // returns 32bit hwrev_sn, or 0 on error
+// upper 16 bit: revision              (TMP116 word 7)
+// lower 16 bit serial number          (TMP116 word 6, valid only for I2C_SELMAIN)
 {
    unsigned int  mval, i2cdata[8];
    unsigned int revsn, saveaux;
@@ -192,13 +194,8 @@ int hwinfo( volatile unsigned int *mapped )
   mapped[AMZ_DEVICESEL] = CS_MZ;	  // read/write from/to MZ IO block
   saveaux = mapped[AAUXCTRL];	
   saveaux = saveaux & 0xFF8F;    // clear the I2C select bits
-  mval = saveaux | I2C_SELMAIN;    // set bit 4-6 to select MZ I2C pins
+  mval = saveaux | I2Csel;    // set bit 4-6 to select MZ I2C pins
   mapped[AAUXCTRL] = mval;
-
-//   mapped[AMZ_DEVICESEL] = CS_MZ;	  // read/write from/to MZ IO block
-//  mval = mapped[AAUXCTRL];	
-//  mval = mval | 0x0010;    // set bit 4 to select MZ I2C pins
-//  mapped[AAUXCTRL] = mval;
 
  /*  mval = mapped[AMZ_BRDINFO];           TODO: ensure  AMZ_BRDINFO has the right address
    ctrl[7] = (mval & 0x800000) >> 23 ;    
@@ -227,7 +224,7 @@ int hwinfo( volatile unsigned int *mapped )
    ctrl[0] = 0;   // R/W*         // write starting addr to read from
    I2Cbytesend(mapped, ctrl);
    I2Cslaveack(mapped);
-    mval = 0x07;   // addr 7 = serial number
+    mval = 0x06;   // addr 7 = serial number
    i2cdata[7] = (mval & 0x0080) >> 7 ;    
    i2cdata[6] = (mval & 0x0040) >> 6 ;    
    i2cdata[5] = (mval & 0x0020) >> 5 ;    
@@ -253,8 +250,6 @@ int hwinfo( volatile unsigned int *mapped )
          mval = mval + (1<<(k+8));
    I2Cmasterack(mapped);
 
-//   usleep(100);
-//   I2Cslaveack(mapped);
    I2Cbytereceive(mapped, i2cdata);
    for( k = 0; k < 8; k ++ )
       if(i2cdata[k])
@@ -269,7 +264,106 @@ int hwinfo( volatile unsigned int *mapped )
    revsn = (mval & 0xFFFF);
    //printf("Revision %04X, Serial Number %d \n",(revsn>>16), revsn&0xFFFF);
 
-/*
+
+   // ------------- read hardware version  -------------------- 
+
+     // 2 bytes: ctrl, addr  write
+   I2Cstart(mapped);
+   ctrl[0] = 0;   // R/W*         // write starting addr to read from
+   I2Cbytesend(mapped, ctrl);
+   I2Cslaveack(mapped);
+    mval = 0x07;   // addr 8 =  hardware version
+   i2cdata[7] = (mval & 0x0080) >> 7 ;    
+   i2cdata[6] = (mval & 0x0040) >> 6 ;    
+   i2cdata[5] = (mval & 0x0020) >> 5 ;    
+   i2cdata[4] = (mval & 0x0010) >> 4 ;
+   i2cdata[3] = (mval & 0x0008) >> 3 ;    
+   i2cdata[2] = (mval & 0x0004) >> 2 ;   
+   i2cdata[1] = (mval & 0x0002) >> 1 ;    
+   i2cdata[0] = (mval & 0x0001)      ;   
+   I2Cbytesend(mapped, i2cdata);
+   I2Cslaveack(mapped);
+     usleep(300);
+
+   // read data bytes 
+   mval = 0;
+   ctrl[0] = 1;   // R/W*         // now read 
+   usleep(100);
+   I2Cstart(mapped);               //restart
+   I2Cbytesend(mapped, ctrl);      // device address
+   I2Cslaveack(mapped);
+   I2Cbytereceive(mapped, i2cdata);
+   for( k = 0; k < 8; k ++ )
+      if(i2cdata[k])
+         mval = mval + (1<<(k+8));
+   I2Cmasterack(mapped);
+
+   I2Cbytereceive(mapped, i2cdata);
+   for( k = 0; k < 8; k ++ )
+      if(i2cdata[k])
+         mval = mval + (1<<(k+0));
+   //I2Cmasterack(mapped);
+   I2Cmasternoack(mapped);
+   I2Cstop(mapped);
+
+   revsn = revsn | ((mval & 0xFFFF)<<16);
+
+
+   // ------- When reading HW info for I2C_SELMAIN, include DB variant info from DB01 ----------------------
+
+  if(I2Csel== I2C_SELMAIN) 
+  {
+     saveaux = saveaux & 0xFF8F;    // clear the I2C select bits
+     mval = saveaux | I2C_SELDB0;    // set bit 4-6 to select MZ I2C pins
+     mapped[AAUXCTRL] = mval;
+   
+   
+      // 2 bytes: ctrl, addr  write
+      I2Cstart(mapped);
+      ctrl[0] = 0;   // R/W*         // write starting addr to read from
+      I2Cbytesend(mapped, ctrl);
+      I2Cslaveack(mapped);
+       mval = 0x07;   // addr 8 =  hardware version
+      i2cdata[7] = (mval & 0x0080) >> 7 ;    
+      i2cdata[6] = (mval & 0x0040) >> 6 ;    
+      i2cdata[5] = (mval & 0x0020) >> 5 ;    
+      i2cdata[4] = (mval & 0x0010) >> 4 ;
+      i2cdata[3] = (mval & 0x0008) >> 3 ;    
+      i2cdata[2] = (mval & 0x0004) >> 2 ;   
+      i2cdata[1] = (mval & 0x0002) >> 1 ;    
+      i2cdata[0] = (mval & 0x0001)      ;   
+      I2Cbytesend(mapped, i2cdata);
+      I2Cslaveack(mapped);
+        usleep(300);
+   
+      // read data bytes 
+      mval = 0;
+      ctrl[0] = 1;   // R/W*         // now read 
+      usleep(100);
+      I2Cstart(mapped);               //restart
+      I2Cbytesend(mapped, ctrl);      // device address
+      I2Cslaveack(mapped);
+      I2Cbytereceive(mapped, i2cdata);
+      for( k = 0; k < 8; k ++ )
+         if(i2cdata[k])
+            mval = mval + (1<<(k+8));
+      I2Cmasterack(mapped);
+   
+      I2Cbytereceive(mapped, i2cdata);
+      for( k = 0; k < 8; k ++ )
+         if(i2cdata[k])
+            mval = mval + (1<<(k+0));
+      //I2Cmasterack(mapped);
+      I2Cmasternoack(mapped);
+      I2Cstop(mapped);
+   
+      revsn = revsn | ((mval & 0x00F0)<<16);
+   }
+
+   // ---------------- finish up and return -----------------
+
+
+/* // version check -- TODO not for now
    //printf("I2C read Revision 0x%04X\n",mval);
    if ( (mval == PN_BOARD_VERSION_12_250_A)     ||
         (mval == PN_BOARD_VERSION_12_250_B)     ||
@@ -674,7 +768,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
      // temperatures
      m[14] = (int)board_temperature(mapped,I2C_SELMAIN);
      m[15] = (int)zynq_temperature();
-     m[16] = (int)(0xFFFF & (hwinfo(mapped) >> 16));          // this is a pretty slow I2C I/O
+     m[16] = (int)(0xFFFF & (hwinfo(mapped,I2C_SELMAIN) >> 16));          // this is a pretty slow I2C I/O
    }
 
 
@@ -752,7 +846,7 @@ char Controller_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    "SysTime", 
    "FW_VERSION", 
    "HW_VERSION", 
-   "reserved", 	   //10
+   "TotalTime", 	   //10
    "TotalTime",
    "TotalTime", 
    "TotalTime", 
@@ -798,13 +892,13 @@ char System_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    "WR_TM_TAI", 
    "WR_TM_CYC", 
    "WR_TM_CYC",
-   "T_ADC",          // 18 (BEGIN DECIMAL)
+   "reserved",      // 18 (BEGIN DECIMAL)
+   "reserved",
+   "T_ADC",          //20 
    "T_WR",
-   "reserved",		    //20 
-   "reserved",       
-   "reserved",        // 22 (BEGIN HEX)
-   "reserved",
-   "reserved",
+   "reserved",		  // 22 (BEGIN HEX)   
+   "reserved",      
+   "reserved",        
    "reserved",
    "reserved",
    "reserved",
@@ -913,44 +1007,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
          }     //end for time words
      }    // end for channels
   } // end for K7s
- /*
-  // read from K7 - 1 
-  mapped[AMZ_DEVICESEL] = CS_K1;
-
-  // read system data
-  mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
-  mapped[AMZ_EXDWR]  = 0x000;        //                         0x000  = system     -> now addressing system page of K7-0
-
-  for( k = 0; k < N_USED_RS_PAR; k ++ )
-  {
-       mapped[AMZ_EXAFRD] = AK7_SYS_RS+k;    // read from system output range
-       sy[1][k] = mapped[AMZ_EXDRD];
-       if(SLOWREAD) sy[1][k] = mapped[AMZ_EXDRD];
-  }
-
-  // read channel data
-  for( q = NCHANNEL_PER_K7; q < NCHANNEL_PER_K7*2; q ++ )
-  {
-      mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
-      mapped[AMZ_EXDWR]  = 0x100+q;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
-
  
-      for( k = 0; k < 3; k ++ )
-      {
-        mapped[AMZ_EXAFRD] = AK7_CHN_RS_CT+k;    // read from channel output range
-         chn[q][k+0] = mapped[AMZ_EXDRD];
-         if(SLOWREAD) chn[q][k+0] = mapped[AMZ_EXDRD];
-
-         mapped[AMZ_EXAFRD] = AK7_CHN_RS_NTRIG+k;    // read from channel output range
-         chn[q][k+4] = mapped[AMZ_EXDRD];
-         if(SLOWREAD) chn[q][k+4] = mapped[AMZ_EXDRD];
-
-         mapped[AMZ_EXAFRD] = AK7_CHN_RS_NOUT+k;    // read from channel output range
-         chn[q][k+8] = mapped[AMZ_EXDRD];
-         if(SLOWREAD) chn[q][k+8] = mapped[AMZ_EXDRD];
-      }
-  }
- */
  
    // --------------- compute and print useful output values ----------------------- 
    // when printing to std out for cgi, N[i] provide the column titles (repeated for every row as in "name":value)
@@ -1033,15 +1090,15 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    {
       // ----------------- read I2C values (slow) to substitute some unused values
 
-      revsn  = hwinfo(mapped);
+      revsn  = hwinfo(mapped,I2C_SELMAIN);
       co[17] = (revsn>>16) & 0xFFFF;    // pcb rev from TMP116
       co[18] = revsn & 0xFFFF;          // s/n from TMP116
-      co[19]    = co[10];  // repeat s/n stored in MZ memory as item 19 (decimal print)
+      co[19]    = co[14];  // repeat s/n stored in MZ memory as item 19 (decimal print)
       co[20]    = (unsigned int)board_temperature(mapped,I2C_SELMAIN);
       co[21]    = (int)zynq_temperature();
 
-      sy[0][18] = (unsigned int)board_temperature(mapped,I2C_SELDB0);
-      sy[1][18] = (unsigned int)board_temperature(mapped,I2C_SELDB1);
+      sy[0][20] = (unsigned int)board_temperature(mapped,I2C_SELDB0);
+      sy[1][20] = (unsigned int)board_temperature(mapped,I2C_SELDB1);
   //    printf("T_board %d, T_DB0 %d, T_DB1 %d\n", co[15], sy[0][15], sy[1][15]); 
       
       lastrs = N_USED_RS_PAR;
@@ -1091,6 +1148,70 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
  // clean up  
  if(dest != 1) fclose(fil);
  return 0;
+}
+
+
+int ADCinit_DB01(volatile unsigned int *mapped ) {
+ // adjusts bitslip and returns 0 if successful, -1 if not
+
+   int ret=0;
+   unsigned int mval = 0;
+   unsigned int trys;
+   unsigned int frame; 
+   
+   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
+   int k7; 
+   unsigned int goodframe = 0x87;     // depends on FPGA compile?
+   printf(" Target frame pattern is 0x%02x\n",goodframe); 
+   
+   for(k7=0;k7<N_K7_FPGAS;k7++)
+      {
+      trys = 0;
+      frame= 0;
+      
+      do {
+         // read frame 
+         mapped[AMZ_DEVICESEL] = cs[k7];	            // select FPGA  
+         mapped[AMZ_EXAFWR] = AK7_PAGE;         // write to  k7's addr        addr 3 = channel/system, select    
+         mapped[AMZ_EXDWR] = PAGE_SYS;             //  0x000  = system page                
+         mapped[AMZ_EXAFRD] = AK7_ADCFRAME;     // write register address to  K7
+         usleep(1);
+         frame = mapped[AMZ_EXDRD]; 
+         printf( " K7 %d: frame pattern is 0x%x (try %d) \n", k7, frame, trys);
+                   
+         // turn testpattern off again
+         mapped[AMZ_EXAFWR] = AK7_ADCSPI;       // write to  k7's addr     addr 5 = SPI
+         mval = 0 << 15;                        // SPI write (high bit=0)
+         mval = mval + (0x03 << 8);             // SPI reg address  (bit 13:8)
+         mval = mval + 0;                       // test pattern off
+         mapped[AMZ_EXDWR] = mval;              //  write to ADC SPI
+         usleep(5);
+                  
+         if(frame!=goodframe) {
+            // trigger a bitslip         
+            mapped[AMZ_EXAFWR] = AK7_PAGE;         // write to  k7's addr        addr 3 = channel/system, select    
+            mapped[AMZ_EXDWR] = PAGE_SYS;             //  0x000  = system page                           
+            mapped[AMZ_EXAFWR] = AK7_ADCBITSLIP;   // write register address to  K7
+            mapped[AMZ_EXDWR] = 0;             // any write will do
+         }
+         
+         trys = trys+1;
+      
+      } while(frame!=goodframe && trys<16);
+      
+      if(frame==goodframe)  {
+         printf( " K7 %d: ADC initialized ok \n", k7);
+         // keep ret unchanged, default above 0 = success
+      } else {
+         printf( " K7 %d: ADC not initialized, try again by calling adcinit? \n", k7);
+         ret = -1;
+      }
+   
+   } // end for K7s
+   
+   
+   mapped[AMZ_DEVICESEL] = CS_MZ;	  // deselect FPGA 0  
+   return (ret);
 }
 
 

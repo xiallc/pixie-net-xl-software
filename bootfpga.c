@@ -51,6 +51,7 @@
 
 
 #include "PixieNetDefs.h"
+#include "PixieNetCommon.h"
 
 int main( void ) {
 
@@ -90,6 +91,10 @@ int main( void ) {
 
   mapped = (unsigned int *) map_addr;
 
+
+ printf("Configuring FPGAs:\n");
+
+
     // ************************ read data  *********************************
 
        
@@ -106,7 +111,7 @@ int main( void ) {
       }
         else
   {
-      printf("FPGA file loaded (%d words).\n", nWords);
+      printf(" FPGA file loaded (%d words).\n", nWords);
   }
       fclose(fil);
  
@@ -160,12 +165,12 @@ int main( void ) {
   }
   else
   {
-      printf("FPGA cleared (CSR = 0x%x)\n",mval);
+      printf(" FPGA cleared (CSR = 0x%x)\n",mval);
   }
 
   
   // download configuration data
-  printf("Starting FPGA download\n Percent done: ");
+  printf(" Starting FPGA download\n Percent done: ");
 
    for( j=0; j < N_FPGA_BYTES/2; j++)      
    {
@@ -190,8 +195,21 @@ int main( void ) {
       close(fd);
       return(-3);
   } else {
-    printf("Programming FPGA successful !\n");
+    printf(" Programming FPGA successful !\n");
   }
+
+
+   // ************************ FPGA programming  *********************************
+
+    printf("Initializing ADCs:\n");
+
+   // TODO: check HW version
+   ADCinit_DB01(mapped);
+   // TODO: check return value for success
+
+
+
+   // ************************ clean up  *********************************
 
  
  // clean up  

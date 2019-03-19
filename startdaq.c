@@ -200,7 +200,7 @@ int main(void) {
       C1[k] = C1[k] * Dgain[k];
    }
 
-   revsn = hwinfo(mapped);
+   revsn = hwinfo(mapped,I2C_SELMAIN);
 
     // ********************** Run Start **********************
 
