@@ -211,42 +211,14 @@ int main(void) {
   // TODO!
 
   // ----------- calibrate the ADC bit slip   -------------
-  if(1)  // TODO: figure out version ID and do some things only if necessary
+  if( (revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_75)  // if DB01, need to adjuste the bitslip
   {
-    printf("Checking for ADC data frame alignment ...\n");
-    printf("Target frame pattern is 0x%02x\n",goodframe); 
+     printf("Initializing ADCs:\n");
 
-    for(k7=0;k7<N_K7_FPGAS;k7++)
-    {
-       trys = 0;
-       frame= 0;
-       mapped[AMZ_DEVICESEL] = cs[k7];	            // select FPGA  
+     // TODO: check HW version
+     ADCinit_DB01(mapped);
+     // TODO: check return value for success
 
-       do {
-              // read frame 
-            mapped[AMZ_EXAFWR] = AK7_PAGE;         // write to  k7's addr        addr 3 = channel/system, select    
-            mapped[AMZ_EXDWR] = PAGE_SYS;             //  0x000  = system page                
-            mapped[AMZ_EXAFRD] = AK7_ADCFRAME;     // write register address to  K7
-            usleep(1);
-            frame = mapped[AMZ_EXDRD]; 
-            printf( "K7 %d: frame pattern is 0x%x (try %d) \n", k7, frame, trys);
-      
-            if(frame!=goodframe) {
-               // trigger a bitslip         
-               mapped[AMZ_EXAFWR] = AK7_ADCBITSLIP;   // write register address to  K7
-               mapped[AMZ_EXDWR] = 0;             // any write will do
-            }
-   
-          trys = trys+1;
-   
-       } while(frame!=goodframe && trys<7);
-
-       if(trys==7) {
-         printf("ADC data frame alignment can not be resolved, exiting\n");
-         return(-1);
-       }
-
-    } // end for K7s
   }   //  end version check 
 
 

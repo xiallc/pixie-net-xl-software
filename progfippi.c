@@ -85,7 +85,7 @@ int main(void) {
   }
   
 
-  unsigned int mval, dac, reglo, reghi;
+  unsigned int mval, dac, reglo, reghi, revsn;
   unsigned int CW, SFR, FFR, SL[NCHANNELS], SG[NCHANNELS], FL[NCHANNELS], FG[NCHANNELS], TH[NCHANNELS];
   unsigned int PSAM, TL[NCHANNELS], TD[NCHANNELS];
   unsigned int i2cdata[8];
@@ -513,6 +513,8 @@ int main(void) {
    }    // end for channels present
 
   
+   revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
+
 
    // -------------- now package  and write -------------------
 
@@ -563,7 +565,12 @@ int main(void) {
          
          // package
          reglo = 0;     // halt bit 0
-         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_POLARITY,      FiPPI_INVRT   );     
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_POLARITY,      FiPPI_INVRT   );    
+         if( (k==2) && (revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_75 )  // if DB01, ch.2 is inverted   
+         {
+            reglo = reglo ^ (1<<FiPPI_INVRT); 
+            //printf("reglo_ch.2 0x%08x, revsn 0x%08x\n",reglo, revsn);
+         }
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_VETOENA,       FiPPI_VETOENA   );     
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_EXTTRIGSEL,    FiPPI_EXTTRIGSEL   );     
          reglo = reglo + (SFR<<4);                        //  Store SlowFilterRange in bits [6:4] 
@@ -762,7 +769,8 @@ int main(void) {
 
     mapped[AMZ_DEVICESEL] = CS_MZ;	  // select MZ controller
 
-   for( k = 0; k < NCHANNELS_PRESENT; k ++ )
+  // for( k = NCHANNELS_PRESENT-1; k >= 0 ; k ++ )         // DAC registers are in reverse order
+   for( k = 0; k < NCHANNELS_PRESENT  ; k ++ )         // DAC registers are in reverse order
    {
       dac = (int)floor( (1 - fippiconfig.VOFFSET[k]/ V_OFFSET_MAX) * 32768);	
       if(dac > 65535)  {
@@ -1051,15 +1059,15 @@ int main(void) {
      printf("MZ Zynq temperature: %d C \n",(int)zynq_temperature() );
 
    // ***** check HW info *********
-   mval = hwinfo(mapped,I2C_SELMAIN);
-   printf("Main board Revision 0x%04X, Serial Number %d \n",(mval>>16) & 0xFFFF, mval & 0xFFFF);
+   revsn = hwinfo(mapped,I2C_SELMAIN);
+   printf("Main board Revision 0x%04X, Serial Number %d \n",(revsn>>16) & 0xFFFF, revsn & 0xFFFF);
 //   if(mval==0) printf("WARNING: HW may be incompatible with this SW/FW \n");
 
-   mval = hwinfo(mapped,I2C_SELDB0);
-   printf("DB0 Revision 0x%04X\n",(mval>>16) & 0xFFFF);
+   revsn = hwinfo(mapped,I2C_SELDB0);
+   printf("DB0 Revision 0x%04X\n",(revsn>>16) & 0xFFFF);
 
-   mval = hwinfo(mapped,I2C_SELDB1);
-   printf("DB1 Revision 0x%04X\n",(mval>>16) & 0xFFFF);
+   revsn = hwinfo(mapped,I2C_SELDB1);
+   printf("DB1 Revision 0x%04X\n",(revsn>>16) & 0xFFFF);
 
  
  // clean up  

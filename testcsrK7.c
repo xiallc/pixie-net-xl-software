@@ -111,7 +111,7 @@ int main( int argc, char *argv[] ) {
             (mac>> 8) &0x0000000000FF,
             (mac    ) &0x0000000000FF) ;
 
-      mapped[AMZ_DEVICESEL] = CS_K0;	      // specify which K7 
+      mapped[AMZ_DEVICESEL] = CS_K1;	      // specify which K7 
       mapped[AMZ_EXAFWR] = AK7_PAGE;   // specify   K7's addr:    PAGE register
       mapped[AMZ_EXDWR]  = PAGE_SYS;      //  PAGE 0: system, page 0x10n = channel n
 
@@ -173,7 +173,7 @@ int main( int argc, char *argv[] ) {
 
 
  
-  mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
+  mapped[AOUTBLOCK] = CS_K1;	  // select FPGA 0 
 
   // select sys registers
         mapped[AMZ_EXAFWR] = 3;     // write to  k7's addr     addr 3 = channel/syste, select

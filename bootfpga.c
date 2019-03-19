@@ -199,7 +199,7 @@ int main( void ) {
   }
 
 
-   // ************************ FPGA programming  *********************************
+   // ************************ ADC  initialization  *********************************
 
     printf("Initializing ADCs:\n");
 

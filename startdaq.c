@@ -66,6 +66,7 @@ int main(void) {
   unsigned int RunType, SyncT, ReqRunTime, PollTime, WR_RTCtrl;
   unsigned int SL[NCHANNELS], CCSRA[NCHANNELS], PILEUPCTRL[NCHANNELS];
   //unsigned int SG[NCHANNELS];
+  unsigned int Emin[NCHANNELS];
   float Tau[NCHANNELS], Dgain[NCHANNELS];
   unsigned int BLavg[NCHANNELS], BLcut[NCHANNELS], Binfactor[NCHANNELS], TL[NCHANNELS];
   double C0[NCHANNELS], C1[NCHANNELS], Cg[NCHANNELS];
@@ -151,7 +152,8 @@ int main(void) {
       BLbad[k] = MAX_BADBL;   // initialize to indicate no good BL found yet
       CCSRA[k]       =  fippiconfig.CHANNEL_CSRA[k]; 
       PILEUPCTRL[k] =  ( CCSRA[k] & (1<<CCSRA_PILEUPCTRL) ) >0;   // if bit set, only allow "single" non-piledup events
-   }
+      Emin[k]  = fippiconfig.EMIN[k];   
+ }
 
 
 
@@ -247,7 +249,7 @@ int main(void) {
 
    if(WR_RTCtrl==1)     // RunEnable/Live set via WR time comparison  (if startT < WR time < stopT => RunEnable=1) 
    {
-      mapped[AMZ_DEVICESEL] = CS_K0;	      // specify which K7 
+      mapped[AMZ_DEVICESEL] = CS_K1;	      // specify which K7 
       mapped[AMZ_EXAFWR] = AK7_PAGE;   // specify   K7's addr:    PAGE register
       mapped[AMZ_EXDWR]  = PAGE_SYS;      //  PAGE 0: system, page 0x10n = channel n
 
@@ -553,6 +555,7 @@ int main(void) {
                      }      // 0x100     
    
                       if(RunType==0x400 && ch_k7<NCHANNEL_MAX400)   {
+                      if( energy > Emin[k]) {
                    //     printf( "writing 0x400 record\n"); 
                           hit = (1<<ch) + 0x20 + (0x100<<ch);
                           if(tracewrite==1)
@@ -584,6 +587,7 @@ int main(void) {
                           if( tracewrite )  {   // previously checked if TL >0 and traces are recorded (bit 8 of CCSRA)     
                             fwrite( wf, TL[ch_k7]/2, 4, fil );
                           }   // end trace write
+                     } //energy limit
                      }      // 0x400
                      
                      eventcount++;             
@@ -652,8 +656,8 @@ int main(void) {
 
    /* debug */
 
-      mapped[AMZ_DEVICESEL] = CS_K0;	      // specify which K7 
-      mapped[AMZ_EXAFWR] = AK7_PAGE;   // specify   K7's addr:    PAGE register
+      mapped[AMZ_DEVICESEL] = CS_K1;	   // specify which K7 
+      mapped[AMZ_EXAFWR] = AK7_PAGE;      // specify   K7's addr:    PAGE register
       mapped[AMZ_EXDWR]  = PAGE_SYS;      //  PAGE 0: system, page 0x10n = channel n
 
          // get current time

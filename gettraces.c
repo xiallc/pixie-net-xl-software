@@ -117,15 +117,19 @@ int main(void) {
          mapped[AMZ_EXDWR] = PAGE_CHN+ch;                                //  0x100  =channel 0                  
          
          if(GOOD_CH[ch+k7*NCHANNEL_PER_K7]==1)
+         {
+            mapped[AMZ_EXAFRD] = AK7_ADC;     // write to  k7's addr   // dummy read
+            adc[ch+k7*NCHANNEL_PER_K7][0] = mapped[AMZ_EXDRD]; 
             for(k=0;k<NTRACE_SAMPLES;k++) {
                mapped[AMZ_EXAFRD] = AK7_ADC;     // write to  k7's addr
                //      usleep(1);
                adc[ch+k7*NCHANNEL_PER_K7][k] = mapped[AMZ_EXDRD]; 
             }       //    end for NTRACE_SAMPLES 
+         }
          else {
              printf( "No trace for channel %d\n", ch+k7*NCHANNEL_PER_K7 );
             for(k=0;k<NTRACE_SAMPLES;k++) {
-               adc[ch+k7*NCHANNEL_PER_K7][k] = -1;    // non-good channels: set to -1 
+               adc[ch+k7*NCHANNEL_PER_K7][k] = 1;    // non-good channels: set to +1 
             }   //    end for NTRACE_SAMPLES 
          }
       } // end for channels
