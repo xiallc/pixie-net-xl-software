@@ -68,7 +68,8 @@ int main(void) {
   //unsigned int SG[NCHANNELS];
   unsigned int Emin[NCHANNELS];
   float Tau[NCHANNELS], Dgain[NCHANNELS];
-  unsigned int BLavg[NCHANNELS], BLcut[NCHANNELS], Binfactor[NCHANNELS], TL[NCHANNELS];
+  unsigned int BLavg[NCHANNELS], BLcut[NCHANNELS], Binfactor[NCHANNELS];
+  unsigned int TL[NCHANNELS], TRACEENA[NCHANNELS];
   double C0[NCHANNELS], C1[NCHANNELS], Cg[NCHANNELS];
   double baseline[NCHANNELS] = {0};
   double dt, ph;
@@ -80,7 +81,7 @@ int main(void) {
   unsigned int tmp0, tmp1, tmp2; //, tmp3;
   unsigned long long WR_tm_tai, WR_tm_tai_start, WR_tm_tai_stop, WR_tm_tai_next;
   unsigned int hdr[32];
-  unsigned int out0, out1, out2, out3, trace_staddr, tracewrite, pileup, exttsL, exttsH;
+  unsigned int out0, out1, out2, out3, trace_staddr, pileup, tracewrite, exttsL, exttsH;
   unsigned int evstats, R1, timeL, timeH, hit;
   //unsigned int evstats, R1, hit, timeL, timeH, psa0, psa1, cfd0;
   //unsigned int psa_base, psa_Q0, psa_Q1, psa_ampl, psa_R;
@@ -151,6 +152,7 @@ int main(void) {
       if(BLavg[k]>MAX_BLAVG)  BLavg[k] = MAX_BLAVG;
       BLbad[k] = MAX_BADBL;   // initialize to indicate no good BL found yet
       CCSRA[k]       =  fippiconfig.CHANNEL_CSRA[k]; 
+      TRACEENA[k]    = ( CCSRA[k] & (1<<CCSRA_TRACEENA)) >0; 
       PILEUPCTRL[k] =  ( CCSRA[k] & (1<<CCSRA_PILEUPCTRL) ) >0;   // if bit set, only allow "single" non-piledup events
       Emin[k]  = fippiconfig.EMIN[k];   
  }
@@ -230,14 +232,13 @@ int main(void) {
         buffer1[5] = fippiconfig.COINCIDENCE_WINDOW;
         buffer1[7] = revsn>>16;               // HW revision from EEPROM
         buffer1[12] = revsn & 0xFFFF;         // serial number from EEPROM
-        for( ch = 0; ch < NCHANNEL_MAX400; ch++) {
-            buffer1[6]   +=(int)floor((TL[ch] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400);         // combined event length, in blocks
-            buffer1[8+ch] =(int)floor((TL[ch] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400);			// each channel's event length, in blocks
+        for( ch = 0; ch < NCHANNEL_MAX400; ch++) {         // TODO: Runtype 0x400 is for input ch 4-7, but reported as 0-3
+            chw = ch+NCHANNEL_MAX400;
+            buffer1[6]   +=(int)floor((TL[chw]*TRACEENA[chw] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400);         // combined event length, in blocks
+            buffer1[8+ch] =(int)floor((TL[chw]*TRACEENA[chw] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400);			// each channel's event length, in blocks
         }
         fwrite( buffer1, 2, FILE_HEAD_LENGTH_400, fil );     // write to file
       }           
-
-
     }
 
     // Run Start Control
@@ -466,7 +467,7 @@ int main(void) {
    
                      // waveform read (if accepted)
                  //    if(0) {
-                     if( (TL[ch_k7] >0) && ( CCSRA[ch_k7] & (1<<CCSRA_TRACEENA)) )  {   // check if TL >0 and traces are recorded (bit 8 of CCSRA)
+                     if( (TL[ch_k7] >0) && TRACEENA[ch_k7] )  {   // check if TL >0 and traces are recorded (bit 8 of CCSRA)
                        tracewrite = 1;
                     //   printf( "N samples %d, start addr 0x%X \n", TL[ch], trace_staddr);
                        mapped[AMZ_EXAFWR] = AK7_MEMADDR+ch;     // specify   K7's addr     addr 4 = memory address
@@ -556,7 +557,10 @@ int main(void) {
    
                       if(RunType==0x400) {// && ch_k7<NCHANNEL_MAX400)   {
                       if( energy > Emin[k]) {
-                          chw = ch; //-NCHANNEL_MAX400;      // TODO: assume only DB1 is present/connectedso ch 4-7 map to 0-3.    
+                          if(ch>=NCHANNEL_MAX400)    // TODO: here assume only DB1 is present/connected so ch 4-7 map to 0-3. 
+                            chw = ch-NCHANNEL_MAX400; 
+                          else 
+                            chw = ch;
                      //   printf( "Channel hit %d, channel recorded %d\n",ch, chw); 
                           hit = (1<<chw) + 0x20 + (0x100<<chw);
                           if(tracewrite==1)
@@ -569,7 +573,7 @@ int main(void) {
                           memcpy( buffer2 + 8, &(timeL), 4 );
                           memcpy( buffer2 + 12, &(timeH), 4 );
                           memcpy( buffer2 + 16, &(energy), 2 );
-                          memcpy( buffer2 + 18, &(ch), 2 );
+                          memcpy( buffer2 + 18, &(chw), 2 );
                           memcpy( buffer2 + 20, &(out3), 2 );
                           memcpy( buffer2 + 22, &(out3), 2 );   // actually cfd time
                           memcpy( buffer2 + 24, &(out3), 2 );

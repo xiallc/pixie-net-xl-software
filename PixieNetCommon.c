@@ -1005,9 +1005,9 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
             chn[ch+k7*NCHANNEL_PER_K7][k+8] = mapped[AMZ_EXDRD];
             if(SLOWREAD) chn[ch+k7*NCHANNEL_PER_K7][k+8] = mapped[AMZ_EXDRD]; 
           
-            printf("CT value %x   ", chn[ch+k7*NCHANNEL_PER_K7][k+0]);
-            printf("NTRIG value %x   ", chn[ch+k7*NCHANNEL_PER_K7][k+4]);
-            printf("NPPI value %x\n", chn[ch+k7*NCHANNEL_PER_K7][k+8]);
+            //printf("CT value %x   ", chn[ch+k7*NCHANNEL_PER_K7][k+0]);
+            //printf("NTRIG value %x   ", chn[ch+k7*NCHANNEL_PER_K7][k+4]);
+            //printf("NPPI value %x\n", chn[ch+k7*NCHANNEL_PER_K7][k+8]);
          }     //end for time words
      }    // end for channels
   } // end for K7s

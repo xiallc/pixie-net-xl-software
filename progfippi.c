@@ -61,7 +61,7 @@ int main(void) {
   void *map_addr;
   int size = 4096;
   volatile unsigned int *mapped;
-  int k, m;
+  int k;
 
 
   // ******************* read ini file and fill struct with values ********************
@@ -94,7 +94,7 @@ int main(void) {
   unsigned int gnbit[NCHANNEL_PER_K7] = {9, 12, 1, 3};
   unsigned int i2cgain[16] = {0}; 
   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
-  int ch, k7;    // loop counter better be signed int
+  int ch, k7, ch_k7;    // loop counter better be signed int
 
 
   // *************** PS/PL IO initialization *********************
@@ -320,9 +320,11 @@ int main(void) {
 
       // waveforms
       TL[k] = MULT_TL*(int)floor(fippiconfig.TRACE_LENGTH[k]*ADC_CLK_MHZ/MULT_TL/(1<<FFR) );       // multiply time in us *  # ticks per us = time in ticks; multiple of MULT_TL
-      if(TL[k] > MAX_TL || TL[k] < TRACELEN_MIN_250OR100MHZADC)  {
-         printf("Invalid TRACE_LENGTH = %f, must be between %f and %f us\n",fippiconfig.TRACE_LENGTH[k],(double)TRACELEN_MIN_250OR100MHZADC/ADC_CLK_MHZ,(double)MAX_TL/ADC_CLK_MHZ);
+      if(TL[k] > MAX_TL | TL[k] < MULT_TL)  { //|| TL[k] < TRACELEN_MIN_250OR100MHZADC)  {
+         printf("Invalid TRACE_LENGTH = %f, must be between %f and %f us\n",fippiconfig.TRACE_LENGTH[k],(double)MULT_TL/ADC_CLK_MHZ,(double)MAX_TL/ADC_CLK_MHZ);
+        // printf("Invalid TRACE_LENGTH = %f, must be between %f and %f us\n",fippiconfig.TRACE_LENGTH[k],(double)TRACELEN_MIN_250OR100MHZADC/ADC_CLK_MHZ,(double)MAX_TL/ADC_CLK_MHZ);
          return -4400-k;
+         // Note: enfore TL >32 which is the minimum for 0x400 if traces are recorded. For no trace, use CCSRA bit to disable trace
       }
 
       if(TL[k] <fippiconfig.TRACE_LENGTH[k]*ADC_CLK_MHZ/(1<<FFR))  {
@@ -554,44 +556,46 @@ int main(void) {
     
    
       // CHANNEL REGISTERS IN K7
-      for( k = 0; k < NCHANNEL_PER_K7 ; k ++ )
+      for( ch = 0; ch < NCHANNEL_PER_K7 ; ch ++ )
       {
       
          mapped[AMZ_EXAFWR] = AK7_PAGE;         // specify   K7's addr:    PAGE register
-         mapped[AMZ_EXDWR]  = PAGE_CHN +k;      // PAGE 0: system, page 0x10n = channel n
-         ch = k+k7*NCHANNEL_PER_K7;             // pre-compute channel number for data source         
+         mapped[AMZ_EXDWR]  = PAGE_CHN + ch;      // PAGE 0: system, page 0x10n = channel n
+        
+         ch_k7 = ch+k7*NCHANNEL_PER_K7;            // pre-compute channel number for data source  
+         
          
          // ......... P16 Reg 0  .......................            
          
          // package
          reglo = 0;     // halt bit 0
-         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_POLARITY,      FiPPI_INVRT   );    
-         if( (k==2) && (revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_75 )  // if DB01, ch.2 is inverted   
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch_k7],CCSRA_POLARITY,      FiPPI_INVRT   );    
+         if( (ch==2) && (revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_75 )  // if DB01, ch.2 is inverted   
          {
             reglo = reglo ^ (1<<FiPPI_INVRT); 
             //printf("reglo_ch.2 0x%08x, revsn 0x%08x\n",reglo, revsn);
          }
-         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_VETOENA,       FiPPI_VETOENA   );     
-         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_EXTTRIGSEL,    FiPPI_EXTTRIGSEL   );     
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch_k7],CCSRA_VETOENA,       FiPPI_VETOENA   );     
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch_k7],CCSRA_EXTTRIGSEL,    FiPPI_EXTTRIGSEL   );     
          reglo = reglo + (SFR<<4);                        //  Store SlowFilterRange in bits [6:4] 
-         mval = 129-SL[ch];
+         mval = 129-SL[ch_k7];
          reglo = reglo + (mval<<7);                       //  SlowLength in bits [13:7]
-         mval = 129-SL[ch]-SG[ch];
+         mval = 129-SL[ch_k7]-SG[ch_k7];
          reglo = reglo + (mval<<14);                //  SlowLength + SlowGap in bits [20:14]
-         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_CHANTRIGSEL,   FiPPI_CHANTRIGSEL   );     
-         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_SYNCDATAACQ,   FiPPI_SYNCDATAACQ   );     
-         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_GROUPTRIGSEL,  FiPPI_GROUPTRIGSEL   );    
-         mval = 129-FL[ch]-FG[ch];
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch_k7],CCSRA_CHANTRIGSEL,   FiPPI_CHANTRIGSEL   );     
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch_k7],CCSRA_SYNCDATAACQ,   FiPPI_SYNCDATAACQ   );     
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRC[ch_k7],CCSRC_GROUPTRIGSEL,  FiPPI_GROUPTRIGSEL   );    
+         mval = 129-FL[ch_k7]-FG[ch_k7];
          reglo = reglo +( mval<<25) ;               // 128 - (FastLength - 1) in bits [31:25] 
           
          reghi = 0;
-         reghi = 129 - FL[ch] - FG[ch];                          // 128 - (FastLength + FastGap - 1)
+         reghi = 129 - FL[ch_k7] - FG[ch_k7];                          // 128 - (FastLength + FastGap - 1)
          reghi = reghi & 0x7F;                                 // Keep only bits [6:0]
-         reghi = reghi + (TH[ch]<<7);                             // Threshold in [22:7]   
-         reghi = reghi + (fippiconfig.CFD_DELAY[ch] <<23);        //  CFDDelay in [28:23]       // in samples!
-         reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_CHANVETOSEL,   FiPPI_CHANVETOSEL);     
-         reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_MODVETOSEL,    FiPPI_MODVETOSEL );     
-         reghi = reghi + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_ENARELAY,      FiPPI_ENARELAY   );     
+         reghi = reghi + (TH[ch_k7]<<7);                             // Threshold in [22:7]   
+         reghi = reghi + (fippiconfig.CFD_DELAY[ch_k7] <<23);        //  CFDDelay in [28:23]       // in samples!
+         reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[ch_k7],CCSRC_CHANVETOSEL,   FiPPI_CHANVETOSEL);     
+         reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[ch_k7],CCSRC_MODVETOSEL,    FiPPI_MODVETOSEL );     
+         reghi = reghi + setbit(fippiconfig.CHANNEL_CSRA[ch_k7],CCSRA_ENARELAY,      FiPPI_ENARELAY   );     
          
          //printf("Reg 0 high 0x%08X, low 0x%08X \n",reghi, reglo);
          // now write 
@@ -608,23 +612,23 @@ int main(void) {
          // ......... P16 Reg 1  .......................    
          
          // package
-         reglo = 129 - SG[ch];                                 //  SlowGap in bits [6:0]
-         mval = (2*SL[ch]+SG[ch]+1);
+         reglo = 129 - SG[ch_k7];                                 //  SlowGap in bits [6:0]
+         mval = (2*SL[ch_k7]+SG[ch_k7]+1);
          reglo = reglo + (mval<<7);                 // Store RBDEL_SF = (SlowLength + SlowGap + SlowLength + 1) in bits [18:7] of Fipreg1 lo
-         mval =  8192 - ((SL[ch]+SG[ch])<<SFR); 
+         mval =  8192 - ((SL[ch_k7]+SG[ch_k7])<<SFR); 
          reglo = reglo + (mval <<19); // Peaksep= SL+SG; store 8192 - PeakSep * 2^SlowFilterRange  in bits [31:19] of Fipreg1 lo
          
-         if(SFR==1) PSAM = SL[ch]+SG[ch] -3;
-         if(SFR==2) PSAM = SL[ch]+SG[ch] -2;
-         if(SFR==3) PSAM = SL[ch]+SG[ch] -2;
-         if(SFR==4) PSAM = SL[ch]+SG[ch] -1;
-         if(SFR==5) PSAM = SL[ch]+SG[ch] -0;
-         if(SFR==6) PSAM = SL[ch]+SG[ch] +1;
+         if(SFR==1) PSAM = SL[ch_k7]+SG[ch_k7] -3;
+         if(SFR==2) PSAM = SL[ch_k7]+SG[ch_k7] -2;
+         if(SFR==3) PSAM = SL[ch_k7]+SG[ch_k7] -2;
+         if(SFR==4) PSAM = SL[ch_k7]+SG[ch_k7] -1;
+         if(SFR==5) PSAM = SL[ch_k7]+SG[ch_k7] -0;
+         if(SFR==6) PSAM = SL[ch_k7]+SG[ch_k7] +1;
          reghi = 0;
          reghi = 8192 - (PSAM<<SFR);                             // Peaksample = SL+SG - a bit ; store 8192 - Peaksample * 2^SlowFilterRange  in bits [44:32] of Fipreg1 
-         mval = 2*FL[ch]+FG[ch]+2;
+         mval = 2*FL[ch_k7]+FG[ch_k7]+2;
          reghi = reghi + ( mval<<13 );                // Store RBDEL_TF = (FastLength + FastGap + FastLength + 2) in bits [56:45] of Fipreg1
-         reghi = reghi + ( fippiconfig.CFD_SCALE[ch] <<25 );        //  Store CFDScale[3:0] in bits [60:57] of Fipreg1
+         reghi = reghi + ( fippiconfig.CFD_SCALE[ch_k7] <<25 );        //  Store CFDScale[3:0] in bits [60:57] of Fipreg1
          
          // now write 
          mapped[AMZ_EXAFWR] = AK7_P16REG01+0;                 // write to  k7's addr to select channel's register N    
@@ -640,18 +644,18 @@ int main(void) {
          // ......... P16 Reg 2  .......................    
          
          // package
-         reglo = 4096 - (int)(fippiconfig.CHANTRIG_STRETCH[ch]*FILTER_CLOCK_MHZ);               //  ChanTrigStretch goes into [11:0] of FipReg2   // in us
-         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_FTRIGSEL,   SelExtFastTrig   );     
-         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_TRACEENA,    13   );     
-         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_CFDMODE,     14   );   
-         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_QDCENA,      15   );  
-         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_GLOBTRIG,    16   );     
-         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_CHANTRIG,    17   );     
-         mval = 4096 - (int)(fippiconfig.VETO_STRETCH[ch]*FILTER_CLOCK_MHZ);
+         reglo = 4096 - (int)(fippiconfig.CHANTRIG_STRETCH[ch_k7]*FILTER_CLOCK_MHZ);               //  ChanTrigStretch goes into [11:0] of FipReg2   // in us
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch_k7],CCSRA_FTRIGSEL,   SelExtFastTrig   );     
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch_k7],CCSRA_TRACEENA,    13   );     
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch_k7],CCSRA_CFDMODE,     14   );   
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch_k7],CCSRA_QDCENA,      15   );  
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch_k7],CCSRA_GLOBTRIG,    16   );     
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch_k7],CCSRA_CHANTRIG,    17   );     
+         mval = 4096 - (int)(fippiconfig.VETO_STRETCH[ch_k7]*FILTER_CLOCK_MHZ);
          reglo = reglo + (mval <<20);       //Store VetoStretch in bits [31:20] of Fipreg2   // in us
          
-         reghi = (4096 - (int)(fippiconfig.FASTTRIG_BACKLEN[ch]*FILTER_CLOCK_MHZ)) <<8;            //  FastTrigBackLen goes into [19:8] ([51:40] in 64 bit)   // in us
-         reghi = reghi + ( (4096 - (int)(fippiconfig.EXTTRIG_STRETCH[ch]*FILTER_CLOCK_MHZ)) <<20);   //  ExtTrigStretch goes into [31:20] ([63:52] in 64 bit)   // in us
+         reghi = (4096 - (int)(fippiconfig.FASTTRIG_BACKLEN[ch_k7]*FILTER_CLOCK_MHZ)) <<8;            //  FastTrigBackLen goes into [19:8] ([51:40] in 64 bit)   // in us
+         reghi = reghi + ( (4096 - (int)(fippiconfig.EXTTRIG_STRETCH[ch_k7]*FILTER_CLOCK_MHZ)) <<20);   //  ExtTrigStretch goes into [31:20] ([63:52] in 64 bit)   // in us
          
          // now write 
          mapped[AMZ_EXAFWR] = AK7_P16REG02+0;                          // write to  k7's addr to select channel's register N    
@@ -666,18 +670,18 @@ int main(void) {
          // ......... P16 Reg 5  .......................    
          
          // package
-         reglo = (int)(fippiconfig.FTRIGOUT_DELAY[ch]*FILTER_CLOCK_MHZ);        //  FtrigoutDelay goes into [8:0] of FipReg5             // in us                                                                                                    
+         reglo = (int)(fippiconfig.FTRIGOUT_DELAY[ch_k7]*FILTER_CLOCK_MHZ);        //  FtrigoutDelay goes into [8:0] of FipReg5             // in us                                                                                                    
          
-         reghi = (int)(fippiconfig.EXTERN_DELAYLEN[ch]*FILTER_CLOCK_MHZ);       //Store EXTERN_DELAYLEN in bits [8:0] of FipReg5 hi      // in us      
+         reghi = (int)(fippiconfig.EXTERN_DELAYLEN[ch_k7]*FILTER_CLOCK_MHZ);       //Store EXTERN_DELAYLEN in bits [8:0] of FipReg5 hi      // in us      
          /*   bogus trace delay computation from C code?
-         mval = SL[ch]+SG[ch];                                            // psep       TODO: check trace related delays. 
+         mval = SL[ch_k7]+SG[ch_k7];                                            // psep       TODO: check trace related delays. 
          mval = (mval-1) << SFR;                                        // trigger delay
-         pafl = (mval>> SFR) + TD[ch];                                     // paf length   // check units!
+         pafl = (mval>> SFR) + TD[ch_k7];                                     // paf length   // check units!
          mval = pafl - mval;                                           //delay from DSP computation
-         if( (fippiconfig.CHANNEL_CSRA[ch]  & 0x0400) >0 )  //(1<<CCSRA_CFDMODE) >0  )      
-         mval = mval + FL[ch] + FG[ch];                                // add CFD delay if necessary
+         if( (fippiconfig.CHANNEL_CSRA[ch_k7]  & 0x0400) >0 )  //(1<<CCSRA_CFDMODE) >0  )      
+         mval = mval + FL[ch_k7] + FG[ch_k7];                                // add CFD delay if necessary
          */ 
-         mval = TD[ch];
+         mval = TD[ch_k7];
          reghi = reghi +  (mval<<9);                                      // trace delay (Capture_FIFOdelaylen )
          
          // now write 
@@ -693,10 +697,10 @@ int main(void) {
          
          // ......... P16 Reg 6  .......................    
          
-         reglo = fippiconfig.QDCLen0[ch];                    //  QDC       // in samples
-         reglo = reglo + (fippiconfig.QDCLen1[ch]<<16);        //  QDC       // in samples                                                                                 
-         reghi = fippiconfig.QDCLen2[ch];                    //  QDC       // in samples
-         reghi = reghi + (fippiconfig.QDCLen3[ch]<<16);        //  QDC       // in samples      
+         reglo = fippiconfig.QDCLen0[ch_k7];                    //  QDC       // in samples
+         reglo = reglo + (fippiconfig.QDCLen1[ch_k7]<<16);        //  QDC       // in samples                                                                                 
+         reghi = fippiconfig.QDCLen2[ch_k7];                    //  QDC       // in samples
+         reghi = reghi + (fippiconfig.QDCLen3[ch_k7]<<16);        //  QDC       // in samples      
          
          // now write 
          mapped[AMZ_EXAFWR] = AK7_P16REG06+0;              // write to  k7's addr to select channel's register N        
@@ -711,10 +715,10 @@ int main(void) {
          
          // ......... P16 Reg 7  .......................    
          
-         reglo = fippiconfig.QDCLen4[ch];                    //  QDC       // in samples
-         reglo = reglo + (fippiconfig.QDCLen5[ch]<<16);        //  QDC       // in samples                                                                               
-         reghi = fippiconfig.QDCLen6[ch];                    //  QDC       // in samples
-         reghi = reghi + (fippiconfig.QDCLen7[ch]<<16);        //  QDC       // in samples     
+         reglo = fippiconfig.QDCLen4[ch_k7];                    //  QDC       // in samples
+         reglo = reglo + (fippiconfig.QDCLen5[ch_k7]<<16);        //  QDC       // in samples                                                                               
+         reghi = fippiconfig.QDCLen6[ch_k7];                    //  QDC       // in samples
+         reghi = reghi + (fippiconfig.QDCLen7[ch_k7]<<16);        //  QDC       // in samples     
          
          // now write 
          mapped[AMZ_EXAFWR] = AK7_P16REG07+0;              // write to  k7's addr to select channel's register N        
@@ -728,7 +732,7 @@ int main(void) {
          
          // ......... P16 Reg 13  .......................    
          
-         reglo = fippiconfig.CFD_THRESHOLD[ch];             //  CFDThresh       // in steps
+         reglo = fippiconfig.CFD_THRESHOLD[ch_k7];             //  CFDThresh       // in steps
          
          // now write 
          mapped[AMZ_EXAFWR] = AK7_P16REG13+0;              // write to  k7's addr to select channel's register N
@@ -739,12 +743,12 @@ int main(void) {
          
          // ......... P16 Reg 17 (Info)  .......................    
          
-         reglo = k;                                        // channel
+         reglo = ch_k7;                                      // channel
          reglo = reglo + (fippiconfig.SLOT_ID<<4);           // slot     // use for K7 0/1
          reglo = reglo + (fippiconfig.CRATE_ID<<8);          // crate
          reglo = reglo + (fippiconfig.MODULE_ID<<12);        // module type 
                                                          // [15:20] reserved for mod address (always 0?)                                           
-         reghi = TL[ch];                 
+         reghi = TL[ch_k7];                 
          
          // now write 
          mapped[AMZ_EXAFWR] = AK7_P16REG17+0;               // write to  k7's addr to select channel's register N      
@@ -770,18 +774,18 @@ int main(void) {
     mapped[AMZ_DEVICESEL] = CS_MZ;	  // select MZ controller
 
   // for( k = NCHANNELS_PRESENT-1; k >= 0 ; k ++ )         // DAC registers are in reverse order
-   for( k = 0; k < NCHANNELS_PRESENT  ; k ++ )         // DAC registers are in reverse order
+   for( ch_k7 = 0; ch_k7 < NCHANNELS_PRESENT  ; ch_k7 ++ )         // DAC registers are in reverse order
    {
-      dac = (int)floor( (1 - fippiconfig.VOFFSET[k]/ V_OFFSET_MAX) * 32768);	
+      dac = (int)floor( (1 - fippiconfig.VOFFSET[ch_k7]/ V_OFFSET_MAX) * 32768);	
       if(dac > 65535)  {
-         printf("Invalid VOFFSET = %f, must be between %f and -%f\n",fippiconfig.VOFFSET[k], V_OFFSET_MAX-0.05, V_OFFSET_MAX-0.05);
+         printf("Invalid VOFFSET = %f, must be between %f and -%f\n",fippiconfig.VOFFSET[ch_k7], V_OFFSET_MAX-0.05, V_OFFSET_MAX-0.05);
          return -4300-k;
       }
-      mapped[AMZ_FIRSTDAC+k] = dac;
-      if(mapped[AMZ_FIRSTDAC+k] != dac) printf("Error writing parameters to DAC register\n");
+      mapped[AMZ_FIRSTDAC+ch_k7] = dac;
+      if(mapped[AMZ_FIRSTDAC+ch_k7] != dac) printf("Error writing parameters to DAC register\n");
       usleep(DACWAIT);		// wait for programming
-      mapped[AMZ_FIRSTDAC+k] = dac;     // repeat, sometimes doesn't take?
-      if(mapped[AMZ_FIRSTDAC+k] != dac) printf("Error writing parameters to DAC register\n");
+      mapped[AMZ_FIRSTDAC+ch_k7] = dac;     // repeat, sometimes doesn't take?
+      if(mapped[AMZ_FIRSTDAC+ch_k7] != dac) printf("Error writing parameters to DAC register\n");
       usleep(DACWAIT);     
  //     printf("DAC %d, value 0x%x (%d), [%f V] \n",k, dac, dac,fippiconfig.VOFFSET[k]);
    }           // end for channels DAC
@@ -794,17 +798,17 @@ int main(void) {
    // bit mapping
    
   
-   for( k = 0; k < NCHANNELS_PRESENT; k ++ )
+   for( ch_k7 = 0; ch_k7 < NCHANNELS_PRESENT; ch_k7 ++ )
    {
-        if( !( (fippiconfig.ANALOG_GAIN[k] == DB01_GAIN0)  ||
-               (fippiconfig.ANALOG_GAIN[k] == DB01_GAIN1)  ||
-               (fippiconfig.ANALOG_GAIN[k] == DB01_GAIN2)  ||
-               (fippiconfig.ANALOG_GAIN[k] == DB01_GAIN3)  ||
-               (fippiconfig.ANALOG_GAIN[k] == DB01_GAIN4)  ||
-               (fippiconfig.ANALOG_GAIN[k] == DB01_GAIN5)  ||
-               (fippiconfig.ANALOG_GAIN[k] == DB01_GAIN6)  ||
-               (fippiconfig.ANALOG_GAIN[k] == DB01_GAIN7)   ) ) {
-        printf("ANALOG_GAIN = %f not matching available gains exactly, please choose from this list:\n",fippiconfig.ANALOG_GAIN[k]);
+        if( !( (fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN0)  ||
+               (fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN1)  ||
+               (fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN2)  ||
+               (fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN3)  ||
+               (fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN4)  ||
+               (fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN5)  ||
+               (fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN6)  ||
+               (fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN7)   ) ) {
+        printf("ANALOG_GAIN = %f not matching available gains exactly, please choose from this list:\n",fippiconfig.ANALOG_GAIN[ch_k7]);
         printf("    %f \n",DB01_GAIN0);
         printf("    %f \n",DB01_GAIN1);
         printf("    %f \n",DB01_GAIN2);
@@ -813,7 +817,7 @@ int main(void) {
         printf("    %f \n",DB01_GAIN5);
         printf("    %f \n",DB01_GAIN6);
         printf("    %f \n",DB01_GAIN7);
-        return -4300-k;
+        return -4300-ch_k7;
       }  // end if
     }    // end for
     /*     (SGA = SW1/SW0/relay)	            gain
@@ -852,17 +856,17 @@ int main(void) {
        */
 
        // ............. set the bits for 4 channels  ................. 
-       for( k = 0; k < NCHANNEL_PER_K7; k ++ )            // XXXXXX
+       for( ch_k7 = 0; ch_k7 < NCHANNEL_PER_K7; ch_k7 ++ )            // XXXXXX
       {
-         m = k;                                         // XXXXXX
-         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN0)  { i2cgain[sw1bit[m]] = 0; i2cgain[sw0bit[m]] = 0; i2cgain[gnbit[m]] = 0;  }
-         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN1)  { i2cgain[sw1bit[m]] = 0; i2cgain[sw0bit[m]] = 1; i2cgain[gnbit[m]] = 0;  }
-         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN2)  { i2cgain[sw1bit[m]] = 1; i2cgain[sw0bit[m]] = 0; i2cgain[gnbit[m]] = 0;  }
-         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN3)  { i2cgain[sw1bit[m]] = 1; i2cgain[sw0bit[m]] = 1; i2cgain[gnbit[m]] = 0;  }
-         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN4)  { i2cgain[sw1bit[m]] = 0; i2cgain[sw0bit[m]] = 0; i2cgain[gnbit[m]] = 1;  }
-         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN5)  { i2cgain[sw1bit[m]] = 0; i2cgain[sw0bit[m]] = 1; i2cgain[gnbit[m]] = 1;  }
-         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN6)  { i2cgain[sw1bit[m]] = 1; i2cgain[sw0bit[m]] = 0; i2cgain[gnbit[m]] = 1;  }
-         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN7)  { i2cgain[sw1bit[m]] = 1; i2cgain[sw0bit[m]] = 1; i2cgain[gnbit[m]] = 1;  }
+         ch = ch_k7;                                         // XXXXXX
+         if(fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN0)  { i2cgain[sw1bit[ch]] = 0; i2cgain[sw0bit[ch]] = 0; i2cgain[gnbit[ch]] = 0;  }
+         if(fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN1)  { i2cgain[sw1bit[ch]] = 0; i2cgain[sw0bit[ch]] = 1; i2cgain[gnbit[ch]] = 0;  }
+         if(fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN2)  { i2cgain[sw1bit[ch]] = 1; i2cgain[sw0bit[ch]] = 0; i2cgain[gnbit[ch]] = 0;  }
+         if(fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN3)  { i2cgain[sw1bit[ch]] = 1; i2cgain[sw0bit[ch]] = 1; i2cgain[gnbit[ch]] = 0;  }
+         if(fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN4)  { i2cgain[sw1bit[ch]] = 0; i2cgain[sw0bit[ch]] = 0; i2cgain[gnbit[ch]] = 1;  }
+         if(fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN5)  { i2cgain[sw1bit[ch]] = 0; i2cgain[sw0bit[ch]] = 1; i2cgain[gnbit[ch]] = 1;  }
+         if(fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN6)  { i2cgain[sw1bit[ch]] = 1; i2cgain[sw0bit[ch]] = 0; i2cgain[gnbit[ch]] = 1;  }
+         if(fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN7)  { i2cgain[sw1bit[ch]] = 1; i2cgain[sw0bit[ch]] = 1; i2cgain[gnbit[ch]] = 1;  }
    
       }    // end for
 
@@ -931,17 +935,17 @@ int main(void) {
       I2Cstop(mapped);
 
              // ............. set the bits for 4 more  channels  ................. 
-       for( k = NCHANNEL_PER_K7; k < 2*NCHANNEL_PER_K7; k ++ )          // XXXXXX
+       for( ch_k7 = NCHANNEL_PER_K7; ch_k7 < 2*NCHANNEL_PER_K7; ch_k7 ++ )          // XXXXXX
       {
-         m = k - NCHANNEL_PER_K7;                                         // XXXXXX
-         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN0)  { i2cgain[sw1bit[m]] = 0; i2cgain[sw0bit[m]] = 0; i2cgain[gnbit[m]] = 0;  }
-         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN1)  { i2cgain[sw1bit[m]] = 0; i2cgain[sw0bit[m]] = 1; i2cgain[gnbit[m]] = 0;  }
-         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN2)  { i2cgain[sw1bit[m]] = 1; i2cgain[sw0bit[m]] = 0; i2cgain[gnbit[m]] = 0;  }
-         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN3)  { i2cgain[sw1bit[m]] = 1; i2cgain[sw0bit[m]] = 1; i2cgain[gnbit[m]] = 0;  }
-         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN4)  { i2cgain[sw1bit[m]] = 0; i2cgain[sw0bit[m]] = 0; i2cgain[gnbit[m]] = 1;  }
-         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN5)  { i2cgain[sw1bit[m]] = 0; i2cgain[sw0bit[m]] = 1; i2cgain[gnbit[m]] = 1;  }
-         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN6)  { i2cgain[sw1bit[m]] = 1; i2cgain[sw0bit[m]] = 0; i2cgain[gnbit[m]] = 1;  }
-         if(fippiconfig.ANALOG_GAIN[k] == DB01_GAIN7)  { i2cgain[sw1bit[m]] = 1; i2cgain[sw0bit[m]] = 1; i2cgain[gnbit[m]] = 1;  }
+         ch = ch_k7 - NCHANNEL_PER_K7;                                         // XXXXXX
+         if(fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN0)  { i2cgain[sw1bit[ch]] = 0; i2cgain[sw0bit[ch]] = 0; i2cgain[gnbit[ch]] = 0;  }
+         if(fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN1)  { i2cgain[sw1bit[ch]] = 0; i2cgain[sw0bit[ch]] = 1; i2cgain[gnbit[ch]] = 0;  }
+         if(fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN2)  { i2cgain[sw1bit[ch]] = 1; i2cgain[sw0bit[ch]] = 0; i2cgain[gnbit[ch]] = 0;  }
+         if(fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN3)  { i2cgain[sw1bit[ch]] = 1; i2cgain[sw0bit[ch]] = 1; i2cgain[gnbit[ch]] = 0;  }
+         if(fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN4)  { i2cgain[sw1bit[ch]] = 0; i2cgain[sw0bit[ch]] = 0; i2cgain[gnbit[ch]] = 1;  }
+         if(fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN5)  { i2cgain[sw1bit[ch]] = 0; i2cgain[sw0bit[ch]] = 1; i2cgain[gnbit[ch]] = 1;  }
+         if(fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN6)  { i2cgain[sw1bit[ch]] = 1; i2cgain[sw0bit[ch]] = 0; i2cgain[gnbit[ch]] = 1;  }
+         if(fippiconfig.ANALOG_GAIN[ch_k7] == DB01_GAIN7)  { i2cgain[sw1bit[ch]] = 1; i2cgain[sw0bit[ch]] = 1; i2cgain[gnbit[ch]] = 1;  }
    
       }    // end for
 
