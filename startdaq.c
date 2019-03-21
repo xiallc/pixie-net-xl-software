@@ -98,7 +98,7 @@ int main(void) {
   unsigned int BLbad[NCHANNELS];
   onlinebin=MAX_MCA_BINS/WEB_MCA_BINS;
   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
-  int k7, ch_k7;
+  int k7, ch_k7, chw;
 
 
   // ******************* read ini file and fill struct with values ********************
@@ -272,12 +272,12 @@ int main(void) {
      // probably bogus. a proper scheme to ensure multiple modules start at the same time should be implemented on the DAQ network master 
     
       WR_tm_tai_start =  WR_tm_tai_next;
-      WR_tm_tai_stop  =  WR_tm_tai_next + ReqRunTime;
+      WR_tm_tai_stop  =  WR_tm_tai_next + ReqRunTime - 1;
       ReqRunTime = ReqRunTime + WR_TAI_STEP;    // increase time for local DAQ counter accordingly
 
       printf( "Current WR time %llu\n",WR_tm_tai );
       printf( "Start time %llu\n",WR_tm_tai_start );
-      printf( "Stop time %llu\n",WR_tm_tai_stop );
+      printf( "Stop time %llu\n",WR_tm_tai_stop +1);
 
       // write start/stop to both K7
       // todo: this requires both K7s to be a WR slave with valid time from master
@@ -307,7 +307,7 @@ int main(void) {
    mapped[AMZ_CSRIN] = 0x0001; // RunEnable=1 > nLive=0 (DAQ on)
    // this is a bit in a MZ register tied to a line to both FPGAs
    // falling edge of nLive clears counters and memory address pointers
-   // line ignored for WR_RTCtrl in K7, but stull usefule for TotalTime in MZ  
+   // line ignored for WR_RTCtrl in K7, but still useful for TotalTime in MZ  
    
 
     // ********************** Run Loop **********************
@@ -554,10 +554,11 @@ int main(void) {
                           }   // end trace write                   
                      }      // 0x100     
    
-                      if(RunType==0x400 && ch_k7<NCHANNEL_MAX400)   {
+                      if(RunType==0x400) {// && ch_k7<NCHANNEL_MAX400)   {
                       if( energy > Emin[k]) {
-                   //     printf( "writing 0x400 record\n"); 
-                          hit = (1<<ch) + 0x20 + (0x100<<ch);
+                          chw = ch; //-NCHANNEL_MAX400;      // TODO: assume only DB1 is present/connectedso ch 4-7 map to 0-3.    
+                     //   printf( "Channel hit %d, channel recorded %d\n",ch, chw); 
+                          hit = (1<<chw) + 0x20 + (0x100<<chw);
                           if(tracewrite==1)
                               TraceBlks = (int)floor(TL[ch]/BLOCKSIZE_400);
                           else 

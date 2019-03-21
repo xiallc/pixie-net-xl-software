@@ -314,7 +314,7 @@ unsigned int hwinfo( volatile unsigned int *mapped, unsigned int I2Csel)
   if(I2Csel== I2C_SELMAIN) 
   {
      saveaux = saveaux & 0xFF8F;    // clear the I2C select bits
-     mval = saveaux | I2C_SELDB0;    // set bit 4-6 to select MZ I2C pins
+     mval = saveaux | I2C_SELDB1;    // set bit 4-6 to select MZ I2C pins
      mapped[AAUXCTRL] = mval;
    
    
@@ -1003,7 +1003,11 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    
             mapped[AMZ_EXAFRD] = AK7_CHN_RS_NOUT+k;    // read from channel output range
             chn[ch+k7*NCHANNEL_PER_K7][k+8] = mapped[AMZ_EXDRD];
-            if(SLOWREAD) chn[ch+k7*NCHANNEL_PER_K7][k+8] = mapped[AMZ_EXDRD];           
+            if(SLOWREAD) chn[ch+k7*NCHANNEL_PER_K7][k+8] = mapped[AMZ_EXDRD]; 
+          
+            printf("CT value %x   ", chn[ch+k7*NCHANNEL_PER_K7][k+0]);
+            printf("NTRIG value %x   ", chn[ch+k7*NCHANNEL_PER_K7][k+4]);
+            printf("NPPI value %x\n", chn[ch+k7*NCHANNEL_PER_K7][k+8]);
          }     //end for time words
      }    // end for channels
   } // end for K7s
@@ -1194,6 +1198,9 @@ int ADCinit_DB01(volatile unsigned int *mapped ) {
             mapped[AMZ_EXAFWR] = AK7_ADCBITSLIP;   // write register address to  K7
             mapped[AMZ_EXDWR] = 0;             // any write will do
          }
+
+         if(frame==0)
+            trys = 16;  // break out of loop
          
          trys = trys+1;
       
@@ -1203,7 +1210,7 @@ int ADCinit_DB01(volatile unsigned int *mapped ) {
          printf( " K7 %d: ADC initialized ok \n", k7);
          // keep ret unchanged, default above 0 = success
       } else {
-         printf( " K7 %d: ADC not initialized, try again by calling adcinit? \n", k7);
+         printf( " K7 %d: ADC not initialized or missing, try again by calling adcinit? \n", k7);
          ret = -1;
       }
    
