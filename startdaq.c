@@ -154,7 +154,9 @@ int main(void) {
       CCSRA[k]       =  fippiconfig.CHANNEL_CSRA[k]; 
       TRACEENA[k]    = ( CCSRA[k] & (1<<CCSRA_TRACEENA)) >0; 
       PILEUPCTRL[k] =  ( CCSRA[k] & (1<<CCSRA_PILEUPCTRL) ) >0;   // if bit set, only allow "single" non-piledup events
-      Emin[k]  = fippiconfig.EMIN[k];   
+      Emin[k]  = fippiconfig.EMIN[k];  
+     // printf( "Emin %d\n", Emin[k]); 
+
  }
 
 
@@ -460,7 +462,7 @@ int main(void) {
                     // printf( "channel %d, pileup %d, TL %d, exttsL %d \n",ch, pileup, TL[ch],exttsL); 
    
        
-                 if( (PILEUPCTRL[k]==0)     || (PILEUPCTRL[k]==1 && !pileup )    )
+                 if( (PILEUPCTRL[ch]==0)     || (PILEUPCTRL[ch]==1 && !pileup )    )
                  {    // either don't care  OR pilup test required and  pileup bit not set
 
                  //printf( "pileup test passed\n"); 
@@ -556,12 +558,12 @@ int main(void) {
                      }      // 0x100     
    
                       if(RunType==0x400) {// && ch_k7<NCHANNEL_MAX400)   {
-                      if( energy > Emin[k]) {
+                      if( energy > Emin[ch]) {
                           if(ch>=NCHANNEL_MAX400)    // TODO: here assume only DB1 is present/connected so ch 4-7 map to 0-3. 
                             chw = ch-NCHANNEL_MAX400; 
                           else 
                             chw = ch;
-                     //   printf( "Channel hit %d, channel recorded %d\n",ch, chw); 
+                        //printf( "Channel hit %d, channel recorded %d, energy %d, Emin %d\n",ch, chw, energy, Emin[ch]); 
                           hit = (1<<chw) + 0x20 + (0x100<<chw);
                           if(tracewrite==1)
                               TraceBlks = (int)floor(TL[ch]/BLOCKSIZE_400);
@@ -653,7 +655,7 @@ int main(void) {
          loopcount ++;
          currenttime = time(NULL);
       } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-    //  } while (eventcount <= 10); // run for a fixed number of events   
+    //  } while (eventcount <= 100); // run for a fixed number of events   
 
 
 
