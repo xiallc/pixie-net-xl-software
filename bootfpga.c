@@ -62,7 +62,7 @@ int main( void ) {
 
   unsigned int mval = 0;
   FILE * fil;
-  unsigned int j;
+  unsigned int j, revsn;
   unsigned int counter1, nWords;
   unsigned short confdata[N_FPGA_BYTES/2];
 
@@ -97,23 +97,30 @@ int main( void ) {
 
     // ************************ read data  *********************************
 
-       
-     fil = fopen("PNXLK7dual.bin","rb");
-     nWords = fread(confdata, 2, (N_FPGA_BYTES/2), fil);
-      if(((N_FPGA_BYTES/2) - nWords) > 1) {
-         // ndat differing from nWords by 1 is OK if N_COMFPGA_BYTES is an odd number 
-         printf("ERROR: reading FPGA configuration incomplete\n");
-         flock( fd, LOCK_UN );
-         munmap(map_addr, size);
-         close(fd);
-         fclose(fil);
-         return(-1);
-      }
-        else
-  {
-      printf(" FPGA file loaded (%d words).\n", nWords);
-  }
+   revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
+   if((revsn & 0x00F00000) == 0x00200000)
+   {
+      fil = fopen("PNXLK7_DB02_12_250.bin","rb");
+      printf(" HW Rev = 0x%04X, SN = %d,  loading PNXLK7_DB02_12_250.bin\n", revsn>>16, revsn&0xFFFF);
+   }
+   else
+   {
+      fil = fopen("PNXLK7_DB01_14_75.bin","rb");  
+      printf(" HW Rev = 0x%04X, SN = %d, loading PNXLK7_DB01_14_75.bin\n", revsn>>16, revsn&0xFFFF);
+   }
+   nWords = fread(confdata, 2, (N_FPGA_BYTES/2), fil);
+   if(((N_FPGA_BYTES/2) - nWords) > 1) {
+      // ndat differing from nWords by 1 is OK if N_COMFPGA_BYTES is an odd number 
+      printf("ERROR: reading FPGA configuration incomplete\n");
+      flock( fd, LOCK_UN );
+      munmap(map_addr, size);
+      close(fd);
       fclose(fil);
+      return(-1);
+   } else {
+      printf(" FPGA file loaded (%d words).\n", nWords);
+   }
+   fclose(fil);
  
    // ************************ FPGA programming  *********************************
 
@@ -201,12 +208,12 @@ int main( void ) {
 
    // ************************ ADC  initialization  *********************************
 
-    printf("Initializing ADCs:\n");
-
-   // TODO: check HW version
-   ADCinit_DB01(mapped);
-   // TODO: check return value for success
-
+    if((revsn & 0x00F00000) != 0x00200000)
+    {
+      printf("Initializing ADCs:\n");  
+      ADCinit_DB01(mapped);
+      // TODO: check return value for success
+    }
 
 
    // ************************ clean up  *********************************

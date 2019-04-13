@@ -118,9 +118,16 @@ int main( int argc, char *argv[] ) {
    // ************************ parse arguments *********************************
 
    if( argc!=5)  {
-     printf( "Please give arguments\n 1) addr (0x##) for test read\n 2) serial number (decimal) for write\n" );
-     printf( " 3) device (0=board, 1=DB1, 2=DB2)\n 4) revision (0x####) for write\n" );
-     printf( "  if addr > 0x0F, skip write and only read sn and from addr & 0xF\n" );
+     printf( "Please give arguments\n 1) addr (0x##) for test read\n");
+     printf( "    if addr > 0x0F, skip write and only read sn and from addr & 0xF\n" );
+     printf( " 2) serial number (decimal) for write to reg 6 on MB\n" );
+     printf( " 3) device (0=MB, 1=DB0 near PZ, 2=DB1 near MZ)\n");
+     printf( " 4) revision (0x####) for write to reg 7\n");
+     printf( "     DB01_14_75:  0x0000 \n" );
+     printf( "     DB01_14_125: 0x0010 \n" );
+     printf( "     DB02_12_250: 0x0020 \n" );
+     printf( "     MB:          0xA100 for PXdesk Rev A \n" );
+   
      return 2;
    }
 
