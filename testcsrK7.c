@@ -92,6 +92,40 @@ int main( int argc, char *argv[] ) {
 
   mapped = (unsigned int *) map_addr;
 
+
+  
+    // ************************ DB02 input delays *********************************
+
+     if( argc!=2)  {
+         printf( "please give arguments delay (decimal)  \n" );
+         return 2;
+     }
+     val = strtol(argv[1], NULL, 10);
+
+      mapped[AMZ_DEVICESEL] = CS_K1;	   // specify which K7 
+      mapped[AMZ_EXAFWR] = AK7_PAGE;      // specify   K7's addr:    PAGE register
+      mapped[AMZ_EXDWR]  = PAGE_SYS;      //  PAGE 0: system, page 0x10n = channel n
+
+      mapped[AMZ_EXAFWR] =  AK7_ADCSPI;   // specify   K7's addr:   ADC SPI register (temp. use)
+      mapped[AMZ_EXDWR]  =  val;
+      mapped[AMZ_EXAFWR] =  AK7_ADCBITSLIP;   // specify   K7's addr:    ADC bitslip to apply
+      mapped[AMZ_EXDWR]  =  15;              // any write ok
+
+
+
+
+
+
+      mapped[AOUTBLOCK] = CS_MZ;	  // deselect FPGA 0  
+ 
+ // clean up  
+ flock( fd, LOCK_UN );
+ munmap(map_addr, size);
+ close(fd);
+ return 0;
+
+ // end now
+
     // ************************ test streamers *********************************
 
      if( argc!=2)  {
