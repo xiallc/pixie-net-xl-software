@@ -57,23 +57,21 @@ int main(void) {
   void *map_addr;
   int size = 4096;
   volatile unsigned int *mapped;
-  int k, addr, ch, adc, dac, tmp;
+  int k, addr, adc, dac, tmp;
   unsigned int mval, bit;
 
   unsigned int ADCRANGE = 16384;   //TODO  adjust max ADC per HW variant
-  unsigned int mins[NCHANNELS_PRESENT] = {ADCRANGE,ADCRANGE,ADCRANGE,ADCRANGE};     
-  unsigned int mint[NCHANNELS_PRESENT] = {ADCRANGE,ADCRANGE,ADCRANGE,ADCRANGE};     
-  unsigned int targetdac[NCHANNELS_PRESENT] = {0,0,0,0};
-  unsigned int targetBL[NCHANNELS_PRESENT] = {1600,1600,1600,1600};     
+  unsigned int mins[NCHANNELS] = {ADCRANGE};     
+  unsigned int mint[NCHANNELS] = {ADCRANGE};     
+  unsigned int targetdac[NCHANNELS] = {0};
+  unsigned int targetBL[NCHANNELS] = {1600};     
   double dacadj;
   unsigned int oldadc, adcchanged, saveaux, revsn;
   unsigned int GOOD_CH[NCHANNELS];
-  int k7, ch_k7;
+  int k7, ch, ch_k7;       // ch = abs ch. no; ch_k7 = ch. no in k7
   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
-
   unsigned int ADCmax, DACstep, DACstart; 
-
-
+  unsigned int revsn, NCHANNELS_PER_K7, NCHANNELS_PRESENT;
 
 
 
@@ -115,24 +113,33 @@ int main(void) {
     return rval;
   }
 
-  for( ch_k7 = 0; ch_k7 < NCHANNELS_PRESENT; ch_k7 ++ )
+  for( ch = 0; ch < NCHANNELS; ch ++ )
   {
-      GOOD_CH[ch_k7]  =  ( fippiconfig.CHANNEL_CSRA[ch_k7] & (1<<CCSRA_GOOD) ) >0;  
-
-      targetBL[ch_k7] =  (unsigned int)floor(ADCRANGE*fippiconfig.BASELINE_PERCENT[ch_k7]/100);
+      GOOD_CH[ch]  =  ( fippiconfig.CHANNEL_CSRA[ch] & (1<<CCSRA_GOOD) ) >0;  
+      targetBL[ch] =  (unsigned int)floor(ADCRANGE*fippiconfig.BASELINE_PERCENT[ch]/100);
   }
 
    printf( "targetBL[0]=%d\n", targetBL[0] );
 
 
 
-   // ***** check HW info *********
-   revsn = hwinfo(mapped,I2C_SELMAIN);   // assuming all DBs are the same!
+  // ***** check HW info *********
+  revsn = hwinfo(mapped,I2C_SELMAIN);   // assuming all DBs are the same!
+  if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
+  {
+     NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
+     NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
+  }
+  else
+  {
+     NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+     NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+  }
 
-   //TODO  adjust max ADC per HW variant
-   ADCmax = 16384;      // adjust 
-   DACstep = 256;
-   DACstart = 27648;
+  //TODO  adjust max ADC per HW variant
+  ADCmax = 16384;      // adjust 
+  DACstep = 256;
+  DACstart = 27648;
 
   mapped[AMZ_DEVICESEL] =  CS_MZ;      // select MZ controller	
   saveaux = mapped[AAUXCTRL];
@@ -146,10 +153,9 @@ int main(void) {
      for(k7=0;k7<N_K7_FPGAS;k7++)
      {
      
-        for( ch = 0; ch < NCHANNEL_PER_K7; ch ++ )
+        for( ch_k7 = 0; ch_k7 < NCHANNEL_PER_K7; ch_k7 ++ )
         {
-
-            ch_k7 = ch_k7;
+           ch = ch_k7+k7*NCHANNEL_PER_K7;
            // find if change of DAC changes ADC
            adc = 0;
            oldadc = 0;
@@ -161,34 +167,19 @@ int main(void) {
            do {
 
                mapped[AMZ_DEVICESEL] = CS_MZ;	  // select MZ controller
-               mapped[AMZ_FIRSTDAC+ch_k7] = dac;
+               mapped[AMZ_FIRSTDAC+ch] = dac;
                usleep(DACWAIT);
-               mapped[AMZ_FIRSTDAC+ch_k7] = dac; //;     //TODO: double write required?
-               if(mapped[AMZ_FIRSTDAC+ch_k7] != dac) printf("Error writing parameters to DAC register\n");
+               mapped[AMZ_FIRSTDAC+ch] = dac; //;     //TODO: double write required?
+               if(mapped[AMZ_FIRSTDAC+ch] != dac) printf("Error writing parameters to DAC register\n");
                usleep(DACSETTLE);		// wait for DAC's RC filter
 
                mapped[AMZ_DEVICESEL] =  cs[k7];	            // select FPGA
                mapped[AMZ_EXAFWR] = AK7_PAGE;     // write to  k7's addr        addr 3 = channel/syste, select    
-               mapped[AMZ_EXDWR]  = PAGE_CHN+ch;                                //  0x100  =channel 0                  
+               mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;                                //  0x100  =channel 0                  
                mapped[AMZ_EXAFRD] = AK7_ADC;     // write to  k7's addr
                usleep(1);
                adc = mapped[AMZ_EXDRD];          // read K7 data from MZ
  
-
-
-     /*        // Pixie-Net 
-               mapped[AOUTBLOCK] = OB_IOREG;	  // read from IO block
-               mapped[addr] = dac;
-               usleep(DACWAIT);
-               mapped[addr] = dac; //;     //TODO: double write required?
-               if(mapped[addr] != dac) printf("Error writing parameters to DAC register\n");
-               usleep(DACSETTLE);		// wait for DAC's RC filter
-      
-               mapped[AOUTBLOCK] = OB_EVREG;		// switch reads to event data block of addresses
-               adc = (mapped[readdr[ch]] & 0xFFFF);  // dummy read to refresh read register
-               adc = (mapped[readdr[ch]] & 0xFFFF);
-
-               */
                if (k==0)   {
                   oldadc = adc;
                } else {
@@ -214,15 +205,7 @@ int main(void) {
                   mapped[AMZ_EXAFWR] = AK7_ADCCTRL;     // write to  k7's addr        addr 3 = channel/syste, select    
                   mapped[AMZ_EXDWR]  = mval;              // swap 0/1                                 
 
-                  // PN mval =  mapped[AADCCTRL];
-                  // mval = mval ^ 0x0001;
-                  // mapped[AADCCTRL] = mval;	  // swap 0/1
-            //   } else {
-                //  mval =  mapped[AADCCTRL];
-                //  mval = mval ^ 0x0002;
-                //  mapped[AADCCTRL] = mval;	  // swap 2/3
-           //    }
-               printf("Channel %u: ADC values does not change with DAC. Swapped channel inputs\n",ch);
+                  printf("Channel %u: ADC values does not change with DAC. Swapped channel inputs\n",ch);
            }
       
         } // endfor  channels
@@ -235,7 +218,7 @@ int main(void) {
   // TODO!
 
   // ----------- calibrate the ADC bit slip   -------------
-  if( (revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_75)  // if DB01, need to adjuste the bitslip
+  if( (revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_75)  // if DB01, need to adjust the bitslip
   {
      printf("Initializing ADCs:\n");
 
@@ -253,14 +236,14 @@ int main(void) {
   printf(" still preliminary, not precise, slow ...\n");
    for(k7=0;k7<N_K7_FPGAS;k7++)
    {
-     for( ch = 0; ch < NCHANNEL_PER_K7; ch ++ )
+     for( ch_k7 = 0; ch_k7 < NCHANNEL_PER_K7; ch_k7 ++ )
      {
-        ch_k7 = ch+k7*NCHANNEL_PER_K7;
+        ch = ch_k7+k7*NCHANNEL_PER_K7;
 
 
-        if( GOOD_CH[ch_k7] == 0 )
+        if( GOOD_CH[ch] == 0 )
         {
-            printf(" Channel %d marked as 'not good' skipping \n", ch_k7);
+            printf(" Channel %d marked as 'not good' skipping \n", ch);
         }
         else
         {
@@ -273,82 +256,82 @@ int main(void) {
            do  {
                // set DAC
                mapped[AMZ_DEVICESEL] = CS_MZ;	                       // select MZ controller
-               mapped[AMZ_FIRSTDAC+ch_k7] = dac;                       //dac;
+               mapped[AMZ_FIRSTDAC+ch] = dac;                       //dac;
                usleep(DACWAIT);
-               mapped[AMZ_FIRSTDAC+ch_k7] = dac; //;                   //TODO: double write required?
-               if(mapped[AMZ_FIRSTDAC+ch_k7] != dac) printf("Error writing parameters to DAC register\n");
+               mapped[AMZ_FIRSTDAC+ch] = dac; //;                   //TODO: double write required?
+               if(mapped[AMZ_FIRSTDAC+ch] != dac) printf("Error writing parameters to DAC register\n");
                usleep(DACSETTLE);		                               // wait for DAC's RC filter
       
                // read ADC
                mapped[AMZ_DEVICESEL] =  cs[k7];	                      // select FPGA
                mapped[AMZ_EXAFWR] = AK7_PAGE;                         // write to  k7's addr        addr 3 = channel/syste, select    
-               mapped[AMZ_EXDWR] = PAGE_CHN+ch;                       //  0x100  =channel 0                  
+               mapped[AMZ_EXDWR] = PAGE_CHN+ch_k7;                       //  0x100  =channel 0                  
                mapped[AMZ_EXAFRD] = AK7_ADC;                          // write to  k7's addr
                usleep(1);
                adc = mapped[AMZ_EXDRD];
               
-            //   printf("Channel %u: DAC value %u, adc %u\n",ch_k7,dac,adc);
+            //   printf("Channel %u: DAC value %u, adc %u\n",ch,dac,adc);
                dac = dac + DACstep;
                k=k+1;
           } while ( ((adc>(unsigned int)floor(0.8*ADCmax)) | (adc<(unsigned int)floor(0.2*ADCmax))) & (dac < 65536)  );    //& (k<33)
         //    } while ( k<33*4  );    //& (k<33)
            dac = dac - DACstep;                                     // dac is now the lowest valid DAC value
-         //  printf("Channel %u: DAC value %u, adc %u\n",ch_k7,dac,adc);
+         //  printf("Channel %u: DAC value %u, adc %u\n",ch,dac,adc);
           
         
    
       
            // 2. get min/max of many samples
-           mins[ch_k7] = adc;
+           mins[ch] = adc;
            for( k = 0; k < NTRACE_SAMPLES; k ++ )   {
               mapped[AMZ_EXAFRD] = AK7_ADC;     // write to  k7's addr
               usleep(1);
               adc = mapped[AMZ_EXDRD];
-              if ( (adc < mins[ch_k7]) && (adc>200 ))  mins[ch_k7] = adc;    // find min but exclude zeros
+              if ( (adc < mins[ch]) && (adc>200 ))  mins[ch] = adc;    // find min but exclude zeros
            }   
-           printf("Channel %u: DAC value %u, min adc read %u\n",ch_k7,dac,mins[ch_k7]);
+           printf("Channel %u: DAC value %u, min adc read %u\n",ch,dac,mins[ch]);
       
    
            // 3. change DAC settings
             dac = dac + DACstep;                                  // new, second dac
             mapped[AMZ_DEVICESEL] = CS_MZ;	                     // select MZ controller
-            mapped[AMZ_FIRSTDAC+ch_k7] = dac;                     //dac;
+            mapped[AMZ_FIRSTDAC+ch] = dac;                     //dac;
             usleep(DACWAIT);
-            mapped[AMZ_FIRSTDAC+ch_k7] = dac;                     //;     //TODO: double write required?
-            if(mapped[AMZ_FIRSTDAC+ch_k7] != dac) printf("Error writing parameters to DAC register\n");
+            mapped[AMZ_FIRSTDAC+ch] = dac;                     //;     //TODO: double write required?
+            if(mapped[AMZ_FIRSTDAC+ch] != dac) printf("Error writing parameters to DAC register\n");
             usleep(DACSETTLE);		                              // wait for DAC's RC filter
       
    
          // 4. get min/max of many samples
             mapped[AMZ_DEVICESEL] =  cs[k7];	                     // select FPGA
             mapped[AMZ_EXAFWR] = AK7_PAGE;                        // write to  k7's addr        addr 3 = channel/syste, select    
-            mapped[AMZ_EXDWR] = PAGE_CHN+ch;                      //  0x100  =channel 0                  
+            mapped[AMZ_EXDWR] = PAGE_CHN+ch_k7;                      //  0x100  =channel 0                  
             mapped[AMZ_EXAFRD] = AK7_ADC;                         // write to  k7's addr
             usleep(1);
             adc = mapped[AMZ_EXDRD];
-            mint[ch_k7] = adc;     
+            mint[ch] = adc;     
             for( k = 0; k < NTRACE_SAMPLES; k ++ )     
             {
                mapped[AMZ_EXAFRD] = AK7_ADC;                      // write to  k7's addr
                usleep(1);
                adc = mapped[AMZ_EXDRD];
-               if ((adc < mint[ch_k7])  && (adc>200 ))  mint[ch_k7] = adc;    // find min  but exclude zeros
+               if ((adc < mint[ch])  && (adc>200 ))  mint[ch] = adc;    // find min  but exclude zeros
            }    
    
-           printf("Channel %u: DAC value %u, min adc read %u\n",ch_k7,dac,mint[ch_k7]);
+           printf("Channel %u: DAC value %u, min adc read %u\n",ch,dac,mint[ch]);
       
    
            // 5. compute target dac from 2 points
-           dacadj =  DACstep * ((double)targetBL[ch_k7]-(double)mint[ch_k7]) / ((double)mint[ch_k7]-(double)mins[ch_k7]);
+           dacadj =  DACstep * ((double)targetBL[ch]-(double)mint[ch]) / ((double)mint[ch]-(double)mins[ch]);
          
            tmp = dac + (int)floor(dacadj);
            if( (tmp>0) & (tmp<65536) )
            {
-              printf("Channel %u: DAC adjustment %f\n",ch_k7,dacadj  );
-              targetdac[ch_k7]  = dac + (int)floor(dacadj*0.9);      // bogus factor 0.8 to not overshoot 
+              printf("Channel %u: DAC adjustment %f\n",ch,dacadj  );
+              targetdac[ch]  = dac + (int)floor(dacadj*0.9);      // bogus factor 0.8 to not overshoot 
            } else {
-                printf("Channel %u: could not find target DAC value\n",ch_k7);
-                targetdac[ch_k7]  = dac;
+                printf("Channel %u: could not find target DAC value\n",ch);
+                targetdac[ch]  = dac;
            }
          } // end if good channel
          
@@ -362,15 +345,15 @@ int main(void) {
     printf("\n");
    for(k7=0;k7<N_K7_FPGAS;k7++)
    {
-      for( ch = 0; ch < NCHANNEL_PER_K7; ch ++ )
+      for( ch_k7 = 0; ch_k7 < NCHANNEL_PER_K7; ch_k7 ++ )
       {
-         ch_k7 = ch+k7*NCHANNEL_PER_K7;
-         addr = AMZ_FIRSTDAC+ch_k7;   
+         ch = ch_k7+k7*NCHANNEL_PER_K7;
+         addr = AMZ_FIRSTDAC+ch;   
 
-        if( GOOD_CH[ch_k7] == 1 )
+        if( GOOD_CH[ch] == 1 )
         {
             mapped[AMZ_DEVICESEL] = CS_MZ;	                       // select MZ controller
-            dac = targetdac[ch_k7];
+            dac = targetdac[ch];
             mapped[addr] = dac; //dac;
             usleep(DACWAIT);
             mapped[addr] = dac; //;                                //TODO: double write required?
@@ -379,19 +362,19 @@ int main(void) {
       
             mapped[AMZ_DEVICESEL] =  cs[k7];	                     // select FPGA
             mapped[AMZ_EXAFWR] = AK7_PAGE;                        // write to  k7's addr        addr 3 = channel/syste, select    
-            mapped[AMZ_EXDWR] = PAGE_CHN+ch;                      //  0x100  =channel 0    
+            mapped[AMZ_EXDWR] = PAGE_CHN+ch_k7;                      //  0x100  =channel 0    
             mapped[AMZ_EXAFRD] = AK7_ADC;                         // write to  k7's addr
             adc = mapped[AMZ_EXDRD];
-            mint[ch_k7] = adc;     
+            mint[ch] = adc;     
             for( k = 0; k < NTRACE_SAMPLES; k ++ )     
             {
                mapped[AMZ_EXAFRD] = AK7_ADC;                      // write to  k7's addr
                usleep(1);
                adc = mapped[AMZ_EXDRD];
-               if ((adc < mint[ch_k7])  && (adc>200 ))  mint[ch_k7] = adc;    // find min  but exclude zeros
+               if ((adc < mint[ch])  && (adc>200 ))  mint[ch] = adc;    // find min  but exclude zeros
            }    
 
-            printf("Channel %u: DAC value %u, offset %fV, ADC ~%u\n",ch_k7,dac,V_OFFSET_MAX*(1.0-(double)dac/32678.0), mint[ch_k7]);
+            printf("Channel %u: DAC value %u, offset %fV, ADC ~%u\n",ch,dac,V_OFFSET_MAX*(1.0-(double)dac/32678.0), mint[ch]);
          } // end if good channel
       }  // end channels
    } //end for K7s

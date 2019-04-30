@@ -59,47 +59,38 @@ int main(void) {
   void *map_addr;
   int size = 4096;
   volatile unsigned int *mapped;
-  int k, ch;
+  int k;
   FILE * filmca;
   FILE * fil;
 
   unsigned int RunType, SyncT, ReqRunTime, PollTime, WR_RTCtrl;
   unsigned int SL[NCHANNELS], CCSRA[NCHANNELS], PILEUPCTRL[NCHANNELS];
   //unsigned int SG[NCHANNELS];
-  unsigned int Emin[NCHANNELS];
   float Tau[NCHANNELS], Dgain[NCHANNELS];
   unsigned int BLavg[NCHANNELS], BLcut[NCHANNELS], Binfactor[NCHANNELS];
-  unsigned int TL[NCHANNELS], TRACEENA[NCHANNELS];
+  unsigned int TL[NCHANNELS], TRACEENA[NCHANNELS], Emin[NCHANNELS];;
   double C0[NCHANNELS], C1[NCHANNELS], Cg[NCHANNELS];
   double baseline[NCHANNELS] = {0};
-  double dt, ph;
-  double elm, q;
-  //double cfdlev, tmpD, bscale;
+  double dt, ph, elm, q;
   time_t starttime, currenttime;
-  unsigned int w0, w1, revsn;
-  //unsigned int startTS, m, c0, c1, c2, c3, w0, w1, tmpI, revsn;
-  unsigned int tmp0, tmp1, tmp2; //, tmp3;
+  unsigned int w0, w1, tmp0, tmp1, tmp2; //, tmp3;
   unsigned long long WR_tm_tai, WR_tm_tai_start, WR_tm_tai_stop, WR_tm_tai_next;
   unsigned int hdr[32];
   unsigned int out0, out1, out2, out3, trace_staddr, pileup, tracewrite, exttsL, exttsH;
   unsigned int evstats, R1, timeL, timeH, hit;
-  //unsigned int evstats, R1, hit, timeL, timeH, psa0, psa1, cfd0;
-  //unsigned int psa_base, psa_Q0, psa_Q1, psa_ampl, psa_R;
-  //unsigned int cfdout, cfdlow, cfdhigh, cfdticks, cfdfrac, ts_max;
-  unsigned int lsum, tsum, gsum, energy, bin; //, binx, biny;
+  unsigned int lsum, tsum, gsum, energy, bin; 
   unsigned int mca[NCHANNELS][MAX_MCA_BINS] ={{0}};    // full MCA for end of run
   unsigned int wmca[NCHANNELS][WEB_MCA_BINS] ={{0}};    // smaller MCA during run
-  //unsigned int mca2D[NCHANNELS][MCA2D_BINS*MCA2D_BINS] ={{0}};    // 2D MCA for end of run
-  unsigned int onlinebin;
   unsigned int wf[MAX_TL/2];    // two 16bit values per word
-  unsigned int loopcount, eventcount, NumPrevTraceBlks, TraceBlks;
+  unsigned int onlinebin, loopcount, eventcount, NumPrevTraceBlks, TraceBlks;
   unsigned short buffer1[FILE_HEAD_LENGTH_400] = {0};
   unsigned char buffer2[CHAN_HEAD_LENGTH_400*2] = {0};
   unsigned int wm = WATERMARK;
   unsigned int BLbad[NCHANNELS];
   onlinebin=MAX_MCA_BINS/WEB_MCA_BINS;
   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
-  int k7, ch_k7, chw;
+  unsigned int revsn, NCHANNELS_PER_K7, NCHANNELS_PRESENT;
+  int k7, ch_k7, ch, chw;  // ch = abs ch. no; ch_k7 = ch. no in k7
 
 
   // ******************* read ini file and fill struct with values ********************
@@ -206,7 +197,19 @@ int main(void) {
       C1[k] = C1[k] * Dgain[k];
    }
 
-   revsn = hwinfo(mapped,I2C_SELMAIN);
+   // ************************** check HW version ********************************
+
+   revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
+   }
+   else
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+   }
 
     // ********************** Run Start **********************
 
@@ -234,10 +237,9 @@ int main(void) {
         buffer1[5] = fippiconfig.COINCIDENCE_WINDOW;
         buffer1[7] = revsn>>16;               // HW revision from EEPROM
         buffer1[12] = revsn & 0xFFFF;         // serial number from EEPROM
-        for( ch = 0; ch < NCHANNEL_MAX400; ch++) {         // TODO: Runtype 0x400 is for input ch 4-7, but reported as 0-3
-            chw = ch+NCHANNEL_MAX400;
-            buffer1[6]   +=(int)floor((TL[chw]*TRACEENA[chw] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400);         // combined event length, in blocks
-            buffer1[8+ch] =(int)floor((TL[chw]*TRACEENA[chw] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400);			// each channel's event length, in blocks
+        for( ch = 0; ch < NCHANNEL_MAX400; ch++) {         // TODO: Runtype 0x400 records all channels as 0-3 (using lowest 2 bits), but tracelength in header is from ch.0-3)
+            buffer1[6]   +=(int)floor((TL[ch]*TRACEENA[ch] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400);         // combined event length, in blocks
+            buffer1[8+ch] =(int)floor((TL[ch]*TRACEENA[ch] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400);			// each channel's event length, in blocks
         }
         fwrite( buffer1, 2, FILE_HEAD_LENGTH_400, fil );     // write to file
       }           
@@ -245,10 +247,7 @@ int main(void) {
 
     // Run Start Control
    mapped[AMZ_DEVICESEL] = CS_MZ;	 // select MZ
-   if(SyncT==1)
-      mapped[ARTC_CLR] = 0x0001; // any write will create a pulse to clear timers
-
-
+   if(SyncT==1)  mapped[ARTC_CLR] = 0x0001; // any write will create a pulse to clear timers
 
    if(WR_RTCtrl==1)     // RunEnable/Live set via WR time comparison  (if startT < WR time < stopT => RunEnable=1) 
    {
@@ -324,13 +323,13 @@ int main(void) {
          {
             mapped[AMZ_DEVICESEL] =  cs[k7];	            // select FPGA 
   
-            for( ch=0; ch < NCHANNEL_PER_K7; ch++) {
+            for( ch_k7=0; ch_k7 < NCHANNEL_PER_K7; ch_k7++) {
 
-               ch_k7 = ch+k7*NCHANNEL_PER_K7;
+               ch = ch_k7+k7*NCHANNEL_PER_K7;
                
                // read raw BL sums 
                mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
-               mapped[AMZ_EXDWR]  = PAGE_CHN+ch;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
+               mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
    
                mapped[AMZ_EXAFRD] = AK7_BLLOCK;    // read from 0xD4 to lock BL registers (no data)
                tmp0 = mapped[AMZ_EXDRD];
@@ -361,21 +360,21 @@ int main(void) {
    
                if (tsum>0)		// tum=0 indicates bad baseline
                {
-                 ph = C1[ch_k7]*lsum+Cg[ch_k7]*gsum+C0[ch_k7]*tsum;
+                 ph = C1[ch]*lsum+Cg[ch]*gsum+C0[ch]*tsum;
                  //if (ch==0) printf("ph %f, BLcut %d, BLavg %d, baseline %f\n",ph,BLcut[ch],BLavg[ch],baseline[ch] );
-                 if( (BLcut[ch_k7]==0) || (abs(ph-baseline[ch_k7])<BLcut[ch_k7]) || (BLbad[ch_k7] >=MAX_BADBL) )       // only accept "good" baselines < BLcut, or if too many bad in a row (to start over)
+                 if( (BLcut[ch]==0) || (abs(ph-baseline[ch])<BLcut[ch]) || (BLbad[ch] >=MAX_BADBL) )       // only accept "good" baselines < BLcut, or if too many bad in a row (to start over)
                  {
-                     if( (BLavg[ch_k7]==0) || (BLbad[ch_k7] >=MAX_BADBL) )
+                     if( (BLavg[ch]==0) || (BLbad[ch] >=MAX_BADBL) )
                      {
-                         baseline[ch_k7] = ph;
-                         BLbad[ch_k7] = 0;
+                         baseline[ch] = ph;
+                         BLbad[ch] = 0;
                      } else {
                          // BL average: // avg = old avg + (new meas - old avg)/2^BLavg
-                         baseline[ch_k7] = baseline[ch_k7] + (ph-baseline[ch_k7])/(1<<BLavg[ch_k7]);
-                         BLbad[ch_k7] = 0;
+                         baseline[ch] = baseline[ch] + (ph-baseline[ch])/(1<<BLavg[ch]);
+                         BLbad[ch] = 0;
                      } // end BL avg
                   } else {
-                     BLbad[ch_k7] = BLbad[ch_k7]+1;
+                     BLbad[ch] = BLbad[ch]+1;
                  }     // end BLcut check
                }       // end tsum >0 check
             }          // end for channels
@@ -401,15 +400,15 @@ int main(void) {
          // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
          if(evstats) {					  // if there are events in any channel
        //   printf( "K7 0 read from 0x85: 0x%X\n", evstats );
-            for( ch=0; ch < NCHANNEL_PER_K7; ch++)
+            for( ch_k7=0; ch_k7 < NCHANNEL_PER_K7; ch_k7++)
             {
 
-               ch_k7 = ch+k7*NCHANNEL_PER_K7;     // total channel count
-               R1 = 1 << ch;
+               ch = ch_k7+k7*NCHANNEL_PER_K7;     // total channel count
+               R1 = 1 << ch_k7;
                if(evstats & R1)	{	 //  if there is an event in the header memory for this channel
       
                      mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
-                     mapped[AMZ_EXDWR]  = PAGE_CHN+ch;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
+                     mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
                     
                     if(  eventcount==0) {
                      // dummy reads
@@ -469,7 +468,7 @@ int main(void) {
    
                      // waveform read (if accepted)
                  //    if(0) {
-                     if( (TL[ch_k7] >0) && TRACEENA[ch_k7] )  {   // check if TL >0 and traces are recorded (bit 8 of CCSRA)
+                     if( (TL[ch] >0) && TRACEENA[ch] )  {   // check if TL >0 and traces are recorded (bit 8 of CCSRA)
                        tracewrite = 1;
                     //   printf( "N samples %d, start addr 0x%X \n", TL[ch], trace_staddr);
                        mapped[AMZ_EXAFWR] = AK7_MEMADDR+ch;     // specify   K7's addr     addr 4 = memory address
@@ -486,7 +485,7 @@ int main(void) {
                      //  }
    
    
-                       for( k=0; k < (TL[ch_k7]/2); k++)
+                       for( k=0; k < (TL[ch]/2); k++)
                        {
                            mapped[AMZ_EXAFRD] = AK7_TRCMEM_A;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
                            w0 = mapped[AMZ_EXDRD];      // read 16 bits
@@ -505,32 +504,32 @@ int main(void) {
                             
                      //printf( "start computing E\n"); 
                      // compute and histogram E
-                     ph = C1[ch_k7]*(double)lsum+Cg[ch_k7]*(double)gsum+C0[ch_k7]*(double)tsum;
+                     ph = C1[ch]*(double)lsum+Cg[ch]*(double)gsum+C0[ch]*(double)tsum;
                     //  printf("ph %f, BLavg %f, E %f\n",ph,baseline[ch], ph-baseline[ch]);
-                     ph = ph-baseline[ch_k7];
+                     ph = ph-baseline[ch];
                      if ((ph<0.0)|| (ph>65536.0))	ph =0.0;	   // out of range energies -> 0
                      energy = (int)floor(ph);
                      //if ((hit & (1<< HIT_LOCALHIT))==0)	  	energy =0;	   // not a local hit -> 0
    
                      //   printf( "now incrementing MCA, E = %d\n", energy); 
                      //  histogramming if E< max mcabin
-                     bin = energy >> Binfactor[ch_k7];
+                     bin = energy >> Binfactor[ch];
                      if( (bin<MAX_MCA_BINS) && (bin>0) ) {
-                        mca[ch_k7][bin] =  mca[ch_k7][bin] + 1;	// increment mca
+                        mca[ch][bin] =  mca[ch][bin] + 1;	// increment mca
                         bin = bin >> WEB_LOGEBIN;
-                        if(bin>0) wmca[ch_k7][bin] = wmca[ch_k7][bin] + 1;	// increment wmca
+                        if(bin>0) wmca[ch][bin] = wmca[ch][bin] + 1;	// increment wmca
                      }
                   
                      // cfd and psa need some recomputation, not fully implemented yet
    
                      // fill in some constants. For now, report 10 32bit word headers (all except QDC)
                      tmp0 = CHAN_HEAD_LENGTH_100;  // header length
-                     tmp1 = tmp0 + TL[ch_k7];
+                     tmp1 = tmp0 + TL[ch];
                      out1 = out0 & 0x80000FFF;     // keep pileup and crate/slot/channel #
                      out1 = out1 + (tmp0<<12);     // add header length
                      out1 = out1 + (tmp1<<17);     // add event length
                      out2 = energy;
-                     out2 = out2 + (TL[ch_k7]<<16);
+                     out2 = out2 + (TL[ch]<<16);
                      if(out0& 0x40000000) // test OOR
                         out2 = out2 + (1<<31);
                      out3 = 0;      // baseline placeholder, float actually
@@ -553,48 +552,45 @@ int main(void) {
                           fwrite( buffer2, 1, CHAN_HEAD_LENGTH_100*4, fil );
              
                           if( tracewrite )  {   // previously checked if TL >0 and traces are recorded (bit 8 of CCSRA)                          
-                             fwrite( wf, TL[ch_k7]/2, 4, fil );                        
+                             fwrite( wf, TL[ch]/2, 4, fil );                        
                           }   // end trace write                   
                      }      // 0x100     
    
-                      if(RunType==0x400) {// && ch_k7<NCHANNEL_MAX400)   {
-                      if( energy > Emin[ch]) {
-                          if(ch>=NCHANNEL_MAX400)    // TODO: here assume only DB1 is present/connected so ch 4-7 map to 0-3. 
-                            chw = ch-NCHANNEL_MAX400; 
-                          else 
-                            chw = ch;
-                        //printf( "Channel hit %d, channel recorded %d, energy %d, Emin %d\n",ch, chw, energy, Emin[ch]); 
-                          hit = (1<<chw) + 0x20 + (0x100<<chw);
-                          if(tracewrite==1)
-                              TraceBlks = (int)floor(TL[ch]/BLOCKSIZE_400);
-                          else 
-                              TraceBlks = 0;
-                          memcpy( buffer2 + 0, &(hit), 4 );
-                          memcpy( buffer2 + 4, &(TraceBlks), 2 );
-                          memcpy( buffer2 + 6, &(NumPrevTraceBlks), 2 ); 
-                          memcpy( buffer2 + 8, &(timeL), 4 );
-                          memcpy( buffer2 + 12, &(timeH), 4 );
-                          memcpy( buffer2 + 16, &(energy), 2 );
-                          memcpy( buffer2 + 18, &(chw), 2 );
-                          memcpy( buffer2 + 20, &(out3), 2 );
-                          memcpy( buffer2 + 22, &(out3), 2 );   // actually cfd time
-                          memcpy( buffer2 + 24, &(out3), 2 );
-                          memcpy( buffer2 + 26, &(out3), 2 );
-                          memcpy( buffer2 + 28, &(out3), 2 );
-                          memcpy( buffer2 + 30, &(out3), 2 );  
-                          memcpy( buffer2 + 32, &(out3), 2 );      // debug
-                          memcpy( buffer2 + 34, &(out3), 2 );   
-                          memcpy( buffer2 + 36, &(exttsL), 4 );      // debug
-                          memcpy( buffer2 + 40, &(exttsH), 4 );   
-                          // no checksum  for now
-                          memcpy( buffer2 + 60, &(wm), 4 );
-                          fwrite( buffer2, 1, CHAN_HEAD_LENGTH_400*2, fil );
-                          NumPrevTraceBlks = TraceBlks;
-   
-                          if( tracewrite )  {   // previously checked if TL >0 and traces are recorded (bit 8 of CCSRA)     
-                            fwrite( wf, TL[ch_k7]/2, 4, fil );
-                          }   // end trace write
-                     } //energy limit
+                      if(RunType==0x400) {// && ch<NCHANNEL_MAX400)   {
+                         if( energy > Emin[ch]) {
+                             chw = ch & 0x03;         // map channels into 0-3, assume only one set of 4 connected
+                           //printf( "Channel hit %d, channel recorded %d, energy %d, Emin %d\n",ch, chw, energy, Emin[ch]); 
+                             hit = (1<<chw) + 0x20 + (0x100<<chw);
+                             if(tracewrite==1)
+                                 TraceBlks = (int)floor(TL[ch]/BLOCKSIZE_400);
+                             else 
+                                 TraceBlks = 0;
+                             memcpy( buffer2 + 0, &(hit), 4 );
+                             memcpy( buffer2 + 4, &(TraceBlks), 2 );
+                             memcpy( buffer2 + 6, &(NumPrevTraceBlks), 2 ); 
+                             memcpy( buffer2 + 8, &(timeL), 4 );
+                             memcpy( buffer2 + 12, &(timeH), 4 );
+                             memcpy( buffer2 + 16, &(energy), 2 );
+                             memcpy( buffer2 + 18, &(chw), 2 );
+                             memcpy( buffer2 + 20, &(out3), 2 );
+                             memcpy( buffer2 + 22, &(out3), 2 );   // actually cfd time
+                             memcpy( buffer2 + 24, &(out3), 2 );
+                             memcpy( buffer2 + 26, &(out3), 2 );
+                             memcpy( buffer2 + 28, &(out3), 2 );
+                             memcpy( buffer2 + 30, &(out3), 2 );  
+                             memcpy( buffer2 + 32, &(out3), 2 );      // debug
+                             memcpy( buffer2 + 34, &(out3), 2 );   
+                             memcpy( buffer2 + 36, &(exttsL), 4 );      // debug
+                             memcpy( buffer2 + 40, &(exttsH), 4 );   
+                             // no checksum  for now
+                             memcpy( buffer2 + 60, &(wm), 4 );
+                             fwrite( buffer2, 1, CHAN_HEAD_LENGTH_400*2, fil );
+                             NumPrevTraceBlks = TraceBlks;
+      
+                             if( tracewrite )  {   // previously checked if TL >0 and traces are recorded (bit 8 of CCSRA)     
+                               fwrite( wf, TL[ch]/2, 4, fil );
+                             }   // end trace write
+                        } //energy limit
                      }      // 0x400
                      
                      eventcount++;             
@@ -602,7 +598,7 @@ int main(void) {
                   else { // event not acceptable (piled up 
                        // header memory already advanced, now also advance trace memory address
                        mapped[AMZ_EXAFWR] = AK7_MEMADDR+ch;             // specify   K7's trace memory address
-                       mapped[AMZ_EXDWR]  = trace_staddr+TL[ch_k7]/2 ;     //  advance to end of this event's trace
+                       mapped[AMZ_EXDWR]  = trace_staddr+TL[ch]/2 ;     //  advance to end of this event's trace
                        // no write out
                   }
                }     // end event in this channel
@@ -632,15 +628,18 @@ int main(void) {
 
             // 2) MCA
             filmca = fopen("MCA.csv","w");
-            fprintf(filmca,"bin,MCAch0,MCAch1,MCAch2,MCAch3,MCAch4,MCAch5,MCAch6,MCAch7\n");
+            fprintf(filmca,"bin");
+            for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(filmca,",MCAch%d",ch);
+            fprintf(filmca,"\n");
+            //fprintf(filmca,"bin,MCAch0,MCAch1,MCAch2,MCAch3,MCAch4,MCAch5,MCAch6,MCAch7\n");
             for( k=0; k <WEB_MCA_BINS; k++)       // report the 4K spectra during the run (faster web update)
             {
             //   fprintf(filmca,"%d,%u,%u,%u,%u\n ", k*onlinebin,wmca[0][k],wmca[1][k],wmca[2][k],wmca[3][k]);
 
                fprintf(filmca,"%d",k*onlinebin);                  // bin number
                for(k7=0;k7<N_K7_FPGAS;k7++)
-                  for(ch=0;ch<NCHANNEL_PER_K7;ch++) 
-                     fprintf(filmca,",%d",wmca[ch+k7*NCHANNEL_PER_K7][k]);    // print channel data
+                  for(ch=0;ch<NCHANNELS_PER_K7;ch++) 
+                     fprintf(filmca,",%d",wmca[ch+k7*NCHANNELS_PER_K7][k]);    // print channel data
                fprintf(filmca,"\n");
 
             }
@@ -689,7 +688,10 @@ int main(void) {
                       
    // final save MCA and RS
    filmca = fopen("MCA.csv","w");
-   fprintf(filmca,"bin,MCAch0,MCAch1,MCAch2,MCAch3,MCAch4,MCAch5,MCAch6,MCAch7\n");
+   fprintf(filmca,"bin");
+   for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(filmca,",MCAch%d",ch);
+   fprintf(filmca,"\n");
+   //fprintf(filmca,"bin,MCAch0,MCAch1,MCAch2,MCAch3,MCAch4,MCAch5,MCAch6,MCAch7\n");
    for( k=0; k <MAX_MCA_BINS; k++)
    {
     //  fprintf(filmca,"%d,%u,%u,%u,%u\n ", k,mca[0][k],mca[1][k],mca[2][k],mca[3][k] );

@@ -46,8 +46,10 @@
 #define SYSTEM_CLOCK_MHZ   75
 #define FILTER_CLOCK_MHZ   75
 #define NCHANNELS          32          // number of channels in parameter files (=max)
-#define NCHANNELS_PRESENT  8           // actual number of channels per module (should be variable)
-#define NCHANNEL_PER_K7    4           // actual number of channels per K7 (should be variable)
+#define NCHANNELS_PRESENT_DB02   16          // actual number of channels per module with DB02
+#define NCHANNELS_PRESENT_DB01   8           // actual number of channels per module with DB01
+#define NCHANNELS_PER_K7_DB02    8           // actual number of channels per K7 with DB02
+#define NCHANNELS_PER_K7_DB01    4           // actual number of channels per K7 with DB01
 #define NCHANNEL_MAX400    4           // maximum number of channels recorded in a single 0x400 .bin file
 #define N_K7_FPGAS         2
 #define V_OFFSET_MAX			1.25			// Pixie voltage offset maximum

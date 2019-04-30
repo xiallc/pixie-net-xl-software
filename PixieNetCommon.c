@@ -809,12 +809,13 @@ int read_print_runstats_XL_2x4(int mode, int dest, volatile unsigned int *mapped
   FILE * fil;
   unsigned int co[N_PL_RS_PAR] ={0};
   unsigned int sy[N_K7_FPGAS][N_PL_RS_PAR]  ={{0}};  
-  unsigned int chn[N_K7_FPGAS*NCHANNEL_PER_K7][N_PL_RS_PAR]  ={{0}};  
+  unsigned int chn[NCHANNELS][N_PL_RS_PAR]  ={{0}};  
   unsigned int csr, csrbit, revsn;
   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
-  unsigned int k7, ch;
-  double coa, sya, CT[N_K7_FPGAS*NCHANNEL_PER_K7], val;
-  char N[14][MAX_PAR_NAME_LENGTH] = {      // names for the cgi array
+  unsigned int k7, ch, ch_k7;      // ch = abs ch. no; ch_k7 = ch. no in k7
+  unsigned int revsn, NCHANNELS_PER_K7, NCHANNELS_PRESENT;
+  double coa, sya, CT[NCHANNELS], val;
+  char N[22][MAX_PAR_NAME_LENGTH] = {      // names for the cgi array
     "ParameterCo",
     "Controller",
     "ParameterSy",
@@ -828,7 +829,15 @@ int read_print_runstats_XL_2x4(int mode, int dest, volatile unsigned int *mapped
     "Channel4",
     "Channel5",
     "Channel6",
-    "Channel7" 
+    "Channel7",
+    "Channel8",
+    "Channel9",
+    "Channel10",
+    "Channel11",
+    "Channel12",
+    "Channel13",
+    "Channel14",
+    "Channel15" 
     
     
     };
@@ -942,25 +951,42 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    "reserved",
    "reserved",	   
    "reserved",       //30
-    "reserved"
+   "reserved"
 };      
 
 // return(0);
 
 //}
 
-  // ************** XIA code begins **************************
-  // open the output file
+  // ************** main code begins **************************
+
+   // --------------------------- check HW version -------------------------------
+
+   revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
+   }
+   else
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+   }
+
+  // ---------------- open the output file -------------------------------------------
   if(dest != 1)  {
           fil = fopen("RS.csv","w");
-          fprintf(fil,"ParameterCo,Controller,ParameterSy,System0,System1,ParameterCh,Channel0,Channel1,Channel2,Channel3,Channel4,Channel5,Channel6,Channel7\n");
+          fprintf(fil,"ParameterCo,Controller,ParameterSy,System0,System1,ParameterCh,");
+          for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(fil,"Channel%d,",ch);
+          fprintf(fil,"\n");
    }
       
 
   // ----------------- read _used_ RS values (16bit) ----------------------------
   // at this point, raw binary values; later conversion into count rates etc
 
-  // read controller data
+  // read controller data, 16 words
   mapped[AMZ_DEVICESEL] = CS_MZ;
   for( k = 0; k < 16; k ++ )
   {
@@ -986,30 +1012,31 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
      }
    
      // read channel data
-     for( ch = 0; ch < NCHANNEL_PER_K7; ch++ )
+     for( ch_k7 = 0; ch_k7 < NCHANNELS_PER_K7; ch_k7++ )
      {
+         ch = ch_k7+k7*NCHANNELS_PER_K7;
          mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
-         mapped[AMZ_EXDWR]  = PAGE_CHN+ch;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
+         mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
    
          for( k = 0; k < 3; k ++ )      // loop over number of time words
          {
             mapped[AMZ_EXAFRD] = AK7_CHN_RS_CT+k;    // read from channel output range
-            chn[ch+k7*NCHANNEL_PER_K7][k+0] = mapped[AMZ_EXDRD];
-            if(SLOWREAD) chn[ch+k7*NCHANNEL_PER_K7][k+0] = mapped[AMZ_EXDRD];            
+            chn[ch][k+0] = mapped[AMZ_EXDRD];
+            if(SLOWREAD) chn[ch][k+0] = mapped[AMZ_EXDRD];            
    
             mapped[AMZ_EXAFRD] = AK7_CHN_RS_NTRIG+k;    // read from channel output range
-            chn[ch+k7*NCHANNEL_PER_K7][k+4] = mapped[AMZ_EXDRD];
-            if(SLOWREAD) chn[ch+k7*NCHANNEL_PER_K7][k+4] = mapped[AMZ_EXDRD];            
+            chn[ch][k+4] = mapped[AMZ_EXDRD];
+            if(SLOWREAD) chn[ch][k+4] = mapped[AMZ_EXDRD];            
    
             mapped[AMZ_EXAFRD] = AK7_CHN_RS_NOUT+k;    // read from channel output range
-            chn[ch+k7*NCHANNEL_PER_K7][k+8] = mapped[AMZ_EXDRD];
-            if(SLOWREAD) chn[ch+k7*NCHANNEL_PER_K7][k+8] = mapped[AMZ_EXDRD]; 
+            chn[ch][k+8] = mapped[AMZ_EXDRD];
+            if(SLOWREAD) chn[ch][k+8] = mapped[AMZ_EXDRD]; 
           
             //printf("CT value %x   ", chn[ch+k7*NCHANNEL_PER_K7][k+0]);
             //printf("NTRIG value %x   ", chn[ch+k7*NCHANNEL_PER_K7][k+4]);
             //printf("NPPI value %x\n", chn[ch+k7*NCHANNEL_PER_K7][k+8]);
          }     //end for time words
-     }    // end for channels
+     }    // end for channels in k7
   } // end for K7s
  
  
@@ -1030,10 +1057,10 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
   
    if(dest != 1) fprintf(fil,",COUNT_TIME"); 
    if(dest != 0) printf(",%s:\"COUNT_TIME\"",N[5]);
-   for( k = 0; k < NCHANNELS_PRESENT; k ++ ) {
-      CT[k] = ( (double)chn[k][0] + (double)chn[k][1]*65536 + (double)chn[k][2]*TWOTO32 )/FILTER_CLOCK_MHZ*1.0e-6;
-      if(dest != 1) fprintf(fil,",%4.6G",CT[k]);
-      if(dest != 0) printf(",%s:%4.6G",N[6+k],CT[k]);
+   for( ch = 0; ch < NCHANNELS_PRESENT; ch ++ ) {
+      CT[ch] = ( (double)chn[ch][0] + (double)chn[ch][1]*65536 + (double)chn[ch][2]*TWOTO32 )/FILTER_CLOCK_MHZ*1.0e-6;
+      if(dest != 1) fprintf(fil,",%4.6G",CT[ch]);
+      if(dest != 0) printf(",%s:%4.6G",N[6+ch],CT[ch]);
    }
    if(dest != 1) fprintf(fil,"\n ");
    if(dest != 0) printf("},  \n");
@@ -1050,14 +1077,14 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
   
    if(dest != 1) fprintf(fil,",INPUT_COUNT_RATE"); 
    if(dest != 0) printf(",%s:\"INPUT_COUNT_RATE\"",N[5]);
-   for( k = 0; k < NCHANNELS_PRESENT; k ++ ) {   
-      val = ( (double)chn[k][4] + (double)chn[k][5]*65536 + (double)chn[k][6]*TWOTO32 );    // fastpeaks, Nin
-      if(CT[k]==0)
+   for( ch = 0; ch < NCHANNELS_PRESENT; ch ++ ) {   
+      val = ( (double)chn[ch][4] + (double)chn[ch][5]*65536 + (double)chn[ch][6]*TWOTO32 );    // fastpeaks, Nin
+      if(CT[ch]==0)
          val=0;
       else 
-         val = val/CT[k];
+         val = val/CT[ch];
       if(dest != 1) fprintf(fil,",%4.6G",val);
-      if(dest != 0) printf(",%s:%4.6G",N[6+k],val);
+      if(dest != 0) printf(",%s:%4.6G",N[6+ch],val);
    }
    if(dest != 1) fprintf(fil,"\n ");
    if(dest != 0) printf("},  \n");
@@ -1074,14 +1101,14 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
   
    if(dest != 1) fprintf(fil,",OUTPUT_COUNT_RATE"); 
    if(dest != 0) printf(",%s:\"OUTPUT_COUNT_RATE\"",N[5]);
-   for( k = 0; k < NCHANNELS_PRESENT; k ++ ) {
-      val = ( (double)chn[k][8] + (double)chn[k][9]*65536 + (double)chn[k][10]*TWOTO32 );    // Nout
-      if(CT[k]==0)
+   for( ch = 0; ch < NCHANNELS_PRESENT; ch ++ ) {
+      val = ( (double)chn[ch][8] + (double)chn[ch][9]*65536 + (double)chn[ch][10]*TWOTO32 );    // Nout
+      if(CT[ch]==0)
          val=0;
       else 
-         val = val/CT[k];
+         val = val/CT[ch];
       if(dest != 1) fprintf(fil,",%4.6G",val);
-      if(dest != 0) printf(",%s:%4.6G",N[6+k],val);
+      if(dest != 0) printf(",%s:%4.6G",N[6+ch],val);
    }
    if(dest != 1) fprintf(fil,"\n ");
    if(dest != 0) printf("},  \n");
@@ -1094,7 +1121,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    {
       // ----------------- read I2C values (slow) to substitute some unused values
 
-      revsn  = hwinfo(mapped,I2C_SELMAIN);
+     // revsn  = hwinfo(mapped,I2C_SELMAIN);
       co[17] = (revsn>>16) & 0xFFFF;    // pcb rev from TMP116
       co[18] = revsn & 0xFFFF;          // s/n from TMP116
       co[19]    = co[14];  // repeat s/n stored in MZ memory as item 19 (decimal print)
@@ -1116,27 +1143,34 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
          if(dest != 1) 
          {
             fprintf(fil,"%s,%u,",Controller_PLRS_Names[k],co[k]);
-            fprintf(fil,"%s,%u,%u,",System_PLRS_Names[k], sy[0][k], sy[1][k]);
-            fprintf(fil,"%s,%u,%u,%u,%u,%u,%u,%u,%u\n ", Channel_PLRS_Names[k],chn[0][k],chn[1][k],chn[2][k],chn[3][k],chn[4][k],chn[5][k],chn[6][k],chn[7][k]);
+            fprintf(fil,"%s,%u,%u,%s",System_PLRS_Names[k], sy[0][k], sy[1][k],Channel_PLRS_Names[k]);
+            for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(fil,",%u"chn[ch][k]);
+            fprintf(fil,"\n ");
          }
          if(dest != 0) 
          {
             printf("{%s:\"%s\",%s:%u,",N[0],Controller_PLRS_Names[k],N[1],co[k]);
-            printf("%s:\"%s\",%s:%u,%s:%u,",N[2],System_PLRS_Names[k], N[3],sy[0][k], N[4],sy[1][k]);
-            printf("%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u},  \n", N[5],Channel_PLRS_Names[k],N[6],chn[0][k],N[7],chn[1][k],N[8],chn[2][k],N[9],chn[3][k],N[10],chn[4][k],N[11],chn[5][k],N[12],chn[6][k],N[13],chn[7][k]);
+            printf("%s:\"%s\",%s:%u,%s:%u,%s:\"%s\"",N[2],System_PLRS_Names[k], N[3],sy[0][k], N[4],sy[1][k]N[5],Channel_PLRS_Names[k]);
+            for(ch=0;ch<NCHANNELS_PRESENT;ch++) printf(",%s:%u,",N[6+ch],chn[ch][k]);
+            printf("},  \n");
+           // printf("%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u},  \n", N[5],Channel_PLRS_Names[k],N[6],chn[0][k],N[7],chn[1][k],N[8],chn[2][k],N[9],chn[3][k],N[10],chn[4][k],N[11],chn[5][k],N[12],chn[6][k],N[13],chn[7][k]);
          }
       } else {                                // others are bit patterns
          if(dest != 1) 
          {
             fprintf(fil,"%s,0x%X,",Controller_PLRS_Names[k],co[k]);
-            fprintf(fil,"%s,0x%X,0x%X,",System_PLRS_Names[k], sy[0][k], sy[1][k]);
-            fprintf(fil,"%s,%u,%u,%u,%u,%u,%u,%u,%u\n ", Channel_PLRS_Names[k],chn[0][k],chn[1][k],chn[2][k],chn[3][k],chn[4][k],chn[5][k],chn[6][k],chn[7][k]);
+            fprintf(fil,"%s,0x%X,0x%X,%s",System_PLRS_Names[k], sy[0][k], sy[1][k],Channel_PLRS_Names[k]);
+            for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(fil,",%u"chn[ch][k]);
+            fprintf(fil,"\n ");
+            //fprintf(fil,"%s,%u,%u,%u,%u,%u,%u,%u,%u\n ", Channel_PLRS_Names[k],chn[0][k],chn[1][k],chn[2][k],chn[3][k],chn[4][k],chn[5][k],chn[6][k],chn[7][k]);
          }
          if(dest != 0) 
          {
             printf("{%s:\"%s\",%s:\"0x%X\",",N[0],Controller_PLRS_Names[k],N[1],co[k]);
-            printf("%s:\"%s\",%s:\"0x%X\",%s:\"0x%X\",",N[2],System_PLRS_Names[k], N[3],sy[0][k], N[4],sy[1][k]);
-            printf("%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u},  \n", N[5],Channel_PLRS_Names[k],N[6],chn[0][k],N[7],chn[1][k],N[8],chn[2][k],N[9],chn[3][k],N[10],chn[4][k],N[11],chn[5][k],N[12],chn[6][k],N[13],chn[7][k]);
+            printf("%s:\"%s\",%s:\"0x%X\",%s:\"0x%X\",%s:\"%s\"",N[2],System_PLRS_Names[k], N[3],sy[0][k], N[4],sy[1][k],N[5],Channel_PLRS_Names[k]);
+            for(ch=0;ch<NCHANNELS_PRESENT;ch++) printf(",%s:%u",N[6+ch],chn[ch][k]);
+            printf("},  \n");
+            //printf("%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u},  \n", N[5],Channel_PLRS_Names[k],N[6],chn[0][k],N[7],chn[1][k],N[8],chn[2][k],N[9],chn[3][k],N[10],chn[4][k],N[11],chn[5][k],N[12],chn[6][k],N[13],chn[7][k]);
          }
    //      if(dest != 1) fprintf(fil,"%s,0x%X,%s,%u,%u,%u,%u\n ",Module_PLRS_Names[k],m[k],Channel_PLRS_Names[k],c[0][k],c[1][k],c[2][k],c[3][k]);
    //      if(dest != 0) printf("{%s:\"%s\",%s:\"0x%X\",%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u},  \n",N[0],Module_PLRS_Names[k],N[1],m[k],N[2],Channel_PLRS_Names[k],N[3],c[0][k],N[4],c[1][k],N[5],c[2][k],N[6],c[3][k]);

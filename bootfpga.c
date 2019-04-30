@@ -98,7 +98,7 @@ int main( void ) {
     // ************************ read data  *********************************
 
    revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
-   if((revsn & 0x00F00000) == 0x00200000)
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
    {
       fil = fopen("PNXLK7_DB02_12_250.bin","rb");
       printf(" HW Rev = 0x%04X, SN = %d,  loading PNXLK7_DB02_12_250.bin\n", revsn>>16, revsn&0xFFFF);

@@ -53,6 +53,8 @@
 #include "PixieNetDefs.h"
 #include "PixieNetCommon.h"
 
+/* This function is for DB01 only */
+
 int main( int argc, char *argv[] ) {
 
   int fd;
@@ -65,9 +67,9 @@ int main( int argc, char *argv[] ) {
   unsigned int upper, lower;
   unsigned int frame; // regno;
 
- unsigned int adc[NCHANNEL_PER_K7][14];
+ unsigned int adc[NCHANNELS_PER_K7_DB01][14];
  unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
- int k, k7, ch; 
+ int k, k7, ch, ch_k7;    // ch = abs ch. no; ch_k7 = ch. no in k7
  unsigned int goodframe = 0x87;     // depends on FPGA compile?
  printf("Target frame pattern is 0x%02x\n",goodframe); 
 
@@ -156,12 +158,12 @@ int main( int argc, char *argv[] ) {
                //  printf( "test pattern is 0x%x \n", (addr<<8));
       
                // read 1 sample from ADC register                               
-               for(ch=0;ch<NCHANNEL_PER_K7;ch++) {    
+               for(ch_k7=0;ch_k7<NCHANNELS_PER_K7_DB01;ch_k7++) {    
                   mapped[AMZ_EXAFWR] = AK7_PAGE;     // write to  k7's addr        addr 3 = channel/syste, select    
-                  mapped[AMZ_EXDWR] = PAGE_CHN+ch;   //  0x100+ch  = page channel ch                         
+                  mapped[AMZ_EXDWR] = PAGE_CHN+ch_k7;   //  0x100+ch  = page channel ch                         
                   mapped[AMZ_EXAFRD] = AK7_ADC;      // write register address to  K7
                   usleep(1);
-                  adc[ch][k] = mapped[AMZ_EXDRD];      
+                  adc[ch_k7][k] = mapped[AMZ_EXDRD];      
                } // end for channels
                
                printf( "test pattern 0x%04x: adc0 0x%04x, adc1 0x%04x, adc2 0x%04x, adc3 0x%04x \n", (upper<<8)+lower, adc[0][k],adc[1][k],adc[2][k],adc[3][k] );

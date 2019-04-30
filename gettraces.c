@@ -54,11 +54,12 @@ int main(void) {
   void *map_addr;
   int size = 4096;
   volatile unsigned int *mapped;
-  int k,ch, k7;
+  int k,ch, k7, ch_k7;      // ch = abs ch. no; ch_k7 = ch. no in k7
   FILE * fil;
-  unsigned int adc[NCHANNEL_PER_K7*N_K7_FPGAS][NTRACE_SAMPLES];
+  unsigned int adc[NCHANNELS][NTRACE_SAMPLES];
   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
   unsigned int GOOD_CH[NCHANNELS];
+  unsigned int revsn, NCHANNELS_PER_K7, NCHANNELS_PRESENT;
 
 
   // *************** PS/PL IO initialization *********************
@@ -99,37 +100,51 @@ int main(void) {
     return rval;
   }
 
-  for( k = 0; k < NCHANNELS; k ++ )
+  for( ch = 0; ch < NCHANNELS; ch ++ )
   {
-      GOOD_CH[k]  =  ( fippiconfig.CHANNEL_CSRA[k] & (1<<CCSRA_GOOD) ) >0;  
+      GOOD_CH[ch]  =  ( fippiconfig.CHANNEL_CSRA[ch] & (1<<CCSRA_GOOD) ) >0;  
   }
 
-     
+  // ************************** check HW version ********************************
+
+   revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
+   }
+   else
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+   }  
+   
    // ******************* read 8K samples from ADC register ********************
    // at this point, no guarantee that sampling is truly periodic
    for(k7=0;k7<N_K7_FPGAS;k7++)
    {
       mapped[AMZ_DEVICESEL] =  cs[k7];	            // select FPGA 
       
-      for(ch=0;ch<NCHANNEL_PER_K7;ch++) {
+      for(ch_k7=0;ch_k7<NCHANNEL_PER_K7;ch_k7++) {
+         ch = ch_k7+k7*NCHANNEL_PER_K7;
       
          mapped[AMZ_EXAFWR] = AK7_PAGE;     // write to  k7's addr        addr 3 = channel/syste, select    
-         mapped[AMZ_EXDWR] = PAGE_CHN+ch;                                //  0x100  =channel 0                  
+         mapped[AMZ_EXDWR] = PAGE_CHN+ch_k7;                                //  0x100  =channel 0                  
          
-         if(GOOD_CH[ch+k7*NCHANNEL_PER_K7]==1)
+         if(GOOD_CH[ch]==1)
          {
             mapped[AMZ_EXAFRD] = AK7_ADC;     // write to  k7's addr   // dummy read
-            adc[ch+k7*NCHANNEL_PER_K7][0] = mapped[AMZ_EXDRD]; 
+            adc[ch][0] = mapped[AMZ_EXDRD]; 
             for(k=0;k<NTRACE_SAMPLES;k++) {
                mapped[AMZ_EXAFRD] = AK7_ADC;     // write to  k7's addr
                //      usleep(1);
-               adc[ch+k7*NCHANNEL_PER_K7][k] = mapped[AMZ_EXDRD]; 
+               adc[ch][k] = mapped[AMZ_EXDRD]; 
             }       //    end for NTRACE_SAMPLES 
          }
          else {
              printf( "No trace for channel %d\n", ch+k7*NCHANNEL_PER_K7 );
             for(k=0;k<NTRACE_SAMPLES;k++) {
-               adc[ch+k7*NCHANNEL_PER_K7][k] = 1;    // non-good channels: set to +1 
+               adc[ch][k] = 1;    // non-good channels: set to +1 
             }   //    end for NTRACE_SAMPLES 
          }
       } // end for channels
@@ -137,15 +152,19 @@ int main(void) {
 
   // open the output file
   fil = fopen("ADC.csv","w");
-  fprintf(fil,"sample,adc0,adc1,adc2,adc3,adc4,adc5,adc6,adc7\n");
+  fprintf(fil,"sample");
+  for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(fil,",adc%d",ch);
+  fprintf(fil,"\n");
+  //  fprintf(fil,"sample,adc0,adc1,adc2,adc3,adc4,adc5,adc6,adc7\n");
 
   //  write to file
   for( k = 0; k < NTRACE_SAMPLES; k ++ )
   {
       fprintf(fil,"%d",k);                  // sample number
       for(k7=0;k7<N_K7_FPGAS;k7++)
-         for(ch=0;ch<NCHANNEL_PER_K7;ch++) 
-             fprintf(fil,",%d",adc[ch+k7*NCHANNEL_PER_K7][k]);    // print channel data
+         for(ch_k7=0;ch_k7<NCHANNEL_PER_K7;ch_k7++) 
+            ch = ch_k7+k7*NCHANNEL_PER_K7;
+            fprintf(fil,",%d",adc[ch][k]);    // print channel data
       fprintf(fil,"\n");
    }
  
