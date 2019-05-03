@@ -1151,7 +1151,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
          {
             printf("{%s:\"%s\",%s:%u,",N[0],Controller_PLRS_Names[k],N[1],co[k]);
             printf("%s:\"%s\",%s:%u,%s:%u,%s:\"%s\"",N[2],System_PLRS_Names[k], N[3],sy[0][k], N[4],sy[1][k],N[5],Channel_PLRS_Names[k]);
-            for(ch=0;ch<NCHANNELS_PRESENT;ch++) printf(",%s:%u,",N[6+ch],chn[ch][k]);
+            for(ch=0;ch<NCHANNELS_PRESENT;ch++) printf(",%s:%u",N[6+ch],chn[ch][k]);
             printf("},  \n");
            // printf("%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u},  \n", N[5],Channel_PLRS_Names[k],N[6],chn[0][k],N[7],chn[1][k],N[8],chn[2][k],N[9],chn[3][k],N[10],chn[4][k],N[11],chn[5][k],N[12],chn[6][k],N[13],chn[7][k]);
          }

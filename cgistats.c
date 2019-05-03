@@ -104,7 +104,7 @@ int main(void) {
 
 
   // finish printing the webpage
-  for( k = 61; k < 106; k ++ )
+  for( k = 61; k < 115; k ++ )
   {
       fgets(line, LINESZ, fil);        // read from template
       printf("%s",line);               // "print" to webserver on stdout

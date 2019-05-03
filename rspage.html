@@ -10,7 +10,7 @@
 
 <style>
 	body { background-color:#d0d0d0; font-family:sans-serif; }
-	div.box { background-color:#ffffff; width:1100px; margin:20px auto 50px; padding:50px; border-radius:10px; border:1px solid #808080; box-shadow:8px 15px 20px #404040 }
+	div.box { background-color:#ffffff; width:1650px; margin:20px auto 50px; padding:50px; border-radius:10px; border:1px solid #808080; box-shadow:8px 15px 20px #404040 }
 	img.logo { float:right; margin:-10px 0 0 30px }
 	h1 { margin:0; font-size:24px }
 	h2 { margin-top:40px; font-size:20px; font-weight:normal; border-bottom:1px solid #ff9040 }
@@ -73,21 +73,29 @@ d3.csv("RS.csv", function(error, csv) {
   thead.append("th").text("Sys. 0");
   thead.append("th").text("Sys. 1");
   thead.append("th").text("Parameter");
-  thead.append("th").text("Chan. 0");
-  thead.append("th").text("Chan. 1");
-  thead.append("th").text("Chan. 2");
-  thead.append("th").text("Chan. 3");
-  thead.append("th").text("Chan. 4");
-  thead.append("th").text("Chan. 5");
-  thead.append("th").text("Chan. 6");
-  thead.append("th").text("Chan. 7");
+  thead.append("th").text("Ch. 00");
+  thead.append("th").text("Ch. 01");
+  thead.append("th").text("Ch. 02");
+  thead.append("th").text("Ch. 03");
+  thead.append("th").text("Ch. 04");
+  thead.append("th").text("Ch. 05");
+  thead.append("th").text("Ch. 06");
+  thead.append("th").text("Ch. 07");
+  thead.append("th").text("Ch. 08");
+  thead.append("th").text("Ch. 09");
+  thead.append("th").text("Ch. 10");
+  thead.append("th").text("Ch. 11");
+  thead.append("th").text("Ch. 12");
+  thead.append("th").text("Ch. 13");
+  thead.append("th").text("Ch. 14");
+  thead.append("th").text("Ch. 15");
 
   var tr = tbody.selectAll("tr")
       .data(rows)
       .enter().append("tr");
 
   var td = tr.selectAll("td")
-        .data(function(d) { return [d.ParameterCo, d.Controller, d.ParameterSy, d.System0, d.System1, d.ParameterCh, d.Channel0, d.Channel1, d.Channel2, d.Channel3, d.Channel4, d.Channel5, d.Channel6, d.Channel7]; })
+        .data(function(d) { return [d.ParameterCo, d.Controller, d.ParameterSy, d.System0, d.System1, d.ParameterCh, d.Channel0, d.Channel1, d.Channel2, d.Channel3, d.Channel4, d.Channel5, d.Channel6, d.Channel7, d.Channel8, d.Channel9, d.Channel10, d.Channel11, d.Channel12, d.Channel13, d.Channel14, d.Channel15]; })
       .enter().append("td")
         .text(function(d) { return d; });
 
