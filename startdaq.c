@@ -396,10 +396,11 @@ int main(void) {
          evstats = mapped[AMZ_EXDRD];   // bits set for every channel that has data in header memory
          if(SLOWREAD)  evstats = mapped[AMZ_EXDRD];   
    
+    //        printf( "K7 %d read from 0x85: 0x%X\n", k7, evstats );
          // event readout compatible with P16 DSP code
          // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
          if(evstats) {					  // if there are events in any channel
-       //   printf( "K7 0 read from 0x85: 0x%X\n", evstats );
+        //  printf( "K7 0 read from 0x85: 0x%X\n", evstats );
             for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++)
             {
 
@@ -629,7 +630,7 @@ int main(void) {
             // 2) MCA
             filmca = fopen("MCA.csv","w");
             fprintf(filmca,"bin");
-            for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(filmca,",MCAch%d",ch);
+            for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(filmca,",MCAch%02d",ch);
             fprintf(filmca,"\n");
             //fprintf(filmca,"bin,MCAch0,MCAch1,MCAch2,MCAch3,MCAch4,MCAch5,MCAch6,MCAch7\n");
             for( k=0; k <WEB_MCA_BINS; k++)       // report the 4K spectra during the run (faster web update)
@@ -637,11 +638,8 @@ int main(void) {
             //   fprintf(filmca,"%d,%u,%u,%u,%u\n ", k*onlinebin,wmca[0][k],wmca[1][k],wmca[2][k],wmca[3][k]);
 
                fprintf(filmca,"%d",k*onlinebin);                  // bin number
-               for(k7=0;k7<N_K7_FPGAS;k7++)
-                  for(ch=0;ch<NCHANNELS_PER_K7;ch++) 
-                     fprintf(filmca,",%d",wmca[ch+k7*NCHANNELS_PER_K7][k]);    // print channel data
+               for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(filmca,",%d",wmca[ch][k]);    // print channel data
                fprintf(filmca,"\n");
-
             }
             fclose(filmca);    
 
@@ -654,7 +652,7 @@ int main(void) {
          loopcount ++;
          currenttime = time(NULL);
       } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-    //  } while (eventcount <= 100); // run for a fixed number of events   
+   //   } while (eventcount <= 10); // run for a fixed number of events   
 
 
 
@@ -696,9 +694,7 @@ int main(void) {
    {
     //  fprintf(filmca,"%d,%u,%u,%u,%u\n ", k,mca[0][k],mca[1][k],mca[2][k],mca[3][k] );
        fprintf(filmca,"%d",k);                  // bin number
-       for(k7=0;k7<N_K7_FPGAS;k7++)
-         for(ch=0;ch<NCHANNELS_PER_K7;ch++) 
-            fprintf(filmca,",%d",mca[ch+k7*NCHANNELS_PER_K7][k]);    // print channel data
+       for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(filmca,",%d",mca[ch][k]);    // print channel data
        fprintf(filmca,"\n");
    }
    fclose(filmca);

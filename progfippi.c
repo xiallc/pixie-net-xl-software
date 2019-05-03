@@ -87,7 +87,7 @@ int main(void) {
 
   unsigned int mval, dac, reglo, reghi;
   unsigned int CW, SFR, FFR, SL[NCHANNELS], SG[NCHANNELS], FL[NCHANNELS], FG[NCHANNELS], TH[NCHANNELS];
-  unsigned int PSAM, TL[NCHANNELS], TD[NCHANNELS];
+  unsigned int PSAM, TL[NCHANNELS], TD[NCHANNELS], SAVER0[NCHANNELS];
   unsigned int i2cdata[8];
   unsigned int sw0bit[NCHANNELS_PER_K7_DB01] = {6, 11, 4, 0};       // these arrays encode the mapping of gain bits to I2C signals
   unsigned int sw1bit[NCHANNELS_PER_K7_DB01] = {8, 2, 5, 10};
@@ -343,7 +343,7 @@ int main(void) {
       }
 
       if(TL[ch] <fippiconfig.TRACE_LENGTH[ch]*ADC_CLK_MHZ/(1<<FFR))  {
-         printf("TRACE_LENGTH[%d] will be rounded off to = %f us, %d samples\n",k,(double)TL[ch]/ADC_CLK_MHZ,TL[ch]);
+         printf("TRACE_LENGTH[%d] will be rounded off to = %f us, %d samples\n",ch,(double)TL[ch]/ADC_CLK_MHZ,TL[ch]);
       }
       TD[ch] = (int)floor(fippiconfig.TRACE_DELAY[ch]*ADC_CLK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
       if(TD[ch] > MAX_TL-TWEAK_UD)  {
@@ -578,7 +578,7 @@ int main(void) {
          // ......... P16 Reg 0  .......................            
          
          // package
-         reglo = 0;     // halt bit 0
+         reglo = 1;     // halt bit =1
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_POLARITY,      FiPPI_INVRT   );    
          if( (ch_k7==2) && (revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_75 )  // if DB01, ch.2 is inverted   
          {
@@ -597,6 +597,7 @@ int main(void) {
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_GROUPTRIGSEL,  FiPPI_GROUPTRIGSEL   );    
          mval = 129-FL[ch]-FG[ch];
          reglo = reglo +( mval<<25) ;               // 128 - (FastLength - 1) in bits [31:25] 
+         SAVER0[ch] = reglo;
           
          reghi = 0;
          reghi = 129 - FL[ch] - FG[ch];                          // 128 - (FastLength + FastGap - 1)
@@ -789,7 +790,7 @@ int main(void) {
       dac = (int)floor( (1 - fippiconfig.VOFFSET[ch]/ V_OFFSET_MAX) * 32768);	
       if(dac > 65535)  {
          printf("Invalid VOFFSET = %f, must be between %f and -%f\n",fippiconfig.VOFFSET[ch], V_OFFSET_MAX-0.05, V_OFFSET_MAX-0.05);
-         return -4300-k;
+         return -4300-ch;
       }
       mapped[AMZ_FIRSTDAC+ch] = dac;
       if(mapped[AMZ_FIRSTDAC+ch] != dac) printf("Error writing parameters to DAC register\n");
@@ -1030,20 +1031,30 @@ int main(void) {
      // --------------------------- finish up ----------------------------------
 
 
-       /*
+       
      // TODO
    // restart/initialize filters 
    usleep(100);      // wait for filter FIFOs to clear, really should be longest SL+SG
-   for( k = 0; k < NCHANNELS; k ++ )
+   for(k7=0;k7<N_K7_FPGAS;k7++)
    {
-        addr = 16+k*16;
-        mapped[addr+2] = saveR2[k];       // restart filters with the halt bit in R2 set to zero
+      mapped[AMZ_DEVICESEL] =  cs[k7];	// select FPGA 
+
+      for( ch_k7 = 0; ch_k7 < NCHANNELS_PER_K7 ; ch_k7 ++ )
+      {
+         ch = ch_k7+k7*NCHANNELS_PER_K7;            // pre-compute channel number for data source 
+         mapped[AMZ_EXAFWR] = AK7_PAGE;         // specify   K7's addr:    PAGE register
+         mapped[AMZ_EXDWR]  = PAGE_CHN + ch_k7;      // PAGE 0: system, page 0x10n = channel n
+
+         reglo  = SAVER0[ch];
+         mapped[AMZ_EXAFWR] = AK7_P16REG00+0;                  // write to  k7's addr to select channel's register N
+         mapped[AMZ_EXDWR]  = reglo & 0xFFFE;                  // write lower 16 bit with bit 0 zerod (halt off)
+      }
    }
    usleep(100);      // really should be longest SL+SG
    mapped[ADSP_CLR] = 1;
    mapped[ARTC_CLR] = 1;
 
-     */ 
+      
 
   mapped[AMZ_DEVICESEL] = CS_MZ;	            // select MicroZed Controller
 
