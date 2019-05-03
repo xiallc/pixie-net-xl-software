@@ -335,7 +335,7 @@ int main(void) {
 
       // waveforms
       TL[ch] = MULT_TL*(int)floor(fippiconfig.TRACE_LENGTH[ch]*ADC_CLK_MHZ/MULT_TL/(1<<FFR) );       // multiply time in us *  # ticks per us = time in ticks; multiple of MULT_TL
-      if(TL[ch] > MAX_TL | TL[ch] < MULT_TL)  { //|| TL[ch] < TRACELEN_MIN_250OR100MHZADC)  {
+      if( (TL[ch] > MAX_TL) | (TL[ch] < MULT_TL) )  { //|| TL[ch] < TRACELEN_MIN_250OR100MHZADC)  {
          printf("Invalid TRACE_LENGTH = %f, must be between %f and %f us\n",fippiconfig.TRACE_LENGTH[ch],(double)MULT_TL/ADC_CLK_MHZ,(double)MAX_TL/ADC_CLK_MHZ);
         // printf("Invalid TRACE_LENGTH = %f, must be between %f and %f us\n",fippiconfig.TRACE_LENGTH[ch],(double)TRACELEN_MIN_250OR100MHZADC/ADC_CLK_MHZ,(double)MAX_TL/ADC_CLK_MHZ);
          return -4000-ch;
@@ -570,7 +570,7 @@ int main(void) {
       // CHANNEL REGISTERS IN K7
       for( ch_k7 = 0; ch_k7 < NCHANNELS_PER_K7 ; ch_k7 ++ )
       {
-         ch = ch_k7+k7*NCHANNEL_PER_K7;            // pre-compute channel number for data source  
+         ch = ch_k7+k7*NCHANNELS_PER_K7;            // pre-compute channel number for data source  
          mapped[AMZ_EXAFWR] = AK7_PAGE;         // specify   K7's addr:    PAGE register
          mapped[AMZ_EXDWR]  = PAGE_CHN + ch_k7;      // PAGE 0: system, page 0x10n = channel n
  

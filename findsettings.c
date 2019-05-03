@@ -66,12 +66,12 @@ int main(void) {
   unsigned int targetdac[NCHANNELS] = {0};
   unsigned int targetBL[NCHANNELS] = {1600};     
   double dacadj;
-  unsigned int oldadc, adcchanged, saveaux, revsn;
+  unsigned int oldadc, adcchanged, saveaux;
   unsigned int GOOD_CH[NCHANNELS];
   int k7, ch, ch_k7;       // ch = abs ch. no; ch_k7 = ch. no in k7
   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
   unsigned int ADCmax, DACstep, DACstart; 
-  unsigned int revsn, NCHANNELS_PER_K7, NCHANNELS_PRESENT;
+  unsigned int revsn, NCHANNELS_PER_K7;//, NCHANNELS_PRESENT;
 
 
 
@@ -127,12 +127,12 @@ int main(void) {
   revsn = hwinfo(mapped,I2C_SELMAIN);   // assuming all DBs are the same!
   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
   {
-     NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
+  //   NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
   }
   else
   {
-     NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+   //  NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
   }
 
@@ -153,9 +153,9 @@ int main(void) {
      for(k7=0;k7<N_K7_FPGAS;k7++)
      {
      
-        for( ch_k7 = 0; ch_k7 < NCHANNEL_PER_K7; ch_k7 ++ )
+        for( ch_k7 = 0; ch_k7 < NCHANNELS_PER_K7; ch_k7 ++ )
         {
-           ch = ch_k7+k7*NCHANNEL_PER_K7;
+           ch = ch_k7+k7*NCHANNELS_PER_K7;
            // find if change of DAC changes ADC
            adc = 0;
            oldadc = 0;
@@ -236,9 +236,9 @@ int main(void) {
   printf(" still preliminary, not precise, slow ...\n");
    for(k7=0;k7<N_K7_FPGAS;k7++)
    {
-     for( ch_k7 = 0; ch_k7 < NCHANNEL_PER_K7; ch_k7 ++ )
+     for( ch_k7 = 0; ch_k7 < NCHANNELS_PER_K7; ch_k7 ++ )
      {
-        ch = ch_k7+k7*NCHANNEL_PER_K7;
+        ch = ch_k7+k7*NCHANNELS_PER_K7;
 
 
         if( GOOD_CH[ch] == 0 )
@@ -345,9 +345,9 @@ int main(void) {
     printf("\n");
    for(k7=0;k7<N_K7_FPGAS;k7++)
    {
-      for( ch_k7 = 0; ch_k7 < NCHANNEL_PER_K7; ch_k7 ++ )
+      for( ch_k7 = 0; ch_k7 < NCHANNELS_PER_K7; ch_k7 ++ )
       {
-         ch = ch_k7+k7*NCHANNEL_PER_K7;
+         ch = ch_k7+k7*NCHANNELS_PER_K7;
          addr = AMZ_FIRSTDAC+ch;   
 
         if( GOOD_CH[ch] == 1 )

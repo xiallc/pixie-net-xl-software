@@ -125,8 +125,8 @@ int main(void) {
    {
       mapped[AMZ_DEVICESEL] =  cs[k7];	            // select FPGA 
       
-      for(ch_k7=0;ch_k7<NCHANNEL_PER_K7;ch_k7++) {
-         ch = ch_k7+k7*NCHANNEL_PER_K7;
+      for(ch_k7=0;ch_k7<NCHANNELS_PER_K7;ch_k7++) {
+         ch = ch_k7+k7*NCHANNELS_PER_K7;
       
          mapped[AMZ_EXAFWR] = AK7_PAGE;     // write to  k7's addr        addr 3 = channel/syste, select    
          mapped[AMZ_EXDWR] = PAGE_CHN+ch_k7;                                //  0x100  =channel 0                  
@@ -142,7 +142,7 @@ int main(void) {
             }       //    end for NTRACE_SAMPLES 
          }
          else {
-             printf( "No trace for channel %d\n", ch+k7*NCHANNEL_PER_K7 );
+             printf( "No trace for channel %d\n", ch+k7*NCHANNELS_PER_K7 );
             for(k=0;k<NTRACE_SAMPLES;k++) {
                adc[ch][k] = 1;    // non-good channels: set to +1 
             }   //    end for NTRACE_SAMPLES 
@@ -153,7 +153,7 @@ int main(void) {
   // open the output file
   fil = fopen("ADC.csv","w");
   fprintf(fil,"sample");
-  for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(fil,",adc%d",ch);
+  for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(fil,",adc%02d",ch);
   fprintf(fil,"\n");
   //  fprintf(fil,"sample,adc0,adc1,adc2,adc3,adc4,adc5,adc6,adc7\n");
 
@@ -161,10 +161,7 @@ int main(void) {
   for( k = 0; k < NTRACE_SAMPLES; k ++ )
   {
       fprintf(fil,"%d",k);                  // sample number
-      for(k7=0;k7<N_K7_FPGAS;k7++)
-         for(ch_k7=0;ch_k7<NCHANNEL_PER_K7;ch_k7++) 
-            ch = ch_k7+k7*NCHANNEL_PER_K7;
-            fprintf(fil,",%d",adc[ch][k]);    // print channel data
+      for(ch=0;ch<NCHANNELS_PRESENT;ch++)   fprintf(fil,",%d",adc[ch][k]);    // print channel data
       fprintf(fil,"\n");
    }
  

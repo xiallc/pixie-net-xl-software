@@ -810,7 +810,7 @@ int read_print_runstats_XL_2x4(int mode, int dest, volatile unsigned int *mapped
   unsigned int co[N_PL_RS_PAR] ={0};
   unsigned int sy[N_K7_FPGAS][N_PL_RS_PAR]  ={{0}};  
   unsigned int chn[NCHANNELS][N_PL_RS_PAR]  ={{0}};  
-  unsigned int csr, csrbit, revsn;
+  unsigned int csr, csrbit;
   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
   unsigned int k7, ch, ch_k7;      // ch = abs ch. no; ch_k7 = ch. no in k7
   unsigned int revsn, NCHANNELS_PER_K7, NCHANNELS_PRESENT;
@@ -1144,13 +1144,13 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
          {
             fprintf(fil,"%s,%u,",Controller_PLRS_Names[k],co[k]);
             fprintf(fil,"%s,%u,%u,%s",System_PLRS_Names[k], sy[0][k], sy[1][k],Channel_PLRS_Names[k]);
-            for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(fil,",%u"chn[ch][k]);
+            for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(fil,",%u",chn[ch][k]);
             fprintf(fil,"\n ");
          }
          if(dest != 0) 
          {
             printf("{%s:\"%s\",%s:%u,",N[0],Controller_PLRS_Names[k],N[1],co[k]);
-            printf("%s:\"%s\",%s:%u,%s:%u,%s:\"%s\"",N[2],System_PLRS_Names[k], N[3],sy[0][k], N[4],sy[1][k]N[5],Channel_PLRS_Names[k]);
+            printf("%s:\"%s\",%s:%u,%s:%u,%s:\"%s\"",N[2],System_PLRS_Names[k], N[3],sy[0][k], N[4],sy[1][k],N[5],Channel_PLRS_Names[k]);
             for(ch=0;ch<NCHANNELS_PRESENT;ch++) printf(",%s:%u,",N[6+ch],chn[ch][k]);
             printf("},  \n");
            // printf("%s:\"%s\",%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u,%s:%u},  \n", N[5],Channel_PLRS_Names[k],N[6],chn[0][k],N[7],chn[1][k],N[8],chn[2][k],N[9],chn[3][k],N[10],chn[4][k],N[11],chn[5][k],N[12],chn[6][k],N[13],chn[7][k]);
@@ -1160,7 +1160,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
          {
             fprintf(fil,"%s,0x%X,",Controller_PLRS_Names[k],co[k]);
             fprintf(fil,"%s,0x%X,0x%X,%s",System_PLRS_Names[k], sy[0][k], sy[1][k],Channel_PLRS_Names[k]);
-            for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(fil,",%u"chn[ch][k]);
+            for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(fil,",%u",chn[ch][k]);
             fprintf(fil,"\n ");
             //fprintf(fil,"%s,%u,%u,%u,%u,%u,%u,%u,%u\n ", Channel_PLRS_Names[k],chn[0][k],chn[1][k],chn[2][k],chn[3][k],chn[4][k],chn[5][k],chn[6][k],chn[7][k]);
          }

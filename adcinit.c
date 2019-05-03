@@ -69,7 +69,7 @@ int main( int argc, char *argv[] ) {
 
  unsigned int adc[NCHANNELS_PER_K7_DB01][14];
  unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
- int k, k7, ch, ch_k7;    // ch = abs ch. no; ch_k7 = ch. no in k7
+ int k, k7, ch_k7;    // ch = abs ch. no; ch_k7 = ch. no in k7
  unsigned int goodframe = 0x87;     // depends on FPGA compile?
  printf("Target frame pattern is 0x%02x\n",goodframe); 
 

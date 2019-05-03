@@ -23,11 +23,11 @@ adcinit: adcinit.o PixieNetCommon.o PixieNetDefs.h
 bootfpga: bootfpga.o PixieNetCommon.o PixieNetDefs.h
 	gcc bootfpga.o PixieNetCommon.o $(LIBS) -o bootfpga
 	
-cgitraces.cgi: cgitraces.o PixieNetConfig.o PixieNetDefs.h
-	g++ cgitraces.o PixieNetConfig.o $(LIBS) -o cgitraces.cgi
+cgitraces.cgi: cgitraces.o PixieNetCommon.o PixieNetConfig.o PixieNetDefs.h
+	g++ cgitraces.o PixieNetCommon.o PixieNetConfig.o $(LIBS) -o cgitraces.cgi
 
-gettraces: gettraces.o PixieNetConfig.o PixieNetDefs.h
-	g++ gettraces.o PixieNetConfig.o $(LIBS) -o gettraces
+gettraces: gettraces.o PixieNetCommon.o PixieNetConfig.o PixieNetDefs.h
+	g++ gettraces.o PixieNetCommon.o PixieNetConfig.o $(LIBS) -o gettraces
 
 progfippi: progfippi.o PixieNetCommon.o PixieNetConfig.o PixieNetDefs.h
 	g++ progfippi.o PixieNetCommon.o PixieNetConfig.o $(LIBS) -o progfippi

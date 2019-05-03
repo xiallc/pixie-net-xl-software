@@ -323,9 +323,9 @@ int main(void) {
          {
             mapped[AMZ_DEVICESEL] =  cs[k7];	            // select FPGA 
   
-            for( ch_k7=0; ch_k7 < NCHANNEL_PER_K7; ch_k7++) {
+            for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++) {
 
-               ch = ch_k7+k7*NCHANNEL_PER_K7;
+               ch = ch_k7+k7*NCHANNELS_PER_K7;
                
                // read raw BL sums 
                mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
@@ -400,10 +400,10 @@ int main(void) {
          // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
          if(evstats) {					  // if there are events in any channel
        //   printf( "K7 0 read from 0x85: 0x%X\n", evstats );
-            for( ch_k7=0; ch_k7 < NCHANNEL_PER_K7; ch_k7++)
+            for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++)
             {
 
-               ch = ch_k7+k7*NCHANNEL_PER_K7;     // total channel count
+               ch = ch_k7+k7*NCHANNELS_PER_K7;     // total channel count
                R1 = 1 << ch_k7;
                if(evstats & R1)	{	 //  if there is an event in the header memory for this channel
       
@@ -697,8 +697,8 @@ int main(void) {
     //  fprintf(filmca,"%d,%u,%u,%u,%u\n ", k,mca[0][k],mca[1][k],mca[2][k],mca[3][k] );
        fprintf(filmca,"%d",k);                  // bin number
        for(k7=0;k7<N_K7_FPGAS;k7++)
-         for(ch=0;ch<NCHANNEL_PER_K7;ch++) 
-            fprintf(filmca,",%d",mca[ch+k7*NCHANNEL_PER_K7][k]);    // print channel data
+         for(ch=0;ch<NCHANNELS_PER_K7;ch++) 
+            fprintf(filmca,",%d",mca[ch+k7*NCHANNELS_PER_K7][k]);    // print channel data
        fprintf(filmca,"\n");
    }
    fclose(filmca);

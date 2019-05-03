@@ -39,31 +39,61 @@
   var g2 = new Dygraph(
     document.getElementById("graphdiv2"),
     "ADC.csv", // path to CSV file
-    {legend: 'always',
+    {
+	 legend: 'always',
 	  title: ' ',
 	  ylabel: 'ADC value',
-	  xlabel: 'Sample number'}          // options
+	  xlabel: 'Sample number',          // options
+	  visibility: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true]
+	 }
   );
-      var graphs = [ g2 ];
-      var scales = { x : false, y : false };
-      function setLogScale(axis, val) {
-        if (axis === 'y') {
-          for (var idx = 0; idx < graphs.length; idx++) {
-            graphs[idx].updateOptions({ logscale: val });
-          }
-        } else {
-          for (var idx = 0; idx < graphs.length; idx++) {
-            graphs[idx].updateOptions({ axes : { x : {  logscale : val } } });
-          }
-        }
-        scales[axis] = val;
-        var text = "y: " + (scales.y ? "log" : "linear") + ", x: " + (scales.x ? "log" : "linear");
-        document.getElementById("description").innerText = text;
-      }
+      function change(el) {
+        g2.setVisibility(el.id, el.checked);
+		  }
+  
 
-      setLogScale('y', false);
+
 
 </script>
+
+    <p><b>Show</b></p>
+    <p>
+      <input type="checkbox" id="0" checked="checked"  onclick="change(this)">
+      <label for="0"> adc00 </label>
+      <input type="checkbox" id="1" checked="checked" onclick="change(this)">
+      <label for="1"> adc01 </label>
+      <input type="checkbox" id="2" checked="checked" onclick="change(this)">
+      <label for="2"> adc02 </label>
+		<input type="checkbox" id="3" checked="checked" onclick="change(this)">
+      <label for="3"> adc03 </label><br>
+
+		<input type="checkbox" id="4" checked="checked"  onclick="change(this)">
+      <label for="0"> adc04 </label>
+      <input type="checkbox" id="5" checked="checked" onclick="change(this)">
+      <label for="1"> adc05 </label>
+      <input type="checkbox" id="6" checked="checked" onclick="change(this)">
+      <label for="2"> adc06 </label>
+		<input type="checkbox" id="7" checked="checked" onclick="change(this)">
+      <label for="3"> adc07 </label><br>
+
+		<input type="checkbox" id="8" checked="checked"  onclick="change(this)">
+      <label for="0"> adc08 </label>
+      <input type="checkbox" id="9" checked="checked" onclick="change(this)">
+      <label for="1"> adc09 </label>
+      <input type="checkbox" id="10" checked="checked" onclick="change(this)">
+      <label for="2"> adc10 </label>
+		<input type="checkbox" id="11" checked="checked" onclick="change(this)">
+      <label for="3"> adc11 </label><br>
+
+		<input type="checkbox" id="12" checked="checked"  onclick="change(this)">
+      <label for="0"> adc12 </label>
+      <input type="checkbox" id="13" checked="checked" onclick="change(this)">
+      <label for="1"> adc13 </label>
+      <input type="checkbox" id="14" checked="checked" onclick="change(this)">
+      <label for="2"> adc14 </label>
+		<input type="checkbox" id="15" checked="checked" onclick="change(this)">
+      <label for="3"> adc15 </label><br>
+    </p>
 
 
  </div>
@@ -72,7 +102,7 @@
 <p>Click and drag to zoom </p>
 <p>Alt click and drag to pan </p>
 <p>Use browser button to refresh </p>
-<p>Roughly 200 nanoseconds between samples </p>
+<p>Roughly 500 nanoseconds between samples </p>
 
 
 

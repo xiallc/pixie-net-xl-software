@@ -163,8 +163,8 @@ int main(void) {
    }   
    
    fgets(line, LINESZ, fil);        // read from template, the line listing the ADC.csv file. This is not printed
-   printf("sample");
-   for(ch=0;ch<NCHANNELS_PRESENT;ch++) printf(",adc%d",ch);
+   printf("          \"sample");
+   for(ch=0;ch<NCHANNELS_PRESENT;ch++) printf(",adc%02d",ch);
    printf("\\n\"  +  \n");
    //printf("       \"sample,adc0,adc1,adc2,adc3,adc4,adc5,adc6,adc7\\n\"  +  \n");
 
@@ -172,24 +172,18 @@ int main(void) {
    for( k = 0; k < NTRACE_SAMPLES; k ++ )
    {
       printf("\"%d",k);                  // sample number
-      for(k7=0;k7<N_K7_FPGAS;k7++)
-         for(ch_k7=0;ch_k7<NCHANNEL_PER_K7;ch_k7++) 
-            ch = ch_k7+k7*NCHANNEL_PER_K7;
-            printf(",%d",adc[ch][k]);    // print channel data
+     for(ch=0;ch<NCHANNELS_PRESENT;ch++) printf(",%d",adc[ch][k]);    // print channel data
       printf("\\n \"  + \n");
    }
 
    // dummy line: comma, not + required in last line
    printf("\"%d",k);                  // sample number
-   for(k7=0;k7<N_K7_FPGAS;k7++)
-      for(ch_k7=0;ch_k7<NCHANNEL_PER_K7;ch_k7++) 
-         ch = ch_k7+k7*NCHANNEL_PER_K7;
-         printf(",%d",adc[ch][k-1]);    // print channel data
+   for(ch=0;ch<NCHANNELS_PRESENT;ch++)  printf(",%d",adc[ch][k-1]);    // print channel data
    printf("\\n \"  , \n");
 
 
    // finish printing the webpage
-   for( k = 41; k < 80; k ++ )
+   for( k = 41; k < 111; k ++ )
    {
       fgets(line, LINESZ, fil);        // read from template
       printf("%s",line);               // "print" to webserver on stdout
