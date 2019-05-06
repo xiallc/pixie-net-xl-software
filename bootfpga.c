@@ -98,6 +98,9 @@ int main( void ) {
     // ************************ read data  *********************************
 
    revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
+   mapped[AMZ_HWINFO] = revsn >> 16;      // store PROM revsion info in MZ register, so it can be read without slow I2C
+
+
    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
    {
       fil = fopen("PNXLK7_DB02_12_250.bin","rb");

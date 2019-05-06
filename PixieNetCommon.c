@@ -962,7 +962,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
 
    // --------------------------- check HW version -------------------------------
 
-   revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
+   revsn =  mapped[AMZ_HWINFO]  <<16; //hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
    {
       NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
@@ -1121,7 +1121,7 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    {
       // ----------------- read I2C values (slow) to substitute some unused values
 
-     // revsn  = hwinfo(mapped,I2C_SELMAIN);
+      revsn  = hwinfo(mapped,I2C_SELMAIN);
       co[17] = (revsn>>16) & 0xFFFF;    // pcb rev from TMP116
       co[18] = revsn & 0xFFFF;          // s/n from TMP116
       co[19]    = co[14];  // repeat s/n stored in MZ memory as item 19 (decimal print)

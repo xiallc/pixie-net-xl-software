@@ -51,26 +51,36 @@
      	g2.setVisibility(el.id, el.checked);
 	  }
 
-     function changeall(el) {				   // todo: update the checkbox status also?
-     	g2.setVisibility(0, el.checked);
-		g2.setVisibility(1, el.checked);
-		g2.setVisibility(2, el.checked);
-		g2.setVisibility(3, el.checked);
-		g2.setVisibility(4, el.checked);
-		g2.setVisibility(5, el.checked);
-		g2.setVisibility(6, el.checked);
-		g2.setVisibility(7, el.checked);
-		g2.setVisibility(8, el.checked);
-		g2.setVisibility(9, el.checked);
-		g2.setVisibility(10, el.checked);
-		g2.setVisibility(11, el.checked);
-		g2.setVisibility(12, el.checked);
-		g2.setVisibility(13, el.checked);
-		g2.setVisibility(14, el.checked);
-		g2.setVisibility(15, el.checked);
-	  }
+ //    function changeall(el) {				   // todo: update the checkbox status also?
+ //    	g2.setVisibility(0, el.checked);
+//		g2.setVisibility(1, el.checked);
+//		g2.setVisibility(2, el.checked);
+//		g2.setVisibility(3, el.checked);
+//		g2.setVisibility(4, el.checked);
+//		g2.setVisibility(5, el.checked);
+//		g2.setVisibility(6, el.checked);
+//		g2.setVisibility(7, el.checked);
+//		g2.setVisibility(8, el.checked);
+//		g2.setVisibility(9, el.checked);
+//		g2.setVisibility(10, el.checked);
+//		g2.setVisibility(11, el.checked);
+//		g2.setVisibility(12, el.checked);
+//		g2.setVisibility(13, el.checked);
+//		g2.setVisibility(14, el.checked);
+//		g2.setVisibility(15, el.checked);
+
+      var graphs = [ g2 ];
+      function showall(val) {
+         for (var idx = 0; idx < graphs.length; idx++) {	  
+            graphs[idx].updateOptions({ 	  visibility: [val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val] });
+         }
+		};
+
 
 </script>
+<input id='showall' type="button" value="Show All" onclick="showall(true)">
+<input id='showall' type="button" value="Hide All" onclick="showall(false)">
+
 
     <p><b>Show</b></p>
     <p>
@@ -110,8 +120,8 @@
 		<input type="checkbox" id="15" checked="checked" onclick="change(this)">
       <label for="3"> adc15 </label><br>
 
-		<input type="checkbox" id="16" checked="checked"  onclick="changeall(this)">
-      <label for="0"> all </label>
+
+
     </p>
 
 

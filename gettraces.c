@@ -142,7 +142,7 @@ int main(void) {
             }       //    end for NTRACE_SAMPLES 
          }
          else {
-             printf( "No trace for channel %d\n", ch+k7*NCHANNELS_PER_K7 );
+            printf( "No trace for channel %d\n", ch );
             for(k=0;k<NTRACE_SAMPLES;k++) {
                adc[ch][k] = 1;    // non-good channels: set to +1 
             }   //    end for NTRACE_SAMPLES 

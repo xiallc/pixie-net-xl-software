@@ -183,7 +183,7 @@ int main(void) {
 
 
    // finish printing the webpage
-   for( k = 41; k < 130; k ++ )
+   for( k = 41; k < 140; k ++ )
    {
       fgets(line, LINESZ, fil);        // read from template
       printf("%s",line);               // "print" to webserver on stdout
