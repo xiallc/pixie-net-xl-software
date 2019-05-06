@@ -96,6 +96,7 @@ int main(void) {
   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
   int ch, k7, ch_k7;    // loop counter better be signed int  . ch = abs ch. no; ch_k7 = ch. no in k7
   unsigned int revsn, NCHANNELS_PER_K7, NCHANNELS_PRESENT;
+  unsigned int ADC_CLK_MHZ, SYSTEM_CLOCK_MHZ, FILTER_CLOCK_MHZ;
 
 
 
@@ -136,11 +137,17 @@ int main(void) {
    {
       NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
       NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB02;
+      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB02;
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
    }
    else
    {
       NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
       NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01;             // TODO: adjust for 75/125 variants
+      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB01;
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
    }
 
   // take struct values, convert to FPGA units, write to register, one by one

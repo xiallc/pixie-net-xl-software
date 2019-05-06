@@ -68,7 +68,8 @@ int main(void) {
   //unsigned int SG[NCHANNELS];
   float Tau[NCHANNELS], Dgain[NCHANNELS];
   unsigned int BLavg[NCHANNELS], BLcut[NCHANNELS], Binfactor[NCHANNELS];
-  unsigned int TL[NCHANNELS], TRACEENA[NCHANNELS], Emin[NCHANNELS];;
+  unsigned int TL[NCHANNELS], TRACEENA[NCHANNELS], Emin[NCHANNELS];
+  unsigned int GoodChanMASK[N_K7_FPGAS] = {0} ;
   double C0[NCHANNELS], C1[NCHANNELS], Cg[NCHANNELS];
   double baseline[NCHANNELS] = {0};
   double dt, ph, elm, q;
@@ -90,7 +91,52 @@ int main(void) {
   onlinebin=MAX_MCA_BINS/WEB_MCA_BINS;
   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
   unsigned int revsn, NCHANNELS_PER_K7, NCHANNELS_PRESENT;
+  unsigned int ADC_CLK_MHZ, FILTER_CLOCK_MHZ; //  SYSTEM_CLOCK_MHZ,
   int k7, ch_k7, ch, chw;  // ch = abs ch. no; ch_k7 = ch. no in k7
+
+    // *************** PS/PL IO initialization *********************
+  // open the device for PD register I/O
+  fd = open("/dev/uio0", O_RDWR);
+  if (fd < 0) {
+    perror("Failed to open devfile");
+    return -2;
+  }
+
+  //Lock the PL address space so multiple programs cant step on eachother.
+  if( flock( fd, LOCK_EX | LOCK_NB ) )
+  {
+    printf( "Failed to get file lock on /dev/uio0\n" );
+    return -3;
+  }
+
+  map_addr = mmap( NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+  if (map_addr == MAP_FAILED) {
+    perror("Failed to mmap");
+    return -4;
+  }
+
+  mapped = (unsigned int *) map_addr;
+
+     // ************************** check HW version ********************************
+
+   revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB02;
+  //    SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB02;
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
+   }
+   else
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01;             // TODO: adjust for 75/125 variants
+   //   SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB01;
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
+   }
 
 
   // ******************* read ini file and fill struct with values ********************
@@ -127,54 +173,37 @@ int main(void) {
       return(-1);
   }
 
-  for( k = 0; k < NCHANNELS; k ++ )
-  {
-      SL[k]          = (int)floor(fippiconfig.ENERGY_RISETIME[k]*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
-//    SG[k]          = (int)floor(fippiconfig.ENERGY_FLATTOP[k]*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
-      Dgain[k]       = fippiconfig.DIG_GAIN[k];
- //   TL[k]          = BLOCKSIZE_100*(int)floor(fippiconfig.TRACE_LENGTH[k]*ADC_CLK_MHZ/BLOCKSIZE_100);       // multiply time in us *  # ticks per us = time in ticks, multiple of 4
-      TL[k]          = MULT_TL*(int)floor(fippiconfig.TRACE_LENGTH[k]*ADC_CLK_MHZ/MULT_TL);
-      Binfactor[k]   = fippiconfig.BINFACTOR[k];
-      Tau[k]         = fippiconfig.TAU[k];
-      BLcut[k]       = fippiconfig.BLCUT[k];
-      BLavg[k]       = 65536 - fippiconfig.BLAVG[k];
-      if(BLavg[k]<0)          BLavg[k] = 0;
-      if(BLavg[k]==65536)     BLavg[k] = 0;
-      if(BLavg[k]>MAX_BLAVG)  BLavg[k] = MAX_BLAVG;
-      BLbad[k] = MAX_BADBL;   // initialize to indicate no good BL found yet
-      CCSRA[k]       =  fippiconfig.CHANNEL_CSRA[k]; 
-      TRACEENA[k]    = ( CCSRA[k] & (1<<CCSRA_TRACEENA)) >0; 
-      PILEUPCTRL[k] =  ( CCSRA[k] & (1<<CCSRA_PILEUPCTRL) ) >0;   // if bit set, only allow "single" non-piledup events
-      Emin[k]  = fippiconfig.EMIN[k];  
-     // printf( "Emin %d\n", Emin[k]); 
 
+  for(k7=0;k7<N_K7_FPGAS;k7++)  {
+     for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++) {
+         ch = ch_k7+k7*NCHANNELS_PER_K7;
+         SL[ch]          = (int)floor(fippiconfig.ENERGY_RISETIME[ch]*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
+   //    SG[ch]          = (int)floor(fippiconfig.ENERGY_FLATTOP[ch]*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
+         Dgain[ch]       = fippiconfig.DIG_GAIN[ch];
+    //   TL[ch]          = BLOCKSIZE_100*(int)floor(fippiconfig.TRACE_LENGTH[ch]*ADC_CLK_MHZ/BLOCKSIZE_100);       // multiply time in us *  # ticks per us = time in ticks, multiple of 4
+         TL[ch]          = MULT_TL*(int)floor(fippiconfig.TRACE_LENGTH[ch]*ADC_CLK_MHZ/MULT_TL);
+         Binfactor[ch]   = fippiconfig.BINFACTOR[ch];
+         Tau[ch]         = fippiconfig.TAU[ch];
+         BLcut[ch]       = fippiconfig.BLCUT[ch];
+         BLavg[ch]       = 65536 - fippiconfig.BLAVG[ch];
+         if(BLavg[ch]<0)          BLavg[ch] = 0;
+         if(BLavg[ch]==65536)     BLavg[ch] = 0;
+         if(BLavg[ch]>MAX_BLAVG)  BLavg[ch] = MAX_BLAVG;
+         BLbad[ch] = MAX_BADBL;   // initialize to indicate no good BL found yet
+         CCSRA[ch]       =  fippiconfig.CHANNEL_CSRA[ch]; 
+         TRACEENA[ch]    = ( CCSRA[ch] & (1<<CCSRA_TRACEENA)) >0; 
+         PILEUPCTRL[ch] =  ( CCSRA[ch] & (1<<CCSRA_PILEUPCTRL) ) >0;   // if bit set, only allow "single" non-piledup events
+         Emin[ch]  = fippiconfig.EMIN[ch];  
+         // printf( "Emin %d\n", Emin[ch]); 
+         if( (CCSRA[ch] & (1<<CCSRA_GOOD)) >0 )
+            GoodChanMASK[k7] = GoodChanMASK[k7] + (1<<ch_k7) ;   // build good channel mask
+     }
+   //  printf( "GoodChanMASK 0x%02x\n", GoodChanMASK[k7]);
  }
 
 
 
-  // *************** PS/PL IO initialization *********************
-  // open the device for PD register I/O
-  fd = open("/dev/uio0", O_RDWR);
-  if (fd < 0) {
-    perror("Failed to open devfile");
-    return -2;
-  }
 
-  //Lock the PL address space so multiple programs cant step on eachother.
-  if( flock( fd, LOCK_EX | LOCK_NB ) )
-  {
-    printf( "Failed to get file lock on /dev/uio0\n" );
-    return -3;
-  }
-
-  map_addr = mmap( NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-
-  if (map_addr == MAP_FAILED) {
-    perror("Failed to mmap");
-    return -4;
-  }
-
-  mapped = (unsigned int *) map_addr;
 
   // --------------------------------------------------------
   // ------------------- Main code begins --------------------
@@ -197,19 +226,6 @@ int main(void) {
       C1[k] = C1[k] * Dgain[k];
    }
 
-   // ************************** check HW version ********************************
-
-   revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
-   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
-   {
-      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
-      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
-   }
-   else
-   {
-      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
-      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
-   }
 
     // ********************** Run Start **********************
 
@@ -395,12 +411,13 @@ int main(void) {
          mapped[AMZ_EXAFRD] = AK7_SYSSYTATUS;     // write to  k7's addr for read -> reading from 0x85 system status register
          evstats = mapped[AMZ_EXDRD];   // bits set for every channel that has data in header memory
          if(SLOWREAD)  evstats = mapped[AMZ_EXDRD];   
+         evstats = evstats & GoodChanMASK[k7];  // mask non-good channels
    
     //        printf( "K7 %d read from 0x85: 0x%X\n", k7, evstats );
          // event readout compatible with P16 DSP code
          // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
-         if(evstats) {					  // if there are events in any channel
-        //  printf( "K7 0 read from 0x85: 0x%X\n", evstats );
+         if(evstats) {					  // if there are events in any [good] channel
+    //      printf( "K7 0 read from AK7_SYSSYTATUS (0x85), masked for good channels: 0x%X\n", evstats );
             for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++)
             {
 
@@ -435,7 +452,7 @@ int main(void) {
                         // the next 8 words only need to be read if QDCs are enabled
                      }
    
-                   /*     printf( "Event count %d\n",eventcount );
+               /*         printf( "Event count %d\n",eventcount );
                      printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
                      printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
                      printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
@@ -444,7 +461,7 @@ int main(void) {
                      printf( "Read 5 H-L: 0x %X %X %X %X\n",hdr[23], hdr[22], hdr[21], hdr[20] );
                      printf( "Read 6 H-L: 0x %X %X %X %X\n",hdr[27], hdr[26], hdr[25], hdr[24] );
                      printf( "Read 7 H-L: 0x %X %X %X %X\n",hdr[31], hdr[30], hdr[29], hdr[28] );
-                   */
+                 */  
                    
                      out0   = hdr[0]+(hdr[1]<<16);  // preliminary, more bits to be filled in
                      timeL  = hdr[4]+(hdr[5]<<16); 
@@ -455,6 +472,7 @@ int main(void) {
                      gsum = hdr[20]+(hdr[21]<<16);
                      trace_staddr = hdr[25]>>3;     // tmp2,3 + ext TS. tmp1[15:3] = trace start. rest = cfdout 1
                  //    printf( "time Low: 0x%08X = %0f ms \n",timeL,timeL*13.333/1000000 );
+                 //    printf( "trace start addr = %X\n",trace_staddr);
                      pileup = (out0 & 0x8000000)>>31;   // extract pileup bit
                      exttsL = hdr[26]+(hdr[27]<<16);
                      exttsH = hdr[30];
@@ -471,7 +489,7 @@ int main(void) {
                  //    if(0) {
                      if( (TL[ch] >0) && TRACEENA[ch] )  {   // check if TL >0 and traces are recorded (bit 8 of CCSRA)
                        tracewrite = 1;
-                    //   printf( "N samples %d, start addr 0x%X \n", TL[ch], trace_staddr);
+                  //     printf( "N samples %d, start addr 0x%X \n", TL[ch], trace_staddr);
                        mapped[AMZ_EXAFWR] = AK7_MEMADDR+ch;     // specify   K7's addr     addr 4 = memory address
                        mapped[AMZ_EXDWR]  = trace_staddr;      //  take data from location recorded in trace memory
    
@@ -652,7 +670,7 @@ int main(void) {
          loopcount ++;
          currenttime = time(NULL);
       } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-   //   } while (eventcount <= 10); // run for a fixed number of events   
+   //   } while (eventcount <= 40); // run for a fixed number of events   
 
 
 

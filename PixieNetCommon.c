@@ -8,7 +8,7 @@
  *
  *   * Redistributions of source code must retain the above 
  *     copyright notice, this list of conditions and the 
- *     following disclaimer.
+ *     following disclaimer.                                           
  *   * Redistributions in binary form must reproduce the 
  *     above copyright notice, this list of conditions and the 
  *     following disclaimer in the documentation and/or other 
@@ -814,6 +814,7 @@ int read_print_runstats_XL_2x4(int mode, int dest, volatile unsigned int *mapped
   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
   unsigned int k7, ch, ch_k7;      // ch = abs ch. no; ch_k7 = ch. no in k7
   unsigned int revsn, NCHANNELS_PER_K7, NCHANNELS_PRESENT;
+  unsigned int ADC_CLK_MHZ, SYSTEM_CLOCK_MHZ, FILTER_CLOCK_MHZ;
   double coa, sya, CT[NCHANNELS], val;
   char N[22][MAX_PAR_NAME_LENGTH] = {      // names for the cgi array
     "ParameterCo",
@@ -967,11 +968,17 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    {
       NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
       NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB02;
+      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB02;
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
    }
    else
    {
       NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
       NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01;             // TODO: adjust for 75/125 variants
+      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB01;
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
    }
 
   // ---------------- open the output file -------------------------------------------
