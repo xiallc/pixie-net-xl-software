@@ -83,7 +83,7 @@ int main(void) {
   unsigned int mca[NCHANNELS][MAX_MCA_BINS] ={{0}};    // full MCA for end of run
   unsigned int wmca[NCHANNELS][WEB_MCA_BINS] ={{0}};    // smaller MCA during run
   unsigned int wf[MAX_TL/2];    // two 16bit values per word
-  unsigned int onlinebin, loopcount, eventcount, NumPrevTraceBlks, TraceBlks;
+  unsigned int onlinebin, loopcount, eventcount, NumPrevTraceBlks, TraceBlks, eventcount_ch[NCHANNELS];
   unsigned short buffer1[FILE_HEAD_LENGTH_400] = {0};
   unsigned char buffer2[CHAN_HEAD_LENGTH_400*2] = {0};
   unsigned int wm = WATERMARK;
@@ -232,7 +232,9 @@ int main(void) {
    NumPrevTraceBlks = 0;
    loopcount =  0;
    eventcount = 0;
+   for( ch=0; ch < NCHANNELS; ch++) eventcount_ch[ch] = 0;
    starttime = time(NULL);                         // capture OS start time
+
    if( (RunType==0x100) ||  (RunType==0x400) )  {    // list mode runtypes    
    
       if(RunType==0x100){
@@ -256,6 +258,7 @@ int main(void) {
         for( ch = 0; ch < NCHANNEL_MAX400; ch++) {         // TODO: Runtype 0x400 records all channels as 0-3 (using lowest 2 bits), but tracelength in header is from ch.0-3)
             buffer1[6]   +=(int)floor((TL[ch]*TRACEENA[ch] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400);         // combined event length, in blocks
             buffer1[8+ch] =(int)floor((TL[ch]*TRACEENA[ch] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400);			// each channel's event length, in blocks
+ //           printf( "N blocks %d \n",(int)floor((TL[ch]*TRACEENA[ch] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400));
         }
         fwrite( buffer1, 2, FILE_HEAD_LENGTH_400, fil );     // write to file
       }           
@@ -417,7 +420,7 @@ int main(void) {
          // event readout compatible with P16 DSP code
          // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
          if(evstats) {					  // if there are events in any [good] channel
-    //      printf( "K7 0 read from AK7_SYSSYTATUS (0x85), masked for good channels: 0x%X\n", evstats );
+     //     printf( "K7 0 read from AK7_SYSSYTATUS (0x85), masked for good channels: 0x%X\n", evstats );
             for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++)
             {
 
@@ -428,7 +431,7 @@ int main(void) {
                      mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
                      mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
                     
-                    if(  eventcount==0) {
+                    if(  eventcount_ch[ch]==0) {
                      // dummy reads
                         mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
                         hdr[0] = mapped[AMZ_EXDRD];      // read 16 bits
@@ -452,7 +455,7 @@ int main(void) {
                         // the next 8 words only need to be read if QDCs are enabled
                      }
    
-               /*         printf( "Event count %d\n",eventcount );
+             /*      printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
                      printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
                      printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
                      printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
@@ -461,7 +464,7 @@ int main(void) {
                      printf( "Read 5 H-L: 0x %X %X %X %X\n",hdr[23], hdr[22], hdr[21], hdr[20] );
                      printf( "Read 6 H-L: 0x %X %X %X %X\n",hdr[27], hdr[26], hdr[25], hdr[24] );
                      printf( "Read 7 H-L: 0x %X %X %X %X\n",hdr[31], hdr[30], hdr[29], hdr[28] );
-                 */  
+              */     
                    
                      out0   = hdr[0]+(hdr[1]<<16);  // preliminary, more bits to be filled in
                      timeL  = hdr[4]+(hdr[5]<<16); 
@@ -477,7 +480,7 @@ int main(void) {
                      exttsL = hdr[26]+(hdr[27]<<16);
                      exttsH = hdr[30];
 
-                    // printf( "channel %d, pileup %d, TL %d, exttsL %d \n",ch, pileup, TL[ch],exttsL); 
+              //       printf( "channel %d, pileup %d, TL %d, exttsL %d \n",ch, pileup, TL[ch],exttsL); 
    
        
                  if( (PILEUPCTRL[ch]==0)     || (PILEUPCTRL[ch]==1 && !pileup )    )
@@ -489,18 +492,18 @@ int main(void) {
                  //    if(0) {
                      if( (TL[ch] >0) && TRACEENA[ch] )  {   // check if TL >0 and traces are recorded (bit 8 of CCSRA)
                        tracewrite = 1;
-                  //     printf( "N samples %d, start addr 0x%X \n", TL[ch], trace_staddr);
+            //           printf( "N samples %d, start addr 0x%X ( %d)\n", TL[ch], trace_staddr, trace_staddr);
                        mapped[AMZ_EXAFWR] = AK7_MEMADDR+ch;     // specify   K7's addr     addr 4 = memory address
                        mapped[AMZ_EXDWR]  = trace_staddr;      //  take data from location recorded in trace memory
    
                        // dummy read
                      //   if(  eventcount==0) {
-                          mapped[AMZ_EXAFRD] = AK7_TRCMEM_A;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
-                          w0 = mapped[AMZ_EXDRD];      // read 16 bits
-                          if(SLOWREAD)  w0 = mapped[AMZ_EXDRD];
-                          mapped[AMZ_EXAFRD] = AK7_TRCMEM_B;     // write to  k7's addr for read -> reading from AK7_TRCMEM_B channel header memory, high 16bit and addr increase
-                          w1 = mapped[AMZ_EXDRD];      // read 16 bits  , increments trace memory address
-                          if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
+                  //        mapped[AMZ_EXAFRD] = AK7_TRCMEM_A;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
+                  //        w0 = mapped[AMZ_EXDRD];      // read 16 bits
+                  //        if(SLOWREAD)  w0 = mapped[AMZ_EXDRD];
+                  //        mapped[AMZ_EXAFRD] = AK7_TRCMEM_B;     // write to  k7's addr for read -> reading from AK7_TRCMEM_B channel header memory, high 16bit and addr increase
+                  //        w1 = mapped[AMZ_EXDRD];      // read 16 bits  , increments trace memory address
+                  //        if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
                      //  }
    
    
@@ -514,7 +517,9 @@ int main(void) {
                            if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
                    
                           // re-order 2 sample words from 32bit FIFO
-                          wf[k] = w0+(w1<<16);
+                          wf[k] = w0+(w1<<16);         
+             //            if(k==0)  printf("addr %d data %d \n",w1,w0);   
+
                        }
                      }  else {
                         tracewrite = 0;
@@ -608,11 +613,14 @@ int main(void) {
       
                              if( tracewrite )  {   // previously checked if TL >0 and traces are recorded (bit 8 of CCSRA)     
                                fwrite( wf, TL[ch]/2, 4, fil );
+
+                                
                              }   // end trace write
                         } //energy limit
                      }      // 0x400
                      
-                     eventcount++;             
+                     eventcount++;    
+                     eventcount_ch[ch]++;
                   }
                   else { // event not acceptable (piled up 
                        // header memory already advanced, now also advance trace memory address
@@ -670,7 +678,7 @@ int main(void) {
          loopcount ++;
          currenttime = time(NULL);
       } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-   //   } while (eventcount <= 40); // run for a fixed number of events   
+   //   } while (eventcount <= 3); // run for a fixed number of events   
 
 
 
