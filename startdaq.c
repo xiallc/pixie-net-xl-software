@@ -63,6 +63,7 @@ int main(void) {
   FILE * filmca;
   FILE * fil;
 
+  char filename[64];
   unsigned int RunType, SyncT, ReqRunTime, PollTime, WR_RTCtrl;
   unsigned int SL[NCHANNELS], CCSRA[NCHANNELS], PILEUPCTRL[NCHANNELS];
   //unsigned int SG[NCHANNELS];
@@ -235,18 +236,23 @@ int main(void) {
    for( ch=0; ch < NCHANNELS; ch++) eventcount_ch[ch] = 0;
    starttime = time(NULL);                         // capture OS start time
 
-   if( (RunType==0x100) ||  (RunType==0x400) )  {    // list mode runtypes    
+   if( (RunType==0x100) ||  (RunType==0x400) )  {    // list mode runtypes  
+   
    
       if(RunType==0x100){
         // write a 0x100 header  -- actually there is no header, just events
-        fil = fopen("LMdata.bin","wb");
+        sprintf(filename, "LMdata%d.bin", fippiconfig.MODULE_ID);
+        //fil = fopen("LMdata.bin","wb");
+        fil = fopen(filename,"wb");
       }  
         
       if(RunType==0x400){
         // write a 0x400 header
         // this is limited to the first 4 channels for now
         // fwrite is slow so we will write to a buffer, and then to the file.
-        fil = fopen("LMdata.b00","wb");
+        //fil = fopen("LMdata.b00","wb");
+        sprintf(filename, "LMdata%d.b00", fippiconfig.MODULE_ID);
+        fil = fopen(filename,"wb");
         buffer1[0] = BLOCKSIZE_400;
         buffer1[1] = 0;                                       // module number (get from settings file?)
         buffer1[2] = RunType;
