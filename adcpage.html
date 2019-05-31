@@ -30,25 +30,26 @@
 
 
 
-
-<div id="graphdiv2"  style="width:500px; height:300px;"></div>
+<div id="graphdiv2"  style="width:500px; height:300px;"></div>  
+<div id = "legend" style="width:500px; height:80px;" ></div>
 <script type="text/javascript">
 
-  Dygraph.Interaction.DEBUG = true;
+ 
 
   var g2 = new Dygraph(
     document.getElementById("graphdiv2"),
     "ADC.csv", // path to CSV file
-    {
-	 legend: 'always',
+    {   // graph options
 	  title: ' ',
 	  colors:
-            ["DarkBlue", "DarkRed", "orange", "Black", 
-             "Blue", "Red", "BlueViolet", "DarkGoldenrod", 
-             "DeepSkyBlue", "DeepPink", "#AF66FF", "Green", 
-             "Cyan", "Pink", "Magenta", "SpringGreen"] ,
+            ["Navy", "Maroon",    "DarkMagenta", "Black", 
+             "Blue", "Red",       "BlueViolet",  "Green", 
+             "Teal", "Darkorange","Fuchsia",     "Olive" ,
+				 "Aqua", "Gold",      "Gray",        "Lime" ], 
 	  ylabel: 'ADC value',
-	  xlabel: 'Sample number',          // options
+	  xlabel: 'Sample number',          
+	  labelsDiv: document.getElementById('legend'),
+     legend: 'always',
 	  visibility: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true]
 	 }
   );

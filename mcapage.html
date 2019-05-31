@@ -6,7 +6,7 @@
 <title>Pixie-Net MCA</title>
 
 <script type="text/javascript"  src="dygraph-combined.js"></script>
-
+										  
 <style type="text/css">
 	body { background-color:#d0d0d0; font-family:sans-serif; }
 	div.box { background-color:#ffffff; width:500px; margin:20px auto 50px; padding:50px; border-radius:10px; border:1px solid #808080; box-shadow:8px 15px 20px #404040 }
@@ -23,33 +23,31 @@
 
 
 <body>
- <div class="box">            
+ <div id="page" class="box">            
 <img src="Xia_LLC_web_header.jpg" width="500" height="80" border="0"></a>
 <p> </p>
 <p> <h1> Pixie-Net MCA Spectrum </h1></p>
 
-
-
-
-<div id="graphdiv2"  style="width:500px; height:300px;"></div>
+<div id="graphdiv2"  style="width:500px; height:300px; "></div>
+<div id = "legend" style="width:500px; height:80px;" ></div>
 <script type="text/javascript">
-
-  Dygraph.Interaction.DEBUG = true;
 
   var g2 = new Dygraph(
     document.getElementById("graphdiv2"),
     "MCA.csv", // path to CSV file
-    {legend: 'always',
+    {  // graph options
 	  colors:
-            ["DarkBlue", "DarkRed", "orange", "Black", 
-             "Blue", "Red", "BlueViolet", "DarkGoldenrod", 
-             "DeepSkyBlue", "DeepPink", "#AF66FF", "Green", 
-             "Cyan", "Pink", "Magenta", "SpringGreen"] ,
+            ["Navy", "Maroon",    "DarkMagenta", "Black", 
+             "Blue", "Red",       "BlueViolet",  "Green", 
+             "Teal", "Darkorange","Fuchsia",     "Olive" ,
+				 "Aqua", "Gold",      "Gray",        "Lime" ], 
 	  title: ' ',
 	  ylabel: 'N Counts',
-	  xlabel: 'Bin Number',          // options
+	  xlabel: 'Bin Number',     
+	  labelsDiv: document.getElementById('legend'),
+     legend: 'always',
+	  // TODO: legendformatter option with updated dygraph dygraph.min.js
 	  visibility: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true]
-
 	  }
   );
 
@@ -104,6 +102,7 @@
 
 
 </script>
+<div id="boxes">
 <input id='ylog' type="button" value="y log scale" onclick="setLogScale('y', true)">
 <input id='ylinear' type="button" value="y linear scale" onclick="setLogScale('y', false)">
 <input id='showall' type="button" value="Show All" onclick="showall(true)">
@@ -147,6 +146,7 @@
 		<input type="checkbox" id="15" checked="checked" onclick="change(this)">
       <label for="3"> mca15 </label><br>
     </p>
+	 </div>
 
  </div>
 
