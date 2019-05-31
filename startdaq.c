@@ -553,13 +553,13 @@ int main(void) {
                      // cfd and psa need some recomputation, not fully implemented yet
    
                      // fill in some constants. For now, report 10 32bit word headers (all except QDC)
-                     tmp0 = CHAN_HEAD_LENGTH_100;  // header length
-                     tmp1 = tmp0 + TL[ch];
+                     tmp0 = CHAN_HEAD_LENGTH_100;  // header length in 32bit words, fixed for now
+                     tmp1 = tmp0 + TL[ch]/2;       // event length in 32bit words
                      out1 = out0 & 0x80000FFF;     // keep pileup and crate/slot/channel #
                      out1 = out1 + (tmp0<<12);     // add header length
                      out1 = out1 + (tmp1<<17);     // add event length
                      out2 = energy;
-                     out2 = out2 + (TL[ch]<<16);
+                     out2 = out2 + (TL[ch]<<16);  // TL in 16bit words o ADC samples
                      if(out0& 0x40000000) // test OOR
                         out2 = out2 + (1<<31);
                      out3 = 0;      // baseline placeholder, float actually
