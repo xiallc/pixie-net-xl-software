@@ -221,6 +221,7 @@
 // addresses in MZ controller - direct read/write
 #define AMZ_CSRIN     0x00
 #define AMZ_DEVICESEL 0x03
+#define AMZ_PLLSTART  0x08
 #define AMZ_HWINFO    0x0E
 #define AMZ_FIRSTDAC  0x10
 #define AMZ_EXAFWR    0x18

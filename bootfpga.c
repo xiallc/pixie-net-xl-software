@@ -99,6 +99,7 @@ int main( void ) {
 
    revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
    mapped[AMZ_HWINFO] = revsn >> 16;      // store PROM revsion info in MZ register, so it can be read without slow I2C
+   mapped[AMZ_PLLSTART] = 1;              // any write will start programming the LMK PLL for ADC and FPGA processing clock  
 
 
    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
