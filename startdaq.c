@@ -446,20 +446,23 @@ int main(void) {
                      // read 8 64bit words from header
                      for( k=0; k < 8; k++)
                      {
-                        mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
+                        mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
                         hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
                          if(SLOWREAD)  hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
-                        mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
+                        mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
                         hdr[4*k+2] = mapped[AMZ_EXDRD];      // read 16 bits
                          if(SLOWREAD)  hdr[4*k+2] = mapped[AMZ_EXDRD];      // read 16 bits
-                        mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
+                        mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
                         hdr[4*k+1] = mapped[AMZ_EXDRD];      // read 16 bits
                          if(SLOWREAD)  hdr[4*k+1] = mapped[AMZ_EXDRD];      // read 16 bits
-                        mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
+                        mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
                         hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
                          if(SLOWREAD)   hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
                         // the next 8 words only need to be read if QDCs are enabled
                      }
+                     mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B advances trace memory address to next event
+                     trace_staddr = mapped[AMZ_EXDRD];      // read 16 bits, but unused
+
    
              /*      printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
                      printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
@@ -500,7 +503,7 @@ int main(void) {
                        tracewrite = 1;
             //           printf( "N samples %d, start addr 0x%X ( %d)\n", TL[ch], trace_staddr, trace_staddr);
                        mapped[AMZ_EXAFWR] = AK7_MEMADDR+ch;     // specify   K7's addr     addr 4 = memory address
-                       mapped[AMZ_EXDWR]  = trace_staddr;      //  take data from location recorded in trace memory
+                       mapped[AMZ_EXDWR]  = trace_staddr;      //  take data from location recorded in trace memory    NEW: ignored by FPGA
    
                        // dummy read
                      //   if(  eventcount==0) {
