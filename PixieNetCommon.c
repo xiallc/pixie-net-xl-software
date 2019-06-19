@@ -849,7 +849,7 @@ char Controller_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    "CSROUT",		//0     (BEGIN HEX)
    "reserved", 
    "reserved", 
-   "reserved", 
+   "FPGA BOOTED", 
    "reserved", 
    "reserved", 
    "SysTime", 
@@ -1129,11 +1129,12 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
       // ----------------- read I2C values (slow) to substitute some unused values
 
       revsn  = hwinfo(mapped,I2C_SELMAIN);
+      co[3]  = (csr >> 14) & 0x1;
       co[17] = (revsn>>16) & 0xFFFF;    // pcb rev from TMP116
       co[18] = revsn & 0xFFFF;          // s/n from TMP116
       co[19]    = co[14];  // repeat s/n stored in MZ memory as item 19 (decimal print)
       co[20]    = (unsigned int)board_temperature(mapped,I2C_SELMAIN);
-      co[21]    = (int)zynq_temperature();
+      co[21]    = (int)zynq_temperature(); 
 
       sy[0][20] = (unsigned int)board_temperature(mapped,I2C_SELDB0);
       sy[1][20] = (unsigned int)board_temperature(mapped,I2C_SELDB1);

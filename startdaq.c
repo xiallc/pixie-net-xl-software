@@ -139,6 +139,14 @@ int main(void) {
       FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
    }
 
+   // check if FPGA booted
+   tmp0 = mapped[AMZ_CSROUTL];
+   if( (tmp0 & 0x4000) ==0) {
+       printf( "FPGA not booted, please run ./bootfpga first\n" );
+       return -5;
+   }
+
+
 
   // ******************* read ini file and fill struct with values ********************
   
@@ -280,6 +288,13 @@ int main(void) {
       mapped[AMZ_EXAFWR] = AK7_PAGE;   // specify   K7's addr:    PAGE register
       mapped[AMZ_EXDWR]  = PAGE_SYS;      //  PAGE 0: system, page 0x10n = channel n
 
+      // check if WR locked
+      mapped[AMZ_EXAFRD] = AK7_CSROUT;   
+      tmp0 =  mapped[AMZ_EXDRD];    
+      if( (tmp0 & 0x0300) ==0) {
+          printf( "WARNING: WR link down or time not valid, please check via minicom\n" );
+      }
+
       // get current WR time
       mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+0;   
       tmp0 =  mapped[AMZ_EXDRD];
@@ -351,57 +366,60 @@ int main(void) {
             for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++) {
 
                ch = ch_k7+k7*NCHANNELS_PER_K7;
+
+               if( (GoodChanMASK[k7] & (1<<ch_k7)) >0 ) {
                
-               // read raw BL sums 
-               mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
-               mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
-   
-               mapped[AMZ_EXAFRD] = AK7_BLLOCK;    // read from 0xD4 to lock BL registers (no data)
-               tmp0 = mapped[AMZ_EXDRD];
-   
-               mapped[AMZ_EXAFRD] = AK7_BLSTART+0;        // lsum low 16 bit
-               tmp0 =  mapped[AMZ_EXDRD];
-               if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
-               mapped[AMZ_EXAFRD] = AK7_BLSTART+1;        // lsum high 16 bit
-               tmp1 =  mapped[AMZ_EXDRD];
-               if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
-               lsum = tmp0 + (tmp1<<16); 
-   
-               mapped[AMZ_EXAFRD] = AK7_BLSTART+2;        // tsum low 16 bit
-               tmp0 =  mapped[AMZ_EXDRD];
-               if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
-               mapped[AMZ_EXAFRD] = AK7_BLSTART+3;        // tsum high 16 bit
-               tmp1 =  mapped[AMZ_EXDRD];
-               if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
-               tsum = tmp0 + (tmp1<<16); 
-   
-               mapped[AMZ_EXAFRD] = AK7_BLSTART+6;        // gsum low 16 bit
-               tmp0 =  mapped[AMZ_EXDRD];
-               if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
-               mapped[AMZ_EXAFRD] = AK7_BLSTART+7;        // gsum high 16 bit, unlock
-               tmp1 =  mapped[AMZ_EXDRD];
-               if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
-               gsum = tmp0 + (tmp1<<16); 
-   
-               if (tsum>0)		// tum=0 indicates bad baseline
-               {
-                 ph = C1[ch]*lsum+Cg[ch]*gsum+C0[ch]*tsum;
-                 //if (ch==0) printf("ph %f, BLcut %d, BLavg %d, baseline %f\n",ph,BLcut[ch],BLavg[ch],baseline[ch] );
-                 if( (BLcut[ch]==0) || (abs(ph-baseline[ch])<BLcut[ch]) || (BLbad[ch] >=MAX_BADBL) )       // only accept "good" baselines < BLcut, or if too many bad in a row (to start over)
-                 {
-                     if( (BLavg[ch]==0) || (BLbad[ch] >=MAX_BADBL) )
-                     {
-                         baseline[ch] = ph;
-                         BLbad[ch] = 0;
+                  // read raw BL sums 
+                  mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
+                  mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
+      
+                  mapped[AMZ_EXAFRD] = AK7_BLLOCK;    // read from 0xD4 to lock BL registers (no data)
+                  tmp0 = mapped[AMZ_EXDRD];
+      
+                  mapped[AMZ_EXAFRD] = AK7_BLSTART+0;        // lsum low 16 bit
+                  tmp0 =  mapped[AMZ_EXDRD];
+                  if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
+                  mapped[AMZ_EXAFRD] = AK7_BLSTART+1;        // lsum high 16 bit
+                  tmp1 =  mapped[AMZ_EXDRD];
+                  if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
+                  lsum = tmp0 + (tmp1<<16); 
+      
+                  mapped[AMZ_EXAFRD] = AK7_BLSTART+2;        // tsum low 16 bit
+                  tmp0 =  mapped[AMZ_EXDRD];
+                  if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
+                  mapped[AMZ_EXAFRD] = AK7_BLSTART+3;        // tsum high 16 bit
+                  tmp1 =  mapped[AMZ_EXDRD];
+                  if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
+                  tsum = tmp0 + (tmp1<<16); 
+      
+                  mapped[AMZ_EXAFRD] = AK7_BLSTART+6;        // gsum low 16 bit
+                  tmp0 =  mapped[AMZ_EXDRD];
+                  if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
+                  mapped[AMZ_EXAFRD] = AK7_BLSTART+7;        // gsum high 16 bit, unlock
+                  tmp1 =  mapped[AMZ_EXDRD];
+                  if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
+                  gsum = tmp0 + (tmp1<<16); 
+      
+                  if (tsum>0)		// tum=0 indicates bad baseline
+                  {
+                    ph = C1[ch]*lsum+Cg[ch]*gsum+C0[ch]*tsum;
+                    //if (ch==0) printf("ph %f, BLcut %d, BLavg %d, baseline %f\n",ph,BLcut[ch],BLavg[ch],baseline[ch] );
+                    if( (BLcut[ch]==0) || (abs(ph-baseline[ch])<BLcut[ch]) || (BLbad[ch] >=MAX_BADBL) )       // only accept "good" baselines < BLcut, or if too many bad in a row (to start over)
+                    {
+                        if( (BLavg[ch]==0) || (BLbad[ch] >=MAX_BADBL) )
+                        {
+                            baseline[ch] = ph;
+                            BLbad[ch] = 0;
+                        } else {
+                            // BL average: // avg = old avg + (new meas - old avg)/2^BLavg
+                            baseline[ch] = baseline[ch] + (ph-baseline[ch])/(1<<BLavg[ch]);
+                            BLbad[ch] = 0;
+                        } // end BL avg
                      } else {
-                         // BL average: // avg = old avg + (new meas - old avg)/2^BLavg
-                         baseline[ch] = baseline[ch] + (ph-baseline[ch])/(1<<BLavg[ch]);
-                         BLbad[ch] = 0;
-                     } // end BL avg
-                  } else {
-                     BLbad[ch] = BLbad[ch]+1;
-                 }     // end BLcut check
-               }       // end tsum >0 check
+                        BLbad[ch] = BLbad[ch]+1;
+                    }     // end BLcut check
+                  }       // end tsum >0 check
+               }        // end if good channel
             }          // end for channels
          }             // end for K7s
       }             // end periodicity check
@@ -460,8 +478,8 @@ int main(void) {
                          if(SLOWREAD)   hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
                         // the next 8 words only need to be read if QDCs are enabled
                      }
-                     mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B advances trace memory address to next event
-                     trace_staddr = mapped[AMZ_EXDRD];      // read 16 bits, but unused
+           //          mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B advances trace memory address to next event
+           //          trace_staddr = mapped[AMZ_EXDRD];      // read 16 bits, but unused
 
    
              /*      printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
@@ -478,7 +496,7 @@ int main(void) {
                      out0   = hdr[0]+(hdr[1]<<16);  // preliminary, more bits to be filled in
                      timeL  = hdr[4]+(hdr[5]<<16); 
                      timeH  = hdr[8];  
-                     TL[ch] = hdr[9]; 
+             //        TL[ch] = hdr[9];        //    ignore FPGA tracelen, always read and save per ini file. FPGA does not modify
                      tsum = hdr[12]+(hdr[13]<<16);
                      lsum = hdr[16]+(hdr[17]<<16);
                      gsum = hdr[20]+(hdr[21]<<16);

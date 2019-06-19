@@ -150,6 +150,13 @@ int main(void) {
       FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
    }
 
+   // check if FPGA booted
+   mval = mapped[AMZ_CSROUTL];
+   if( (mval & 0x4000) ==0) {
+       printf( "FPGA not booted, please run ./bootfpga first\n" );
+       return -5;
+   }
+
   // take struct values, convert to FPGA units, write to register, one by one
   // error/dependency check: returns -xxyy, 
   // with xx = parameter number (line) in file and yy = channel number (0 for module)

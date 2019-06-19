@@ -34,7 +34,7 @@
  *----------------------------------------------------------------------*/
 
 // system constants
-#define PS_CODE_VERSION 0x0300
+#define PS_CODE_VERSION 0x0303
 #define PN_BOARD_VERSION_12_250_A 0xA990    
 #define PN_BOARD_VERSION_12_250_B 0xA991  
 #define PN_BOARD_VERSION_12_250_B_PTP 0xA981  
@@ -254,6 +254,7 @@
 #define AK7_P16REG13          0x5A
 #define AK7_P16REG17          0x5C
 
+#define AK7_CSROUT            0x80
 #define AK7_SYSSYTATUS        0x81
 #define AK7_ADCFRAME          0x86
 #define AK7_WR_TM_TAI         0x8D
