@@ -478,8 +478,8 @@ int main(void) {
                          if(SLOWREAD)   hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
                         // the next 8 words only need to be read if QDCs are enabled
                      }
-           //          mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B advances trace memory address to next event
-           //          trace_staddr = mapped[AMZ_EXDRD];      // read 16 bits, but unused
+            //         mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B advances trace memory address to next event
+            //         trace_staddr = mapped[AMZ_EXDRD];      // read 16 bits, but unused
 
    
              /*      printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
