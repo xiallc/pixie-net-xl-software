@@ -602,7 +602,7 @@ int main(void) {
          // package
          reglo = 1;     // halt bit =1
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_POLARITY,      FiPPI_INVRT   );    
-         if( (ch_k7==2) && (revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_75 )  // if DB01, ch.2 is inverted   
+         if( (ch_k7==2) && (revsn & PNXL_DB_VARIANT_MASK)!=PNXL_DB02_12_250 )  // if DB01, ch.2 is inverted   
          {
             reglo = reglo ^ (1<<FiPPI_INVRT); 
             //printf("reglo_ch.2 0x%08x, revsn 0x%08x\n",reglo, revsn);
