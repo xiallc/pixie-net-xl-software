@@ -107,7 +107,12 @@ int main( void ) {
       fil = fopen("PNXLK7_DB02_12_250.bin","rb");
       printf(" HW Rev = 0x%04X, SN = %d,  loading PNXLK7_DB02_12_250.bin\n", revsn>>16, revsn&0xFFFF);
    }
-   else
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
+   {
+      fil = fopen("PNXLK7_DB01_14_125.bin","rb");  
+      printf(" HW Rev = 0x%04X, SN = %d, loading PNXLK7_DB01_14_125.bin\n", revsn>>16, revsn&0xFFFF);
+   }
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75)
    {
       fil = fopen("PNXLK7_DB01_14_75.bin","rb");  
       printf(" HW Rev = 0x%04X, SN = %d, loading PNXLK7_DB01_14_75.bin\n", revsn>>16, revsn&0xFFFF);
@@ -212,7 +217,7 @@ int main( void ) {
 
    // ************************ ADC  initialization  *********************************
 
-    if((revsn & 0x00F00000) != 0x00200000)
+    if((revsn & PNXL_DB_VARIANT_MASK) != PNXL_DB02_12_250)
     {
       printf("Initializing ADCs:\n");  
       ADCinit_DB01(mapped);

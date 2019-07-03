@@ -42,7 +42,8 @@
 #define PNXL_DB01_14_75       0x00000000   // value for DB01 with 14/75 MHZ ADC
 #define PNXL_DB01_14_125      0x00100000   // value for DB01 with 14/125 MHZ ADC
 #define PNXL_DB02_12_250      0x00200000   // value for DB02 with 12/250 MHZ ADC
-#define ADC_CLK_MHZ_DB01        75
+#define ADC_CLK_MHZ_DB01_75        75
+#define ADC_CLK_MHZ_DB01_125       125
 #define SYSTEM_CLOCK_MHZ_DB01   75
 #define FILTER_CLOCK_MHZ_DB01   75
 #define ADC_CLK_MHZ_DB02        250
