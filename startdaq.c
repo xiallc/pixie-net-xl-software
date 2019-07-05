@@ -130,12 +130,20 @@ int main(void) {
   //    SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB02;
       FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
    }
-   else
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
    {
       NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
       NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
-      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01;             // TODO: adjust for 75/125 variants
-   //   SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB01;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01_125;             
+  //    SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB02;       // DB1 125 operates at same filter, sys freq as DB02 (and all other DB's, probably)
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
+   } 
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01_75;             
+ //     SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB01;
       FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
    }
 
