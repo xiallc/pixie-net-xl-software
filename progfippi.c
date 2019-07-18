@@ -625,7 +625,7 @@ int main(void) {
          reghi = 129 - FL[ch] - FG[ch];                          // 128 - (FastLength + FastGap - 1)
          reghi = reghi & 0x7F;                                 // Keep only bits [6:0]
          reghi = reghi + (TH[ch]<<7);                             // Threshold in [22:7]   
-         reghi = reghi + (fippiconfig.CFD_DELAY[ch] <<23);        //  CFDDelay in [28:23]       // in samples!
+         reghi = reghi + (64 - fippiconfig.CFD_DELAY[ch] <<23);        //  CFDDelay in [28:23]       // in samples!
          reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_CHANVETOSEL,   FiPPI_CHANVETOSEL);     
          reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_MODVETOSEL,    FiPPI_MODVETOSEL );     
          reghi = reghi + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_ENARELAY,      FiPPI_ENARELAY   );     
@@ -680,8 +680,8 @@ int main(void) {
          reglo = 4096 - (int)(fippiconfig.CHANTRIG_STRETCH[ch]*FILTER_CLOCK_MHZ);               //  ChanTrigStretch goes into [11:0] of FipReg2   // in us
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_FTRIGSEL,   SelExtFastTrig   );     
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_TRACEENA,    13   );     
-         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_CFDMODE,     14   );   
-         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_QDCENA,      15   );  
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_CFDMODE,     15   );   
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_QDCENA,      14   );  
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_GLOBTRIG,    16   );     
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_CHANTRIG,    17   );     
          mval = 4096 - (int)(fippiconfig.VETO_STRETCH[ch]*FILTER_CLOCK_MHZ);

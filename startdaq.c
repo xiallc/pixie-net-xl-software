@@ -507,7 +507,7 @@ int main(void) {
                      lsum    =  hdr[16]     + (hdr[17]<<16);
                      gsum    =  hdr[20]     + (hdr[21]<<16);
                      cfdout1 =  hdr[24]     + ((hdr[25]&0x7) <<16)+((hdr[28]&0x1F) <<19);
-                     cfdout2 = (hdr[28]>>5) + ((hdr[29]&0x1FFF)<<11);
+                     cfdout2 = (hdr[28]>>5) + ((hdr[29]&0x1FFF)<<11);    
                      cfdsrc  = (hdr[29]>>14)&0x1;        // cfd source (sample in group for >125 MHz ADCs)
                      cfdfrc  = (hdr[29]>>15)&0x1;        // cfd forced if 1
                      exttsL  =  hdr[26]+(hdr[27]<<16);
@@ -517,6 +517,7 @@ int main(void) {
                  //    printf( "time Low: 0x%08X = %0f ms \n",timeL,timeL*13.333/1000000 );
                  //    printf( "trace start addr = %X\n",trace_staddr);
                  //    printf( "channel %d, pileup %d, TL %d, exttsL %d \n",ch, pileup, TL[ch],exttsL); 
+                 //    printf( "ch. %d, cfdout1 %d, cfdout2 %d, cfdsrc %d, cfdfrc %d ",ch,cfdout1,cfdout2,cfdsrc,cfdfrc); 
    
        
                  if( (PILEUPCTRL[ch]==0)     || (PILEUPCTRL[ch]==1 && !pileup )    )
@@ -581,8 +582,9 @@ int main(void) {
                      }
                   
                      // cfd and psa need some recomputation, not fully implemented yet
-                     ph = (double)cfdout1 / ( (double)cfdout1 - (double)cfdout2 );              
-      
+                     cfdout2 = 0x1000000 - cfdout2;   // convert to positive
+                     ph = (double)cfdout1 / ( (double)cfdout1 + (double)cfdout2 );              
+                     //printf(", frac %f \n ",ph); 
           
                      // now store list mode data
                      out7 = 0;      // baseline placeholder, float actually
@@ -596,12 +598,12 @@ int main(void) {
                           out0 = out0  + (tmp1<<17);     // add event length
                           out2 = timeH;
                           if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)   {
-                             cfd = (int)floor(ph)*16384; 
+                             cfd = (int)floor(ph*16384); 
                              out2 = out2 + ((cfd&0x3FFF)<<16);      // combine TS and cfd value
                              out2 = out2 + (cfdsrc<<30);
                              out2 = out2 + (cfdfrc<<31);
                           } else {
-                             cfd = (int)floor(ph)*32768; 
+                             cfd = (int)floor(ph*32768); 
                              out2 = out2 + ((cfd&0x7FFF)<<16);      // combine TS and cfd value
                              out2 = out2 + (cfdfrc<<31);
                           }
@@ -727,7 +729,7 @@ int main(void) {
          loopcount ++;
          currenttime = time(NULL);
       } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-   //   } while (eventcount <= 3); // run for a fixed number of events   
+   //   } while (eventcount <= 50); // run for a fixed number of events   
 
 
 
