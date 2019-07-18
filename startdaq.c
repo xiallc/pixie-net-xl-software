@@ -75,10 +75,10 @@ int main(void) {
   double baseline[NCHANNELS] = {0};
   double dt, ph, elm, q;
   time_t starttime, currenttime;
-  unsigned int w0, w1, tmp0, tmp1, tmp2; //, tmp3;
+  unsigned int w0, w1, tmp0, tmp1, tmp2, cfdout1, cfdout2, cfdsrc, cfdfrc, cfd, info; //, tmp3;
   unsigned long long WR_tm_tai, WR_tm_tai_start, WR_tm_tai_stop, WR_tm_tai_next;
   unsigned int hdr[32];
-  unsigned int out0, out1, out2, out3, trace_staddr, pileup, tracewrite, exttsL, exttsH;
+  unsigned int out0, out2, out3, out7, trace_staddr, pileup, tracewrite, exttsL, exttsH;
   unsigned int evstats, R1, timeL, timeH, hit;
   unsigned int lsum, tsum, gsum, energy, bin; 
   unsigned int mca[NCHANNELS][MAX_MCA_BINS] ={{0}};    // full MCA for end of run
@@ -486,10 +486,7 @@ int main(void) {
                          if(SLOWREAD)   hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
                         // the next 8 words only need to be read if QDCs are enabled
                      }
-            //         mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;     // write to  k7's addr for read -> reading from AK7_HDRMEM_B advances trace memory address to next event
-            //         trace_staddr = mapped[AMZ_EXDRD];      // read 16 bits, but unused
-
-   
+    
              /*      printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
                      printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
                      printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
@@ -501,21 +498,25 @@ int main(void) {
                      printf( "Read 7 H-L: 0x %X %X %X %X\n",hdr[31], hdr[30], hdr[29], hdr[28] );
               */     
                    
-                     out0   = hdr[0]+(hdr[1]<<16);  // preliminary, more bits to be filled in
-                     timeL  = hdr[4]+(hdr[5]<<16); 
-                     timeH  = hdr[8];  
-             //        TL[ch] = hdr[9];        //    ignore FPGA tracelen, always read and save per ini file. FPGA does not modify
-                     tsum = hdr[12]+(hdr[13]<<16);
-                     lsum = hdr[16]+(hdr[17]<<16);
-                     gsum = hdr[20]+(hdr[21]<<16);
+                     info    =  hdr[0]      + (hdr[1]<<16);  // preliminary, more bits to be filled in
+                     pileup  = (info & 0x8000000)>>31;   // extract pileup bit
+                     timeL   =  hdr[4]      + (hdr[5]<<16); 
+                     timeH   =  hdr[8];  
+             //      TL[ch]  =  hdr[9];        //    ignore FPGA tracelen, always read and save per ini file. FPGA does not modify
+                     tsum    =  hdr[12]     + (hdr[13]<<16);
+                     lsum    =  hdr[16]     + (hdr[17]<<16);
+                     gsum    =  hdr[20]     + (hdr[21]<<16);
+                     cfdout1 =  hdr[24]     + ((hdr[25]&0x7) <<16)+((hdr[28]&0x1F) <<19);
+                     cfdout2 = (hdr[28]>>5) + ((hdr[29]&0x1FFF)<<11);
+                     cfdsrc  = (hdr[29]>>14)&0x1;        // cfd source (sample in group for >125 MHz ADCs)
+                     cfdfrc  = (hdr[29]>>15)&0x1;        // cfd forced if 1
+                     exttsL  =  hdr[26]+(hdr[27]<<16);
+                     exttsH  =  hdr[30];
                      trace_staddr = hdr[25]>>3;     // tmp2,3 + ext TS. tmp1[15:3] = trace start. rest = cfdout 1
+
                  //    printf( "time Low: 0x%08X = %0f ms \n",timeL,timeL*13.333/1000000 );
                  //    printf( "trace start addr = %X\n",trace_staddr);
-                     pileup = (out0 & 0x8000000)>>31;   // extract pileup bit
-                     exttsL = hdr[26]+(hdr[27]<<16);
-                     exttsH = hdr[30];
-
-              //       printf( "channel %d, pileup %d, TL %d, exttsL %d \n",ch, pileup, TL[ch],exttsL); 
+                 //    printf( "channel %d, pileup %d, TL %d, exttsL %d \n",ch, pileup, TL[ch],exttsL); 
    
        
                  if( (PILEUPCTRL[ch]==0)     || (PILEUPCTRL[ch]==1 && !pileup )    )
@@ -580,31 +581,44 @@ int main(void) {
                      }
                   
                      // cfd and psa need some recomputation, not fully implemented yet
-   
-                     // fill in some constants. For now, report 10 32bit word headers (all except QDC)
-                     tmp0 = CHAN_HEAD_LENGTH_100;  // header length in 32bit words, fixed for now
-                     tmp1 = tmp0 + TL[ch]/2;       // event length in 32bit words
-                     out1 = out0 & 0x80000FFF;     // keep pileup and crate/slot/channel #
-                     out1 = out1 + (tmp0<<12);     // add header length
-                     out1 = out1 + (tmp1<<17);     // add event length
-                     out2 = energy;
-                     out2 = out2 + (TL[ch]<<16);  // TL in 16bit words o ADC samples
-                     if(out0& 0x40000000) // test OOR
-                        out2 = out2 + (1<<31);
-                     out3 = 0;      // baseline placeholder, float actually
+                     ph = (double)cfdout1 / ( (double)cfdout1 - (double)cfdout2 );              
+      
           
                      // now store list mode data
+                     out7 = 0;      // baseline placeholder, float actually
+
+                     if(RunType==0x100)   {   
+                          // assemble the header words. For now, report always 10 32bit word headers (all except QDC)
+                          tmp0 = CHAN_HEAD_LENGTH_100;  // header length in 32bit words, fixed for now
+                          tmp1 = tmp0 + TL[ch]/2;       // event length in 32bit words
+                          out0 = info & 0x80000FFF;     // keep pileup and crate/slot/channel #
+                          out0 = out0  + (tmp0<<12);     // add header length
+                          out0 = out0  + (tmp1<<17);     // add event length
+                          out2 = timeH;
+                          if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)   {
+                             cfd = (int)floor(ph)*16384; 
+                             out2 = out2 + ((cfd&0x3FFF)<<16);      // combine TS and cfd value
+                             out2 = out2 + (cfdsrc<<30);
+                             out2 = out2 + (cfdfrc<<31);
+                          } else {
+                             cfd = (int)floor(ph)*32768; 
+                             out2 = out2 + ((cfd&0x7FFF)<<16);      // combine TS and cfd value
+                             out2 = out2 + (cfdfrc<<31);
+                          }
+                          out3 = energy;
+                          out3 = out3 + (TL[ch]<<16);  // TL in 16bit words o ADC samples
+                          if(info & 0x40000000) // test OOR
+                              out3 = out3 + (1<<31); 
+                     
+                          memcpy( buffer2 + 0,  &(out0),  4 );
+                          memcpy( buffer2 + 4,  &(timeL), 4 );
+                          memcpy( buffer2 + 8,  &(out2),  4 );
+                          memcpy( buffer2 + 12, &(out3),  4 );
    
-                     if(RunType==0x100)   {                         
-                          memcpy( buffer2 + 0, &(out1), 4 );
-                          memcpy( buffer2 + 4, &(timeL), 4 );
-                          memcpy( buffer2 + 8, &(timeH), 4 );
-                          memcpy( buffer2 + 12, &(out2), 4 );
-   
-                          memcpy( buffer2 + 16, &(tsum), 4 );
-                          memcpy( buffer2 + 20, &(lsum), 4 );   
-                          memcpy( buffer2 + 24, &(gsum), 4 );
-                          memcpy( buffer2 + 28, &(out3), 4 );      // BL
+                          memcpy( buffer2 + 16, &(tsum),  4 );
+                          memcpy( buffer2 + 20, &(lsum),  4 );   
+                          memcpy( buffer2 + 24, &(gsum),  4 );
+                          memcpy( buffer2 + 28, &(out7),  4 );      // BL
    
                           memcpy( buffer2 + 32, &(exttsL), 4 );      // ext TS
                           memcpy( buffer2 + 36, &(exttsH), 4 );      // ext TS
@@ -631,14 +645,14 @@ int main(void) {
                              memcpy( buffer2 + 12, &(timeH), 4 );
                              memcpy( buffer2 + 16, &(energy), 2 );
                              memcpy( buffer2 + 18, &(chw), 2 );
-                             memcpy( buffer2 + 20, &(out3), 2 );
-                             memcpy( buffer2 + 22, &(out3), 2 );   // actually cfd time
-                             memcpy( buffer2 + 24, &(out3), 2 );
-                             memcpy( buffer2 + 26, &(out3), 2 );
-                             memcpy( buffer2 + 28, &(out3), 2 );
-                             memcpy( buffer2 + 30, &(out3), 2 );  
-                             memcpy( buffer2 + 32, &(out3), 2 );      // debug
-                             memcpy( buffer2 + 34, &(out3), 2 );   
+                             memcpy( buffer2 + 20, &(out7), 2 );
+                             memcpy( buffer2 + 22, &(out7), 2 );   // actually cfd time
+                             memcpy( buffer2 + 24, &(out7), 2 );
+                             memcpy( buffer2 + 26, &(out7), 2 );
+                             memcpy( buffer2 + 28, &(out7), 2 );
+                             memcpy( buffer2 + 30, &(out7), 2 );  
+                             memcpy( buffer2 + 32, &(out7), 2 );      // debug
+                             memcpy( buffer2 + 34, &(out7), 2 );   
                              memcpy( buffer2 + 36, &(exttsL), 4 );      // debug
                              memcpy( buffer2 + 40, &(exttsH), 4 );   
                              // no checksum  for now
