@@ -336,6 +336,36 @@ namespace {
     
     return 0;
   }//parse_single_int_val(...)
+
+  int parse_single_ull_val( const map<string,string> &label_to_values,
+                             const string &label, unsigned long long &value, int ignore_missing )
+  // returns 0 if value sucessfully updated, negative value if error, +1 if value not in file (sometimes ok)
+  {
+    string valstr;
+    int ret;
+    ret =  get_single_value_str( label_to_values, label, valstr, ignore_missing); //  //  0 if valid, <0 if error, +1 not in file (sometimes ok)
+    if( ret!=0 )
+      return ret;
+
+    
+    char *cstr = &valstr[0u];    // c++11 avoidance
+    char *end;
+    try
+    {
+      value = strtoll(cstr, &end, 0);                // requires c++11 ? if so use strtoq
+      // value = std::stoul( valstr, nullptr, 0 );   // requires c++11
+    }catch(...)
+    {
+       cerr << "Parameter '" << label << "' with value " << valstr
+            << " could not be interpredted as an unsigned long long\n";
+      return -1;
+    }
+    
+    return 0;
+  }//parse_single_ull_val(...)
+
+
+  
   
   int parse_single_dbl_val( const map<string,string> &label_to_values,
                             const string &label, double &value, int ignore_missing )
@@ -541,6 +571,26 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
 
   ret = parse_single_int_val( label_to_values, "WR_RUNTIME_CTRL", config->WR_RUNTIME_CTRL, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -12;
+
+  ret = parse_single_ull_val( label_to_values, "DEST_MAC0", config->DEST_MAC0, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -13;
+
+  ret = parse_single_ull_val( label_to_values, "DEST_MAC1", config->DEST_MAC1, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -14;
+
+  ret = parse_single_int_val( label_to_values, "DEST_IP0", config->DEST_IP0, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -15;
+
+  ret = parse_single_int_val( label_to_values, "DEST_IP1", config->DEST_IP1, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -16;
+
+  ret = parse_single_int_val( label_to_values, "SRC_IP0", config->SRC_IP0, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -17;
+
+  ret = parse_single_int_val( label_to_values, "SRC_IP1", config->SRC_IP1, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -18;
+
+
   
   // *************** module parameters ************************************
 

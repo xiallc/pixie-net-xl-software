@@ -469,8 +469,9 @@ int main(void) {
                         hdr[0] = mapped[AMZ_EXDRD];      // read 16 bits
                      }            
    
-                     // read 8 64bit words from header
-                     for( k=0; k < 8; k++)
+                     // read 3 64bit words from header
+                     // once E and cfd are computed in FPGA, this can be reduced to 3-4 16bit words . 
+                     for( k=0; k < 3; k++)
                      {
                         mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
                         hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
@@ -484,85 +485,37 @@ int main(void) {
                         mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
                         hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
                          if(SLOWREAD)   hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
-                        // the next 8 words only need to be read if QDCs are enabled
+                        // the next 5 words only need to be read if storing data locally 
                      }
     
              /*      printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
                      printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
                      printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
                      printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
-                     printf( "Read 3 H-L: 0x %X %X %X %X\n",hdr[15], hdr[14], hdr[13], hdr[12] );
-                     printf( "Read 4 H-L: 0x %X %X %X %X\n",hdr[19], hdr[18], hdr[17], hdr[16] );
-                     printf( "Read 5 H-L: 0x %X %X %X %X\n",hdr[23], hdr[22], hdr[21], hdr[20] );
-                     printf( "Read 6 H-L: 0x %X %X %X %X\n",hdr[27], hdr[26], hdr[25], hdr[24] );
-                     printf( "Read 7 H-L: 0x %X %X %X %X\n",hdr[31], hdr[30], hdr[29], hdr[28] );
-              */     
-                   
-                     info    =  hdr[0]      + (hdr[1]<<16);  // preliminary, more bits to be filled in
-                     pileup  = (info & 0x8000000)>>31;   // extract pileup bit
-                     timeL   =  hdr[4]      + (hdr[5]<<16); 
-                     timeH   =  hdr[8];  
-             //      TL[ch]  =  hdr[9];        //    ignore FPGA tracelen, always read and save per ini file. FPGA does not modify
-                     tsum    =  hdr[12]     + (hdr[13]<<16);
-                     lsum    =  hdr[16]     + (hdr[17]<<16);
-                     gsum    =  hdr[20]     + (hdr[21]<<16);
-                     cfdout1 =  hdr[24]     + ((hdr[25]&0x7) <<16)+((hdr[28]&0x1F) <<19);
-                     cfdout2 = (hdr[28]>>5) + ((hdr[29]&0x1FFF)<<11);    
-                     cfdsrc  = (hdr[29]>>14)&0x1;        // cfd source (sample in group for >125 MHz ADCs)
-                     cfdfrc  = (hdr[29]>>15)&0x1;        // cfd forced if 1
-                     exttsL  =  hdr[26]+(hdr[27]<<16);
-                     exttsH  =  hdr[30];
-                     trace_staddr = hdr[25]>>3;     // tmp2,3 + ext TS. tmp1[15:3] = trace start. rest = cfdout 1
+              */                       
+                     timeL   =  hdr[6]      + (hdr[7]<<16); 
+                     tsum    =  hdr[0]     + (hdr[1]<<16);
+                     lsum    =  hdr[2]     + (hdr[3]<<16);
+                     gsum    =  hdr[4]     + (hdr[5]<<16);
+                     cfdout1 =  hdr[8]     + ((hdr[9]&0xFF) <<16);
+                     cfdout2 = ((hdr[9]&0xFF00)>>8) + (hdr[10]<<16);    
+                     cfdsrc  = (hdr[11]>>1)&0x1;        // cfd source (sample in group for >125 MHz ADCs)
+                     cfdfrc  = (hdr[11]>>2)&0x1;        // cfd forced if 1
+                     pileup  = (hdr[11]>>3)&0x1;
 
                  //    printf( "time Low: 0x%08X = %0f ms \n",timeL,timeL*13.333/1000000 );
-                 //    printf( "trace start addr = %X\n",trace_staddr);
-                 //    printf( "channel %d, pileup %d, TL %d, exttsL %d \n",ch, pileup, TL[ch],exttsL); 
                  //    printf( "ch. %d, cfdout1 %d, cfdout2 %d, cfdsrc %d, cfdfrc %d ",ch,cfdout1,cfdout2,cfdsrc,cfdfrc); 
    
        
                  if( (PILEUPCTRL[ch]==0)     || (PILEUPCTRL[ch]==1 && !pileup )    )
                  {    // either don't care  OR pilup test required and  pileup bit not set
+                      //printf( "pileup test passed\n");
+                     
+                      if( (TL[ch] >0) && TRACEENA[ch] )     // check if TL >0 and traces are recorded (bit 8 of CCSRA)
+                          tracewrite = 1;
+                     else 
+                          tracewrite = 0;                   
 
-                 //printf( "pileup test passed\n"); 
-   
-                     // waveform read (if accepted)
-                 //    if(0) {
-                     if( (TL[ch] >0) && TRACEENA[ch] )  {   // check if TL >0 and traces are recorded (bit 8 of CCSRA)
-                       tracewrite = 1;
-            //           printf( "N samples %d, start addr 0x%X ( %d)\n", TL[ch], trace_staddr, trace_staddr);
-                       mapped[AMZ_EXAFWR] = AK7_MEMADDR+ch;     // specify   K7's addr     addr 4 = memory address
-                       mapped[AMZ_EXDWR]  = trace_staddr;      //  take data from location recorded in trace memory    NEW: ignored by FPGA
-   
-                       // dummy read
-                     //   if(  eventcount==0) {
-                  //        mapped[AMZ_EXAFRD] = AK7_TRCMEM_A;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
-                  //        w0 = mapped[AMZ_EXDRD];      // read 16 bits
-                  //        if(SLOWREAD)  w0 = mapped[AMZ_EXDRD];
-                  //        mapped[AMZ_EXAFRD] = AK7_TRCMEM_B;     // write to  k7's addr for read -> reading from AK7_TRCMEM_B channel header memory, high 16bit and addr increase
-                  //        w1 = mapped[AMZ_EXDRD];      // read 16 bits  , increments trace memory address
-                  //        if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
-                     //  }
-   
-   
-                       for( k=0; k < (TL[ch]/2); k++)
-                       {
-                           mapped[AMZ_EXAFRD] = AK7_TRCMEM_A;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
-                           w0 = mapped[AMZ_EXDRD];      // read 16 bits
-                           if(SLOWREAD)  w0 = mapped[AMZ_EXDRD];
-                           mapped[AMZ_EXAFRD] = AK7_TRCMEM_B;     // write to  k7's addr for read -> reading from AK7_TRCMEM_B channel header memory, high 16bit and addr increase
-                           w1 = mapped[AMZ_EXDRD];      // read 16 bits  , increments trace memory address
-                           if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
-                   
-                          // re-order 2 sample words from 32bit FIFO
-                          wf[k] = w0+(w1<<16);         
-             //            if(k==0)  printf("addr %d data %d \n",w1,w0);   
-
-                       }
-                     }  else {
-                        tracewrite = 0;
-                     }
-   
-                            
                      //printf( "start computing E\n"); 
                      // compute and histogram E
                      ph = C1[ch]*(double)lsum+Cg[ch]*(double)gsum+C0[ch]*(double)tsum;
@@ -585,96 +538,151 @@ int main(void) {
                      cfdout2 = 0x1000000 - cfdout2;   // convert to positive
                      ph = (double)cfdout1 / ( (double)cfdout1 + (double)cfdout2 );              
                      //printf(", frac %f \n ",ph); 
-          
-                     // now store list mode data
-                     out7 = 0;      // baseline placeholder, float actually
+                     if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)   {
+                       cfd = (int)floor(ph*16384); 
+                       cfd = (cfd&0x3FFF);      // combine cfd value and bits
+                       cfd = cfd + (cfdsrc<<14);
+                       cfd = cfd + (cfdfrc<<15);
+                     } else {
+                       cfd = (int)floor(ph*32768); 
+                       cfd = (cfd&0x7FFF);      // combine cfd value and bits
+                       cfd = cfd + (cfdfrc<<15);
+                     }
 
-                     if(RunType==0x100)   {   
-                          // assemble the header words. For now, report always 10 32bit word headers (all except QDC)
-                          tmp0 = CHAN_HEAD_LENGTH_100;  // header length in 32bit words, fixed for now
-                          tmp1 = tmp0 + TL[ch]/2;       // event length in 32bit words
-                          out0 = info & 0x80000FFF;     // keep pileup and crate/slot/channel #
-                          out0 = out0  + (tmp0<<12);     // add header length
-                          out0 = out0  + (tmp1<<17);     // add event length
-                          out2 = timeH;
-                          if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)   {
-                             cfd = (int)floor(ph*16384); 
-                             out2 = out2 + ((cfd&0x3FFF)<<16);      // combine TS and cfd value
-                             out2 = out2 + (cfdsrc<<30);
-                             out2 = out2 + (cfdfrc<<31);
-                          } else {
-                             cfd = (int)floor(ph*32768); 
-                             out2 = out2 + ((cfd&0x7FFF)<<16);      // combine TS and cfd value
-                             out2 = out2 + (cfdfrc<<31);
-                          }
-                          out3 = energy;
-                          out3 = out3 + (TL[ch]<<16);  // TL in 16bit words o ADC samples
-                          if(info & 0x40000000) // test OOR
-                              out3 = out3 + (1<<31); 
-                     
-                          memcpy( buffer2 + 0,  &(out0),  4 );
-                          memcpy( buffer2 + 4,  &(timeL), 4 );
-                          memcpy( buffer2 + 8,  &(out2),  4 );
-                          memcpy( buffer2 + 12, &(out3),  4 );
-   
-                          memcpy( buffer2 + 16, &(tsum),  4 );
-                          memcpy( buffer2 + 20, &(lsum),  4 );   
-                          memcpy( buffer2 + 24, &(gsum),  4 );
-                          memcpy( buffer2 + 28, &(out7),  4 );      // BL
-   
-                          memcpy( buffer2 + 32, &(exttsL), 4 );      // ext TS
-                          memcpy( buffer2 + 36, &(exttsH), 4 );      // ext TS
-                          fwrite( buffer2, 1, CHAN_HEAD_LENGTH_100*4, fil );
-             
-                          if( tracewrite )  {   // previously checked if TL >0 and traces are recorded (bit 8 of CCSRA)                          
-                             fwrite( wf, TL[ch]/2, 4, fil );                        
-                          }   // end trace write                   
-                     }      // 0x100     
-   
-                      if(RunType==0x400) {// && ch<NCHANNEL_MAX400)   {
-                         if( energy > Emin[ch]) {
-                             chw = ch & 0x03;         // map channels into 0-3, assume only one set of 4 connected
-                           //printf( "Channel hit %d, channel recorded %d, energy %d, Emin %d\n",ch, chw, energy, Emin[ch]); 
-                             hit = (1<<chw) + 0x20 + (0x100<<chw);
-                             if(tracewrite==1)
-                                 TraceBlks = (int)floor(TL[ch]/BLOCKSIZE_400);
-                             else 
-                                 TraceBlks = 0;
-                             memcpy( buffer2 + 0, &(hit), 4 );
-                             memcpy( buffer2 + 4, &(TraceBlks), 2 );
-                             memcpy( buffer2 + 6, &(NumPrevTraceBlks), 2 ); 
-                             memcpy( buffer2 + 8, &(timeL), 4 );
-                             memcpy( buffer2 + 12, &(timeH), 4 );
-                             memcpy( buffer2 + 16, &(energy), 2 );
-                             memcpy( buffer2 + 18, &(chw), 2 );
-                             memcpy( buffer2 + 20, &(out7), 2 );
-                             memcpy( buffer2 + 22, &(out7), 2 );   // actually cfd time
-                             memcpy( buffer2 + 24, &(out7), 2 );
-                             memcpy( buffer2 + 26, &(out7), 2 );
-                             memcpy( buffer2 + 28, &(out7), 2 );
-                             memcpy( buffer2 + 30, &(out7), 2 );  
-                             memcpy( buffer2 + 32, &(out7), 2 );      // debug
-                             memcpy( buffer2 + 34, &(out7), 2 );   
-                             memcpy( buffer2 + 36, &(exttsL), 4 );      // debug
-                             memcpy( buffer2 + 40, &(exttsH), 4 );   
-                             // no checksum  for now
-                             memcpy( buffer2 + 60, &(wm), 4 );
-                             fwrite( buffer2, 1, CHAN_HEAD_LENGTH_400*2, fil );
-                             NumPrevTraceBlks = TraceBlks;
+                     // at this point, key data of event is known. Now can
+                     // [optional] send it to DM for further decision making (to be implemented), then
+                     //  initiate Ethernet data output of full event data
+                     //           OR
+                     // save to local storage
+
+                     if(0)    //Ethernet storage 
+                     {
+                        mapped[AMZ_EXAFWR] = AK7_PAGE;   // specify   K7's addr:    PAGE register
+                        mapped[AMZ_EXDWR]  = PAGE_SYS;   //  PAGE 0: system, page 0x10n = channel n
+                        
+                        mapped[AMZ_EXAFWR] =  AK7_ETH_ENERGY;   // specify   K7's addr:    energy for Eth data packet
+                        mapped[AMZ_EXDWR]  =  energy;
+                        mapped[AMZ_EXAFWR] =  AK7_ETH_CFD;      // specify   K7's addr:    cfd for Eth data packet
+                        mapped[AMZ_EXDWR]  =  cfd;
+                        mapped[AMZ_EXAFWR] =  AK7_ETH_CTRL;     // specify   K7's addr:    Ethernet output control register
+                        mapped[AMZ_EXDWR]  =  (ch_k7<<12) + (tracewrite<<8) + (TL[ch]>>5);  // channel, payload type with/without trace, TL blocks
+
+                     } else { // local storage
+
+                        // read 5 more 64bit words from header
+                        for( k=0; k < 5; k++)
+                        {
+                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
+                           hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
+                            if(SLOWREAD)  hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
+                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
+                           hdr[4*k+2] = mapped[AMZ_EXDRD];      // read 16 bits
+                            if(SLOWREAD)  hdr[4*k+2] = mapped[AMZ_EXDRD];      // read 16 bits
+                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
+                           hdr[4*k+1] = mapped[AMZ_EXDRD];      // read 16 bits
+                            if(SLOWREAD)  hdr[4*k+1] = mapped[AMZ_EXDRD];      // read 16 bits
+                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
+                           hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
+                            if(SLOWREAD)   hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
+                           // the next 8 words only need to be read if reading CFD data
+                         }
+
+                        // waveform read (if accepted)
+                        if( (tracewrite==1 )  {   
+                          for( k=0; k < (TL[ch]/2); k++)
+                          {
+                              mapped[AMZ_EXAFRD] = AK7_TRCMEM_B;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
+                              w0 = mapped[AMZ_EXDRD];      // read 16 bits
+                              if(SLOWREAD)  w0 = mapped[AMZ_EXDRD];
+                              mapped[AMZ_EXAFRD] = AK7_TRCMEM_B;     // write to  k7's addr for read -> reading from AK7_TRCMEM_B channel header memory, high 16bit and addr increase
+                              w1 = mapped[AMZ_EXDRD];      // read 16 bits  , increments trace memory address
+                              if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
+                              wf[k] = w0+(w1<<16);   // re-order 2 sample words from 32bit FIFO      
+                //            if(k==0)  printf("addr %d data %d \n",w1,w0);   
+                          }  // end trace length   
+                        }   // end trace read or not
       
-                             if( tracewrite )  {   // previously checked if TL >0 and traces are recorded (bit 8 of CCSRA)     
-                               fwrite( wf, TL[ch]/2, 4, fil );
 
-                                
-                             }   // end trace write
-                        } //energy limit
-                     }      // 0x400
+                        // now store list mode data
+                        timeL   =  hdr[2]     + (hdr[3]<<16);
+                        timeH   =  hdr[4];
+                        tsum    =  hdr[8]     + (hdr[9]<<16);
+                        lsum    =  hdr[10]    + (hdr[11]<<16);
+                        gsum    =  hdr[12]    + (hdr[13]<<16);
+                        out7    =  0;           // baseline placeholder, float actually
+                        exttsL  =  hdr[16]    + (hdr[17]<<16);
+                        exttsH  =  hdr[18];
+   
+                        if(RunType==0x100)   {   
+                             // assemble the header words. For now, report always 10 32bit word headers (all except QDC)
+                             out0  = hdr[0]  + (hdr[1]<<16); // pileup, EL, HL, and crate/slot/channel #
+                             out2  = timeH + (cfd<<16)   ;            // h[4]=timeH, h[5]=cfd placeholder
+                             out3 = energy + (hdr[7]<<16);            // h[6]=energy placeholder, h[7] = flag and TL
+                        
+                             memcpy( buffer2 + 0,  &(out0),  4 );
+                             memcpy( buffer2 + 4,  &(timeL), 4 );
+                             memcpy( buffer2 + 8,  &(out2),  4 );
+                             memcpy( buffer2 + 12, &(out3),  4 );
+      
+                             memcpy( buffer2 + 16, &(tsum),  4 );
+                             memcpy( buffer2 + 20, &(lsum),  4 );   
+                             memcpy( buffer2 + 24, &(gsum),  4 );
+                             memcpy( buffer2 + 28, &(out7),  4 );      // BL
+      
+                             memcpy( buffer2 + 32, &(exttsL), 4 );      // ext TS
+                             memcpy( buffer2 + 36, &(exttsH), 4 );      // ext TS
+                             fwrite( buffer2, 1, CHAN_HEAD_LENGTH_100*4, fil );
+                
+                             if( tracewrite )  {   // previously checked if TL >0 and traces are recorded (bit 8 of CCSRA)                          
+                                fwrite( wf, TL[ch]/2, 4, fil );                        
+                             }   // end trace write                   
+                        }      // 0x100     
+      
+                         if(RunType==0x400) {// && ch<NCHANNEL_MAX400)   {
+                            if( energy > Emin[ch]) {
+                                chw = ch & 0x03;         // map channels into 0-3, assume only one set of 4 connected
+                              //printf( "Channel hit %d, channel recorded %d, energy %d, Emin %d\n",ch, chw, energy, Emin[ch]); 
+                                hit = (1<<chw) + 0x20 + (0x100<<chw);
+                                if(tracewrite==1)
+                                    TraceBlks = (int)floor(TL[ch]/BLOCKSIZE_400);
+                                else 
+                                    TraceBlks = 0;
+                                memcpy( buffer2 + 0, &(hit), 4 );
+                                memcpy( buffer2 + 4, &(TraceBlks), 2 );
+                                memcpy( buffer2 + 6, &(NumPrevTraceBlks), 2 ); 
+                                memcpy( buffer2 + 8, &(timeL), 4 );
+                                memcpy( buffer2 + 12, &(timeH), 4 );
+                                memcpy( buffer2 + 16, &(energy), 2 );
+                                memcpy( buffer2 + 18, &(chw), 2 );
+                                memcpy( buffer2 + 20, &(out7), 2 );
+                                memcpy( buffer2 + 22, &(cfd), 2 );   // actually cfd time
+                                memcpy( buffer2 + 24, &(out7), 2 );
+                                memcpy( buffer2 + 26, &(out7), 2 );
+                                memcpy( buffer2 + 28, &(out7), 2 );
+                                memcpy( buffer2 + 30, &(out7), 2 );  
+                                memcpy( buffer2 + 32, &(out7), 2 );      // debug
+                                memcpy( buffer2 + 34, &(out7), 2 );   
+                                memcpy( buffer2 + 36, &(exttsL), 4 );      // debug
+                                memcpy( buffer2 + 40, &(exttsH), 4 );   
+                                // no checksum  for now
+                                memcpy( buffer2 + 60, &(wm), 4 );
+                                fwrite( buffer2, 1, CHAN_HEAD_LENGTH_400*2, fil );
+                                NumPrevTraceBlks = TraceBlks;
+         
+                                if( tracewrite )  {   // previously checked if TL >0 and traces are recorded (bit 8 of CCSRA)     
+                                  fwrite( wf, TL[ch]/2, 4, fil );
+                              
+                                }   // end trace write
+                           } //energy limit
+                        }      // 0x400
+                     } //eth/local storage
                      
                      eventcount++;    
                      eventcount_ch[ch]++;
                   }
                   else { // event not acceptable (piled up 
                        // header memory already advanced, now also advance trace memory address
+                       // TODO: addr write ignored by tracemem logic !!
                        mapped[AMZ_EXAFWR] = AK7_MEMADDR+ch;             // specify   K7's trace memory address
                        mapped[AMZ_EXDWR]  = trace_staddr+TL[ch]/2 ;     //  advance to end of this event's trace
                        // no write out

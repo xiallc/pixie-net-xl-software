@@ -117,7 +117,17 @@ typedef struct PixieNetFippiConfig {
   Bit0 : pulser enabled   */
   unsigned int AUX_CTRL;
 
-   unsigned int WR_RUNTIME_CTRL; // if 1, use WR time counters to determine start/stop of run
+  unsigned int WR_RUNTIME_CTRL; // if 1, use WR time counters to determine start/stop of run
+
+  unsigned long long DEST_MAC0;      // destination MAC for data from first K7 
+  unsigned long long DEST_MAC1;      // destination MAC for data from second K7 
+
+  unsigned int DEST_IP0;             // destination IP for data from first K7 
+  unsigned int DEST_IP1;             // destination IP for data from second K7 
+
+  unsigned int SRC_IP0;              // source IP for data from first K7   (should match WR IP from PROM)
+  unsigned int SRC_IP1;              // source IP for data from second K7 
+
 
   /* SYS_U## : reserved parameters  */
 

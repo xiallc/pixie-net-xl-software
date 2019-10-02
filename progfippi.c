@@ -97,6 +97,8 @@ int main(void) {
   int ch, k7, ch_k7;    // loop counter better be signed int  . ch = abs ch. no; ch_k7 = ch. no in k7
   unsigned int revsn, NCHANNELS_PER_K7, NCHANNELS_PRESENT;
   unsigned int ADC_CLK_MHZ, SYSTEM_CLOCK_MHZ, FILTER_CLOCK_MHZ;
+  unsigned long long mac;
+  unsigned int dip, sip;
 
 
 
@@ -201,7 +203,7 @@ int main(void) {
 
    if(fippiconfig.MODULE_ID > MAX_MODULE_ID) {
        // todo: check for valid module type numbers
-      printf("Invalid CRATE_ID = %d, must be < %d\n",fippiconfig.MODULE_ID,MAX_MODULE_ID);
+      printf("Invalid MODULE_ID = %d, must be < %d\n",fippiconfig.MODULE_ID,MAX_MODULE_ID);
       return -700;
     }
 
@@ -216,6 +218,29 @@ int main(void) {
       printf("Invalid WR_RUNTIME_CTRL = 0x%x\n",fippiconfig.WR_RUNTIME_CTRL);
       return -900;
     }
+
+    // WR Ethernet interface:
+    // Not checking MAC and IP addresses (e.g. DEST_MAC0) for errors, but report for sanity check with hex numbers
+    mac = fippiconfig.DEST_MAC0; 
+    printf( " DEST_MAC0 equal to %02llX:%02llX:%02llX:%02llX:%02llX:%02llX\n", 
+            (mac>>40) &0x0000000000FF,
+            (mac>>32) &0x0000000000FF,
+            (mac>>24) &0x0000000000FF,
+            (mac>>16) &0x0000000000FF,
+            (mac>> 8) &0x0000000000FF,
+            (mac    ) &0x0000000000FF) ;
+    mac = fippiconfig.DEST_IP0; 
+    printf( " DEST_IP0 equal to %d.%d.%d.%d\n", 
+            (mac>>24) &0x0000000000FF,
+            (mac>>16) &0x0000000000FF,
+            (mac>> 8) &0x0000000000FF,
+            (mac    ) &0x0000000000FF) ;
+    mac = fippiconfig.SRC_IP0; 
+    printf( " SRC_IP0 equal to %d.%d.%d.%d\n", 
+            (mac>>24) &0x0000000000FF,
+            (mac>>16) &0x0000000000FF,
+            (mac>> 8) &0x0000000000FF,
+            (mac    ) &0x0000000000FF) ;
 
   
   // ********** MODULE PARAMETERS ******************
@@ -587,7 +612,77 @@ int main(void) {
       mapped[AMZ_EXAFWR] = AK7_SCSRIN;    // write to  k7's addr to select register for write
       mapped[AMZ_EXDWR]  = reglo;        // write lower 16 bit
    
-    
+
+      // ................ WR Ethernet output settings .............................
+      if(k7==0)
+         mac = fippiconfig.DEST_MAC0;
+      else 
+         mac = fippiconfig.DEST_MAC1;
+      mapped[AMZ_EXAFWR] =  AK7_ETH_MAC;     // specify   K7's addr:    WR destination MAC
+      mapped[AMZ_EXDWR]  =  mac      & 0x00000000FFFF;
+      mapped[AMZ_EXAFWR] =  AK7_ETH_MAC+1;   // specify   K7's addr:    
+      mapped[AMZ_EXDWR]  =  (mac>>16) & 0x00000000FFFF;
+      mapped[AMZ_EXAFWR] =  AK7_ETH_MAC+2;   // specify   K7's addr:   
+      mapped[AMZ_EXDWR]  =  (mac>>32) & 0x00000000FFFF;
+ 
+      if(k7==0)
+         dip = fippiconfig.DEST_IP0;
+      else 
+         dip = fippiconfig.DEST_IP1;
+      mapped[AMZ_EXAFWR] =  AK7_ETH_DEST_IP;     // specify   K7's addr:    WR destination IP
+      mapped[AMZ_EXDWR]  =  dip      & 0x00000000FFFF;
+      mapped[AMZ_EXAFWR] =  AK7_ETH_DEST_IP+1;   // specify   K7's addr:    
+      mapped[AMZ_EXDWR]  =  (dip>>16) & 0x00000000FFFF;
+  
+      if(k7==0)
+         sip = fippiconfig.SRC_IP0;
+      else 
+         sip = fippiconfig.SRC_IP1;
+      mapped[AMZ_EXAFWR] =  AK7_ETH_SRC_IP;     // specify   K7's addr:    WR source IP (matching EPROM)
+      mapped[AMZ_EXDWR]  =  sip      & 0x00000000FFFF;
+      mapped[AMZ_EXAFWR] =  AK7_ETH_SRC_IP+1;   // specify   K7's addr:    
+      mapped[AMZ_EXDWR]  =  (sip>>16) & 0x00000000FFFF;
+
+      // IPv4 checksum computation: SHORT (20 word header only)
+      mval = 0;
+      mval = mval + 0x4500;              // version etc
+      mval = mval + 68;                  // 20 word data header (40bytes), 8bytes UDP header, 20 bytes IPv4 header
+      mval = mval + 0;                   // identification
+      mval = mval + 0;                   // flags, fragment offset
+      mval = mval + 0x3F11;              // time to live (63), protocol UPD (17)
+      mval = mval + 0;                   // checksum
+      mval = mval + (sip>>16);           // source ip
+      mval = mval + (sip & 0xFFFF);      // source ip
+      mval = mval + (dip>>16);           // dest ip
+      mval = mval + (dip & 0xFFFF);      // dest ip
+      mval = (mval&0xFFFF) + (mval>>16); // add accumulated carrys 
+      mval = mval + (mval>>16);                // add any more carrys
+      reglo = ~mval;      
+      mapped[AMZ_EXAFWR] =  AK7_ETH_CHECK_SHORT;     // specify   K7's addr:    checksum (SHORT)
+      mapped[AMZ_EXDWR]  =  reglo;
+      printf("WR Ethernet data checksum (SHORT) = 0x%x\n",reglo);
+
+      // IPv4 checksum computation: LONG (20 word header plus trace)
+      // Note: all channels must have same TL!
+      mval = 0;
+      mval = mval + 0x4500;              // version etc
+      mval = mval + TL[0]*2+68;          // 20 word data header (40bytes), 8bytes UDP header, 20 bytes IPv4 header, 2*TL waveform bytes
+      mval = mval + 0;                   // identification
+      mval = mval + 0;                   // flags, fragment offset
+      mval = mval + 0x3F11;              // time to live (63), protocol UPD (17)
+      mval = mval + 0;                   // checksum
+      mval = mval + (sip>>16);           // source ip
+      mval = mval + (sip & 0xFFFF);      // source ip
+      mval = mval + (dip>>16);           // dest ip
+      mval = mval + (dip & 0xFFFF);      // dest ip
+      mval = (mval&0xFFFF) + (mval>>16); // add accumulated carrys 
+      mval = mval + (mval>>16);          // add any more carrys
+      reglo = ~mval;      
+      mapped[AMZ_EXAFWR] =  AK7_ETH_CHECK_LONG;     // specify   K7's addr:    checksum (SHORT)
+      mapped[AMZ_EXDWR]  =  reglo;
+      printf("WR Ethernet data checksum (LONG) = 0x%x\n",reglo);
+
+ 
    
       // CHANNEL REGISTERS IN K7
       for( ch_k7 = 0; ch_k7 < NCHANNELS_PER_K7 ; ch_k7 ++ )

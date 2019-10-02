@@ -243,7 +243,14 @@
 #define AK7_ADCBITSLIP        0x06
 #define AK7_WR_TM_TAI_START   0x07
 #define AK7_WR_TM_TAI_STOP    0x0A
-#define AK7_MEMADDR           0x10
+#define AK7_ETH_MAC           0x0D     // 3 addr for destination MAC
+#define AK7_ETH_DEST_IP       0x10     // 2 addr for destination IP
+#define AK7_ETH_SRC_IP        0x12     // 2 addr for source IP
+#define AK7_ETH_CHECK_SHORT   0x13     // IPv4 checksum, precomputed for short package
+#define AK7_ETH_CHECK_LONG    0x14     // IPv4 checksum, precomputed for long package
+#define AK7_ETH_ENERGY        0x15     // energy of current event to send out
+#define AK7_ETH_CFD           0x16     // cfd of current event to send out
+#define AK7_ETH_CTRL          0x17     // channel number, trace length, type of data payload 
 
 #define AK7_P16REG00          0x40
 #define AK7_P16REG01          0x44
