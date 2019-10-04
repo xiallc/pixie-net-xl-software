@@ -223,24 +223,24 @@ int main(void) {
     // Not checking MAC and IP addresses (e.g. DEST_MAC0) for errors, but report for sanity check with hex numbers
     mac = fippiconfig.DEST_MAC0; 
     printf( " DEST_MAC0 equal to %02llX:%02llX:%02llX:%02llX:%02llX:%02llX\n", 
-            (mac>>40) &0x0000000000FF,
-            (mac>>32) &0x0000000000FF,
-            (mac>>24) &0x0000000000FF,
-            (mac>>16) &0x0000000000FF,
-            (mac>> 8) &0x0000000000FF,
-            (mac    ) &0x0000000000FF) ;
+            (mac>>40) &0xFF,
+            (mac>>32) &0xFF,
+            (mac>>24) &0xFF,
+            (mac>>16) &0xFF,
+            (mac>> 8) &0xFF,
+            (mac    ) &0xFF) ;
     mac = fippiconfig.DEST_IP0; 
-    printf( " DEST_IP0 equal to %d.%d.%d.%d\n", 
-            (mac>>24) &0x0000000000FF,
-            (mac>>16) &0x0000000000FF,
-            (mac>> 8) &0x0000000000FF,
-            (mac    ) &0x0000000000FF) ;
+    printf( " DEST_IP0 0x%08llX equal to %lld.%lld.%lld.%lld\n", mac,
+            (mac>>24) &0xFF,
+            (mac>>16) &0xFF,
+            (mac>> 8) &0xFF,
+            (mac    ) &0xFF) ;
     mac = fippiconfig.SRC_IP0; 
-    printf( " SRC_IP0 equal to %d.%d.%d.%d\n", 
-            (mac>>24) &0x0000000000FF,
-            (mac>>16) &0x0000000000FF,
-            (mac>> 8) &0x0000000000FF,
-            (mac    ) &0x0000000000FF) ;
+    printf( " SRC_IP0 0x%08llX equal to %lld.%lld.%lld.%lld\n",mac, 
+            (mac>>24) &0xFF,
+            (mac>>16) &0xFF,
+            (mac>> 8) &0xFF,
+            (mac    ) &0xFF) ;
 
   
   // ********** MODULE PARAMETERS ******************
@@ -660,7 +660,7 @@ int main(void) {
       reglo = ~mval;      
       mapped[AMZ_EXAFWR] =  AK7_ETH_CHECK_SHORT;     // specify   K7's addr:    checksum (SHORT)
       mapped[AMZ_EXDWR]  =  reglo;
-      printf("WR Ethernet data checksum (SHORT) = 0x%x\n",reglo);
+      printf("WR Ethernet data checksum FPGA %d (SHORT) = 0x%x\n",k7, reglo & 0xFFFF);
 
       // IPv4 checksum computation: LONG (20 word header plus trace)
       // Note: all channels must have same TL!
@@ -680,7 +680,7 @@ int main(void) {
       reglo = ~mval;      
       mapped[AMZ_EXAFWR] =  AK7_ETH_CHECK_LONG;     // specify   K7's addr:    checksum (SHORT)
       mapped[AMZ_EXDWR]  =  reglo;
-      printf("WR Ethernet data checksum (LONG) = 0x%x\n",reglo);
+      printf("WR Ethernet data checksum FPGA %d (LONG)  = 0x%x\n",k7, reglo & 0xFFFF);
 
  
    
@@ -720,7 +720,7 @@ int main(void) {
          reghi = 129 - FL[ch] - FG[ch];                          // 128 - (FastLength + FastGap - 1)
          reghi = reghi & 0x7F;                                 // Keep only bits [6:0]
          reghi = reghi + (TH[ch]<<7);                             // Threshold in [22:7]   
-         reghi = reghi + (64 - fippiconfig.CFD_DELAY[ch] <<23);        //  CFDDelay in [28:23]       // in samples!
+         reghi = reghi + (64 - (fippiconfig.CFD_DELAY[ch] <<23) );        //  CFDDelay in [28:23]       // in samples!
          reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_CHANVETOSEL,   FiPPI_CHANVETOSEL);     
          reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_MODVETOSEL,    FiPPI_MODVETOSEL );     
          reghi = reghi + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_ENARELAY,      FiPPI_ENARELAY   );     

@@ -578,16 +578,16 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
   ret = parse_single_ull_val( label_to_values, "DEST_MAC1", config->DEST_MAC1, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -14;
 
-  ret = parse_single_int_val( label_to_values, "DEST_IP0", config->DEST_IP0, ignore_missing ) ;
+  ret = parse_single_ull_val( label_to_values, "DEST_IP0", config->DEST_IP0, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -15;
 
-  ret = parse_single_int_val( label_to_values, "DEST_IP1", config->DEST_IP1, ignore_missing ) ;
+  ret = parse_single_ull_val( label_to_values, "DEST_IP1", config->DEST_IP1, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -16;
 
-  ret = parse_single_int_val( label_to_values, "SRC_IP0", config->SRC_IP0, ignore_missing ) ;
+  ret = parse_single_ull_val( label_to_values, "SRC_IP0", config->SRC_IP0, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -17;
 
-  ret = parse_single_int_val( label_to_values, "SRC_IP1", config->SRC_IP1, ignore_missing ) ;
+  ret = parse_single_ull_val( label_to_values, "SRC_IP1", config->SRC_IP1, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -18;
 
 

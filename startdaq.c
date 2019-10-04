@@ -75,10 +75,10 @@ int main(void) {
   double baseline[NCHANNELS] = {0};
   double dt, ph, elm, q;
   time_t starttime, currenttime;
-  unsigned int w0, w1, tmp0, tmp1, tmp2, cfdout1, cfdout2, cfdsrc, cfdfrc, cfd, info; //, tmp3;
+  unsigned int w0, w1, tmp0, tmp1, tmp2, cfdout1, cfdout2, cfdsrc, cfdfrc, cfd; //, tmp3;
   unsigned long long WR_tm_tai, WR_tm_tai_start, WR_tm_tai_stop, WR_tm_tai_next;
   unsigned int hdr[32];
-  unsigned int out0, out2, out3, out7, trace_staddr, pileup, tracewrite, exttsL, exttsH;
+  unsigned int out0, out2, out3, out7, pileup, tracewrite, exttsL, exttsH;
   unsigned int evstats, R1, timeL, timeH, hit;
   unsigned int lsum, tsum, gsum, energy, bin; 
   unsigned int mca[NCHANNELS][MAX_MCA_BINS] ={{0}};    // full MCA for end of run
@@ -555,7 +555,7 @@ int main(void) {
                      //           OR
                      // save to local storage
 
-                     if(0)    //Ethernet storage 
+                     if(1)    //Ethernet storage 
                      {
                         mapped[AMZ_EXAFWR] = AK7_PAGE;   // specify   K7's addr:    PAGE register
                         mapped[AMZ_EXDWR]  = PAGE_SYS;   //  PAGE 0: system, page 0x10n = channel n
@@ -569,7 +569,7 @@ int main(void) {
 
                      } else { // local storage
 
-                        // read 5 more 64bit words from header
+                        // read 5 more 64bit words from header (still in channel page)
                         for( k=0; k < 5; k++)
                         {
                            mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
@@ -588,7 +588,7 @@ int main(void) {
                          }
 
                         // waveform read (if accepted)
-                        if( (tracewrite==1 )  {   
+                        if(tracewrite==1)  {   
                           for( k=0; k < (TL[ch]/2); k++)
                           {
                               mapped[AMZ_EXAFRD] = AK7_TRCMEM_B;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
@@ -680,11 +680,10 @@ int main(void) {
                      eventcount++;    
                      eventcount_ch[ch]++;
                   }
-                  else { // event not acceptable (piled up 
+                  else { // event not acceptable (piled up) 
                        // header memory already advanced, now also advance trace memory address
-                       // TODO: addr write ignored by tracemem logic !!
-                       mapped[AMZ_EXAFWR] = AK7_MEMADDR+ch;             // specify   K7's trace memory address
-                       mapped[AMZ_EXDWR]  = trace_staddr+TL[ch]/2 ;     //  advance to end of this event's trace
+                       mapped[AMZ_EXAFWR] = AK7_NEXTEVENT;             // select the "nextevent" address in channel's page
+                       mapped[AMZ_EXDWR]  = 0 ;     // any write ok
                        // no write out
                   }
                }     // end event in this channel
@@ -736,15 +735,15 @@ int main(void) {
 
          loopcount ++;
          currenttime = time(NULL);
-      } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-   //   } while (eventcount <= 50); // run for a fixed number of events   
+   //   } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
+      } while (eventcount <= 50); // run for a fixed number of events   
 
 
 
    // ********************** Run Stop **********************
 
    /* debug */
-
+   
       mapped[AMZ_DEVICESEL] = CS_K1;	   // specify which K7 
       mapped[AMZ_EXAFWR] = AK7_PAGE;      // specify   K7's addr:    PAGE register
       mapped[AMZ_EXDWR]  = PAGE_SYS;      //  PAGE 0: system, page 0x10n = channel n
@@ -762,6 +761,8 @@ int main(void) {
       WR_tm_tai = tmp0 +  65536*tmp1 + TWOTO32*tmp2;
 
       printf( "Current WR time %llu\n",WR_tm_tai );
+      
+      
       /* end debug */
 
    // set nLive bit to stop run
