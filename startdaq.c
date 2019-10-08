@@ -555,13 +555,13 @@ int main(void) {
                      //           OR
                      // save to local storage
 
-                     if(1)    //Ethernet storage 
+                     if(fippiconfig.UDP_OUTPUT==1)    //Ethernet storage 
                      {
                         mapped[AMZ_EXAFWR] = AK7_PAGE;   // specify   K7's addr:    PAGE register
                         mapped[AMZ_EXDWR]  = PAGE_SYS;   //  PAGE 0: system, page 0x10n = channel n
                         
                         mapped[AMZ_EXAFWR] =  AK7_ETH_ENERGY;   // specify   K7's addr:    energy for Eth data packet
-                        mapped[AMZ_EXDWR]  =  0x1177; //energy;
+                        mapped[AMZ_EXDWR]  =  energy;
                         mapped[AMZ_EXAFWR] =  AK7_ETH_CFD;      // specify   K7's addr:    cfd for Eth data packet
                         mapped[AMZ_EXDWR]  =  cfd;
                         mapped[AMZ_EXAFWR] =  AK7_ETH_CTRL;     // specify   K7's addr:    Ethernet output control register
@@ -573,17 +573,17 @@ int main(void) {
                         for( k=0; k < 5; k++)
                         {
                            mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
-                           hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
-                            if(SLOWREAD)  hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
-                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
-                           hdr[4*k+2] = mapped[AMZ_EXDRD];      // read 16 bits
-                            if(SLOWREAD)  hdr[4*k+2] = mapped[AMZ_EXDRD];      // read 16 bits
+                           hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
+                            if(SLOWREAD)  hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
                            mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
                            hdr[4*k+1] = mapped[AMZ_EXDRD];      // read 16 bits
                             if(SLOWREAD)  hdr[4*k+1] = mapped[AMZ_EXDRD];      // read 16 bits
                            mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
-                           hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
-                            if(SLOWREAD)   hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
+                           hdr[4*k+2] = mapped[AMZ_EXDRD];      // read 16 bits
+                            if(SLOWREAD)  hdr[4*k+2] = mapped[AMZ_EXDRD];      // read 16 bits
+                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
+                           hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
+                            if(SLOWREAD)   hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
                            // the next 8 words only need to be read if reading CFD data
                          }
 
@@ -681,7 +681,22 @@ int main(void) {
                      eventcount_ch[ch]++;
                   }
                   else { // event not acceptable (piled up) 
-                       // header memory already advanced, now also advance trace memory address
+
+                       // advance header memory by 5 x4
+                       for( k=0; k < 5; k++)
+                        {
+                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
+                           hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
+                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
+                           hdr[4*k+1] = mapped[AMZ_EXDRD];      // read 16 bits
+                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
+                           hdr[4*k+2] = mapped[AMZ_EXDRD];      // read 16 bits
+                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
+                           hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
+                           // the next 8 words only need to be read if reading CFD data
+                         }
+
+                       //  now also advance trace memory address
                        mapped[AMZ_EXAFWR] = AK7_NEXTEVENT;             // select the "nextevent" address in channel's page
                        mapped[AMZ_EXDWR]  = 0 ;     // any write ok
                        // no write out
@@ -735,8 +750,8 @@ int main(void) {
 
          loopcount ++;
          currenttime = time(NULL);
-   //   } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-      } while (eventcount <= 3); // run for a fixed number of events   
+      } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
+   //   } while (eventcount <= 3); // run for a fixed number of events   
 
 
 
