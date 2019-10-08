@@ -221,22 +221,22 @@ int main(void) {
 
     // WR Ethernet interface:
     // Not checking MAC and IP addresses (e.g. DEST_MAC0) for errors, but report for sanity check with hex numbers
-    mac = fippiconfig.DEST_MAC0; 
-    printf( " DEST_MAC0 equal to %02llX:%02llX:%02llX:%02llX:%02llX:%02llX\n", 
+    mac = fippiconfig.DEST_MAC1; 
+    printf( " DEST_MAC1 equal to %02llX:%02llX:%02llX:%02llX:%02llX:%02llX\n", 
             (mac>>40) &0xFF,
             (mac>>32) &0xFF,
             (mac>>24) &0xFF,
             (mac>>16) &0xFF,
             (mac>> 8) &0xFF,
             (mac    ) &0xFF) ;
-    mac = fippiconfig.DEST_IP0; 
-    printf( " DEST_IP0 0x%08llX equal to %lld.%lld.%lld.%lld\n", mac,
+    mac = fippiconfig.DEST_IP1; 
+    printf( " DEST_IP1 0x%08llX equal to %lld.%lld.%lld.%lld\n", mac,
             (mac>>24) &0xFF,
             (mac>>16) &0xFF,
             (mac>> 8) &0xFF,
             (mac    ) &0xFF) ;
     mac = fippiconfig.SRC_IP0; 
-    printf( " SRC_IP0 0x%08llX equal to %lld.%lld.%lld.%lld\n",mac, 
+    printf( " SRC_IP1 0x%08llX equal to %lld.%lld.%lld.%lld\n",mac, 
             (mac>>24) &0xFF,
             (mac>>16) &0xFF,
             (mac>> 8) &0xFF,
@@ -659,7 +659,7 @@ int main(void) {
       mval = mval + (mval>>16);                // add any more carrys
       reglo = ~mval;      
       mapped[AMZ_EXAFWR] =  AK7_ETH_CHECK_SHORT;     // specify   K7's addr:    checksum (SHORT)
-      mapped[AMZ_EXDWR]  =  reglo;
+      mapped[AMZ_EXDWR]  =  0xF7B9; //reglo;
       printf("WR Ethernet data checksum FPGA %d (SHORT) = 0x%x\n",k7, reglo & 0xFFFF);
 
       // IPv4 checksum computation: LONG (20 word header plus trace)
@@ -678,8 +678,8 @@ int main(void) {
       mval = (mval&0xFFFF) + (mval>>16); // add accumulated carrys 
       mval = mval + (mval>>16);          // add any more carrys
       reglo = ~mval;      
-      mapped[AMZ_EXAFWR] =  AK7_ETH_CHECK_LONG;     // specify   K7's addr:    checksum (SHORT)
-      mapped[AMZ_EXDWR]  =  reglo;
+      mapped[AMZ_EXAFWR] =  AK7_ETH_CHECK_LONG;     // specify   K7's addr:    checksum (LONG)
+      mapped[AMZ_EXDWR]  =  0xF7B9; //reglo;
       printf("WR Ethernet data checksum FPGA %d (LONG)  = 0x%x\n",k7, reglo & 0xFFFF);
 
  

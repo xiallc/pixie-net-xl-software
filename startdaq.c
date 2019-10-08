@@ -561,7 +561,7 @@ int main(void) {
                         mapped[AMZ_EXDWR]  = PAGE_SYS;   //  PAGE 0: system, page 0x10n = channel n
                         
                         mapped[AMZ_EXAFWR] =  AK7_ETH_ENERGY;   // specify   K7's addr:    energy for Eth data packet
-                        mapped[AMZ_EXDWR]  =  energy;
+                        mapped[AMZ_EXDWR]  =  0x1177; //energy;
                         mapped[AMZ_EXAFWR] =  AK7_ETH_CFD;      // specify   K7's addr:    cfd for Eth data packet
                         mapped[AMZ_EXDWR]  =  cfd;
                         mapped[AMZ_EXAFWR] =  AK7_ETH_CTRL;     // specify   K7's addr:    Ethernet output control register
@@ -736,7 +736,7 @@ int main(void) {
          loopcount ++;
          currenttime = time(NULL);
    //   } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-      } while (eventcount <= 50); // run for a fixed number of events   
+      } while (eventcount <= 3); // run for a fixed number of events   
 
 
 
