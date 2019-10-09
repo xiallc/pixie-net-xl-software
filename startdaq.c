@@ -408,10 +408,11 @@ int main(void) {
                   if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
                   gsum = tmp0 + (tmp1<<16); 
       
-                  if (tsum>0)		// tum=0 indicates bad baseline
+                  if (tsum>0 && ((tsum&0x80000000)==0) )		// tum=0 or high bit set indicates bad baseline
                   {
                     ph = C1[ch]*lsum+Cg[ch]*gsum+C0[ch]*tsum;
                     //if (ch==0) printf("ph %f, BLcut %d, BLavg %d, baseline %f\n",ph,BLcut[ch],BLavg[ch],baseline[ch] );
+                    //printf("ph %f, BLcut %d, BLavg %d, baseline %f\n",ph,BLcut[ch],BLavg[ch],baseline[ch] );
                     if( (BLcut[ch]==0) || (abs(ph-baseline[ch])<BLcut[ch]) || (BLbad[ch] >=MAX_BADBL) )       // only accept "good" baselines < BLcut, or if too many bad in a row (to start over)
                     {
                         if( (BLavg[ch]==0) || (BLbad[ch] >=MAX_BADBL) )
@@ -422,10 +423,17 @@ int main(void) {
                             // BL average: // avg = old avg + (new meas - old avg)/2^BLavg
                             baseline[ch] = baseline[ch] + (ph-baseline[ch])/(1<<BLavg[ch]);
                             BLbad[ch] = 0;
+                            
+
                         } // end BL avg
                      } else {
                         BLbad[ch] = BLbad[ch]+1;
                     }     // end BLcut check
+                                     
+                    ph = C1[ch]*lsum+Cg[ch]*gsum+C0[ch]*tsum;
+                    //if (ch==0) printf("ph %f, BLcut %d, BLavg %d, baseline %f\n",ph,BLcut[ch],BLavg[ch],baseline[ch] );
+                    printf("ph %f, tsum 0x%08x, lsum 0x%08x, gsum 0x%08x\n",ph,tsum,lsum,gsum);
+
                   }       // end tsum >0 check
                }        // end if good channel
             }          // end for channels
@@ -697,8 +705,8 @@ int main(void) {
                          }
 
                        //  now also advance trace memory address
-                       mapped[AMZ_EXAFWR] = AK7_NEXTEVENT;             // select the "nextevent" address in channel's page
-                       mapped[AMZ_EXDWR]  = 0 ;     // any write ok
+                       mapped[AMZ_EXAFRD] = AK7_NEXTEVENT;             // select the "nextevent" address in channel's page
+                       out7 = mapped[AMZ_EXDWR];     // any write ok
                        // no write out
                   }
                }     // end event in this channel

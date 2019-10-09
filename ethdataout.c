@@ -113,6 +113,10 @@ int main( int argc, char *argv[] ) {
       mapped[AMZ_EXAFWR] = AK7_PAGE;   // specify   K7's addr:    PAGE register
       mapped[AMZ_EXDWR]  = PAGE_SYS;      //  PAGE 0: system, page 0x10n = channel n
 
+         mapped[AMZ_EXAFWR] =  AK7_WR_TM_TAI_STOP;   // specify   K7's addr:    WR stop time register   (used for IPv4 checksum here)
+         mapped[AMZ_EXDWR]  =  0xF791;
+
+
          mapped[AMZ_EXAFWR] =  AK7_WR_TM_TAI_STOP+3;   // specify   K7's addr:    WR stop time register
          mapped[AMZ_EXDWR]  =  mac      & 0x00000000FFFF;
          mapped[AMZ_EXAFWR] =  AK7_WR_TM_TAI_STOP+4;   // specify   K7's addr:    WR stop time register
