@@ -229,14 +229,14 @@ int main(void) {
 
    // **********************  Compute Coefficients for E Computation  ********************** 
    dt = 1.0/FILTER_CLOCK_MHZ;
-   for( k = 0; k < NCHANNELS; k ++ )
+   for( k = 0; k < NCHANNELS_PRESENT; k ++ )
    { 
       q = exp(-1.0*dt/Tau[k]);
       elm = exp(-1.0*dt*SL[k]/Tau[k]);
       C0[k] = (q-1.0)*elm/(1.0-elm);
       Cg[k] = 1.0-q;
       C1[k] = (1.0-q)/(1.0-elm);
-      // printf("%f  %f   %f\n", C0[k], Cg[k], C1[k]);    
+     // printf("E coefs ch %d:  %f  %f   %f\n", k, C0[k], Cg[k], C1[k]);    
       
       C0[k] = C0[k] * Dgain[k];
       Cg[k] = Cg[k] * Dgain[k];
@@ -432,7 +432,7 @@ int main(void) {
                                      
                     ph = C1[ch]*lsum+Cg[ch]*gsum+C0[ch]*tsum;
                     //if (ch==0) printf("ph %f, BLcut %d, BLavg %d, baseline %f\n",ph,BLcut[ch],BLavg[ch],baseline[ch] );
-                    printf("ph %f, tsum 0x%08x, lsum 0x%08x, gsum 0x%08x\n",ph,tsum,lsum,gsum);
+                //    printf("ph %f, tsum 0x%08x, lsum 0x%08x, gsum 0x%08x, diff t-L %d\n",ph,tsum,lsum,gsum, tsum-lsum);
 
                   }       // end tsum >0 check
                }        // end if good channel
@@ -527,13 +527,13 @@ int main(void) {
                      //printf( "start computing E\n"); 
                      // compute and histogram E
                      ph = C1[ch]*(double)lsum+Cg[ch]*(double)gsum+C0[ch]*(double)tsum;
-                    //  printf("ph %f, BLavg %f, E %f\n",ph,baseline[ch], ph-baseline[ch]);
+                     //printf("ph %f, BLavg %f, E %f\n",ph,baseline[ch], ph-baseline[ch]);
                      ph = ph-baseline[ch];
                      if ((ph<0.0)|| (ph>65536.0))	ph =0.0;	   // out of range energies -> 0
                      energy = (int)floor(ph);
                      //if ((hit & (1<< HIT_LOCALHIT))==0)	  	energy =0;	   // not a local hit -> 0
    
-                     //   printf( "now incrementing MCA, E = %d\n", energy); 
+                     //if(eventcount<4)   printf( "now incrementing MCA, E = %d\n", energy); 
                      //  histogramming if E< max mcabin
                      bin = energy >> Binfactor[ch];
                      if( (bin<MAX_MCA_BINS) && (bin>0) ) {

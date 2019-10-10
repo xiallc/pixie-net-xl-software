@@ -660,7 +660,7 @@ int main(void) {
       reglo = ~mval;      
       mapped[AMZ_EXAFWR] =  AK7_ETH_CHECK_SHORT;     // specify   K7's addr:    checksum (SHORT)
       mapped[AMZ_EXDWR]  =  0xF7B9; //reglo;
-      printf("WR Ethernet data checksum FPGA %d (SHORT) = 0x%x\n",k7, reglo & 0xFFFF);
+     // printf("WR Ethernet data checksum FPGA %d (SHORT) = 0x%x\n",k7, reglo & 0xFFFF);
 
       // IPv4 checksum computation: LONG (20 word header plus trace)
       // Note: all channels must have same TL!
@@ -680,7 +680,7 @@ int main(void) {
       reglo = ~mval;      
       mapped[AMZ_EXAFWR] =  AK7_ETH_CHECK_LONG;     // specify   K7's addr:    checksum (LONG)
       mapped[AMZ_EXDWR]  =  0xF7B9; //reglo;
-      printf("WR Ethernet data checksum FPGA %d (LONG)  = 0x%x\n",k7, reglo & 0xFFFF);
+     // printf("WR Ethernet data checksum FPGA %d (LONG)  = 0x%x\n",k7, reglo & 0xFFFF);
 
  
    
@@ -706,13 +706,15 @@ int main(void) {
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_EXTTRIGSEL,    FiPPI_EXTTRIGSEL   );     
          reglo = reglo + (SFR<<4);                        //  Store SlowFilterRange in bits [6:4] 
          mval = 129-SL[ch];
+         //printf("SL: %d, 129-SL: %d,  ",SL[ch], mval);
          reglo = reglo + (mval<<7);                       //  SlowLength in bits [13:7]
          mval = 129-SL[ch]-SG[ch];
+         // printf("SL+SG: %d, 129-SL-SG: %d \n",SL[ch]+SG[ch], mval);
          reglo = reglo + (mval<<14);                //  SlowLength + SlowGap in bits [20:14]
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_CHANTRIGSEL,   FiPPI_CHANTRIGSEL   );     
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_SYNCDATAACQ,   FiPPI_SYNCDATAACQ   );     
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_GROUPTRIGSEL,  FiPPI_GROUPTRIGSEL   );    
-         mval = 129-FL[ch]-FG[ch];
+         mval = 129-FL[ch];
          reglo = reglo +( mval<<25) ;               // 128 - (FastLength - 1) in bits [31:25] 
          SAVER0[ch] = reglo;
           
