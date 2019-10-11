@@ -73,7 +73,7 @@ int main(void) {
   unsigned int GoodChanMASK[N_K7_FPGAS] = {0} ;
   double C0[NCHANNELS], C1[NCHANNELS], Cg[NCHANNELS];
   double baseline[NCHANNELS] = {0};
-  double dt, ph, elm, q;
+  double dt, ph, elm, q, tmpD, bscale;
   time_t starttime, currenttime;
   unsigned int w0, w1, tmp0, tmp1, tmp2, cfdout1, cfdout2, cfdsrc, cfdfrc, cfd; //, tmp3;
   unsigned long long WR_tm_tai, WR_tm_tai_start, WR_tm_tai_stop, WR_tm_tai_next;
@@ -94,6 +94,7 @@ int main(void) {
   unsigned int revsn, NCHANNELS_PER_K7, NCHANNELS_PRESENT;
   unsigned int ADC_CLK_MHZ, FILTER_CLOCK_MHZ; //  SYSTEM_CLOCK_MHZ,
   int k7, ch_k7, ch, chw;  // ch = abs ch. no; ch_k7 = ch. no in k7
+  unsigned int psa_base, psa_Q0, psa_Q1, psa_ampl, psa_R;  
 
     // *************** PS/PL IO initialization *********************
   // open the device for PD register I/O
@@ -542,7 +543,7 @@ int main(void) {
                         if(bin>0) wmca[ch][bin] = wmca[ch][bin] + 1;	// increment wmca
                      }
                   
-                     // cfd and psa need some recomputation, not fully implemented yet
+                     // cfd needs some more computation
                      cfdout2 = 0x1000000 - cfdout2;   // convert to positive
                      ph = (double)cfdout1 / ( (double)cfdout1 + (double)cfdout2 );              
                      //printf(", frac %f \n ",ph); 
@@ -614,19 +615,46 @@ int main(void) {
                         // now store list mode data
                         timeL   =  hdr[2]     + (hdr[3]<<16);
                         timeH   =  hdr[4];
-                        tsum    =  hdr[8]     + (hdr[9]<<16);
-                        lsum    =  hdr[10]    + (hdr[11]<<16);
-                        gsum    =  hdr[12]    + (hdr[13]<<16);
+                        //tsum    =  hdr[8]     + (hdr[9]<<16);
+                        //lsum    =  hdr[10]    + (hdr[11]<<16);
+                        //gsum    =  hdr[12]    + (hdr[13]<<16);
                         out7    =  0;           // baseline placeholder, float actually
                         exttsL  =  hdr[16]    + (hdr[17]<<16);
                         exttsH  =  hdr[18];
+
+                        // compute PSA results from raw data
+                        // need to subtract baseline in correct scale (1/4) and length (QDC#_LENGTH[ch])
+                        psa_base = hdr[12];
+                        if( fippiconfig.QDCLen4[ch]) 
+                           bscale = 32.0;
+                        else
+                           bscale = 4.0;
+                        
+                        tmpD = (double)hdr[13] - (double)psa_base/bscale * fippiconfig.QDCLen0[ch]; //  subtract QDCL0 x base/bscale from raw value
+                        if( (tmpD>0) && (tmpD<65535))
+                           psa_Q0 = (int)floor(tmpD);
+                        else
+                           psa_Q0 = 0;
+                        
+                        tmpD = (double)hdr[14] - (double)psa_base/bscale * fippiconfig.QDCLen1[ch]; //  subtract QDCL1 x base/bscale from raw value
+                        if( (tmpD>0) && (tmpD<65535))
+                           psa_Q1 = (int)floor(tmpD);
+                        else
+                           psa_Q1 = 0;
+                        
+                        psa_ampl = hdr[15] - psa_base;
+      
+                        if(psa_Q0!=0)
+                           psa_R = (int)floor(1000.0*(double)psa_Q1/(double)psa_Q0);
+                        else
+                           psa_R = 0;
    
                         if(RunType==0x100)   {   
                              // assemble the header words. For now, report always 10 32bit word headers (all except QDC)
                              out0  = hdr[0]  + (hdr[1]<<16); // pileup, EL, HL, and crate/slot/channel #
                              out2  = timeH + (cfd<<16)   ;            // h[4]=timeH, h[5]=cfd placeholder
                              out3 = energy + (hdr[7]<<16);            // h[6]=energy placeholder, h[7] = flag and TL
-                        
+                     
                              memcpy( buffer2 + 0,  &(out0),  4 );
                              memcpy( buffer2 + 4,  &(timeL), 4 );
                              memcpy( buffer2 + 8,  &(out2),  4 );
@@ -648,6 +676,9 @@ int main(void) {
       
                          if(RunType==0x400) {// && ch<NCHANNEL_MAX400)   {
                             if( energy > Emin[ch]) {
+
+                                out2 = hdr[12]    + (hdr[13]<<16);    // raw PSA for debug
+                                out3 = hdr[14]    + (hdr[15]<<16);
                                 chw = ch & 0x03;         // map channels into 0-3, assume only one set of 4 connected
                               //printf( "Channel hit %d, channel recorded %d, energy %d, Emin %d\n",ch, chw, energy, Emin[ch]); 
                                 hit = (1<<chw) + 0x20 + (0x100<<chw);
@@ -662,14 +693,14 @@ int main(void) {
                                 memcpy( buffer2 + 12, &(timeH), 4 );
                                 memcpy( buffer2 + 16, &(energy), 2 );
                                 memcpy( buffer2 + 18, &(chw), 2 );
-                                memcpy( buffer2 + 20, &(out7), 2 );
+                                memcpy( buffer2 + 20, &(psa_ampl), 2 );
                                 memcpy( buffer2 + 22, &(cfd), 2 );   // actually cfd time
-                                memcpy( buffer2 + 24, &(out7), 2 );
-                                memcpy( buffer2 + 26, &(out7), 2 );
-                                memcpy( buffer2 + 28, &(out7), 2 );
-                                memcpy( buffer2 + 30, &(out7), 2 );  
-                                memcpy( buffer2 + 32, &(out7), 2 );      // debug
-                                memcpy( buffer2 + 34, &(out7), 2 );   
+                                memcpy( buffer2 + 24, &(psa_base), 2 );
+                                memcpy( buffer2 + 26, &(psa_Q0), 2 );
+                                memcpy( buffer2 + 28, &(psa_Q1), 2 );
+                                memcpy( buffer2 + 30, &(psa_R), 2 );  
+                                memcpy( buffer2 + 32, &(out2), 2 );      // debug
+                                memcpy( buffer2 + 34, &(out3), 2 );   
                                 memcpy( buffer2 + 36, &(exttsL), 4 );      // debug
                                 memcpy( buffer2 + 40, &(exttsH), 4 );   
                                 // no checksum  for now

@@ -826,11 +826,21 @@ int main(void) {
          
          
          // ......... P16 Reg 6  .......................    
-         
-         reglo = fippiconfig.QDCLen0[ch];                    //  QDC       // in samples
-         reglo = reglo + (fippiconfig.QDCLen1[ch]<<16);        //  QDC       // in samples                                                                                 
-         reghi = fippiconfig.QDCLen2[ch];                    //  QDC       // in samples
-         reghi = reghi + (fippiconfig.QDCLen3[ch]<<16);        //  QDC       // in samples      
+         if(  (fippiconfig.CHANNEL_CSRA[ch] & (1<<CCSRA_QDCENA)) >0 ) {
+            // P16 style QDC
+            reglo = fippiconfig.QDCLen0[ch];                      //  QDC       // in samples
+            reglo = reglo + (fippiconfig.QDCLen1[ch]<<16);        //  QDC       // in samples                                                                                 
+            reghi = fippiconfig.QDCLen2[ch];                      //  QDC       // in samples
+            reghi = reghi + (fippiconfig.QDCLen3[ch]<<16);        //  QDC       // in samples  
+          } else {
+            // P4e style PSA
+            reglo = (fippiconfig.QDCLen0[ch]>>2)+1;                      //  L0 FPGA expects "len/4 + 1" for effective "len" 
+            reghi = fippiconfig.QDCLen0[ch] + 4 + fippiconfig.QDCLen2[ch];                 //  D0 FPGA expects total length + delay (=end)
+            mval  = (fippiconfig.QDCLen1[ch]>>2)+1;
+            reglo = reglo + (mval<<16);                                 //  L1 FPGA expects "len/4 + 1" for effective "len"                                                                                
+            mval  = fippiconfig.QDCLen1[ch] +4 + fippiconfig.QDCLen3[ch];                 //  D1 FPGA expects total length + delay (=end)
+            reghi = reghi + (mval<<16);        
+          }
          
          // now write 
          mapped[AMZ_EXAFWR] = AK7_P16REG06+0;              // write to  k7's addr to select channel's register N        
@@ -844,12 +854,12 @@ int main(void) {
          
          
          // ......... P16 Reg 7  .......................    
-         
-         reglo = fippiconfig.QDCLen4[ch];                    //  QDC       // in samples
-         reglo = reglo + (fippiconfig.QDCLen5[ch]<<16);        //  QDC       // in samples                                                                               
-         reghi = fippiconfig.QDCLen6[ch];                    //  QDC       // in samples
-         reghi = reghi + (fippiconfig.QDCLen7[ch]<<16);        //  QDC       // in samples     
-         
+       
+         reglo = fippiconfig.QDCLen4[ch];                      //  QDC       // in samples     or divide result by 8
+         reglo = reglo + (fippiconfig.QDCLen5[ch]<<16);        //  QDC       // in samples     or PSA threshold                                                                          
+         reghi = fippiconfig.QDCLen6[ch];                      //  QDC       // in samples
+         reghi = reghi + (fippiconfig.QDCLen7[ch]<<16);        //  QDC       // in samples 
+        
          // now write 
          mapped[AMZ_EXAFWR] = AK7_P16REG07+0;              // write to  k7's addr to select channel's register N        
          mapped[AMZ_EXDWR]  = reglo & 0xFFFF;              // write lower 16 bit                                        
