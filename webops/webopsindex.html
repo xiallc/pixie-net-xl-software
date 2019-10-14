@@ -32,13 +32,14 @@ Shortcuts: <a href="cgitraces.cgi"> ADC traces </a>,
 	<h2> CGI Executables </h2>
 	<p><b>Run executables as if typed in terminal</b>:
     <ul>
-	    <li> <a href="acquire.cgi"> acquire </a>    </li>
-       <li> <a href="coincdaq.cgi"> coincdaq </a>  </li>
+	    <li> <a href="bootfpga.cgi"> bootfpga </a>    </li>
+		 <li> <a href="progfippi.cgi"> progfippi </a>  </li>
+		 <li> <a href="startdaq.cgi"> startdaq </a>  </li>
+       <li> <a href="adcinit.cgi"> adcinit </a>  </li>
 		 <li> <a href="findsettings.cgi"> findsettings </a>  </li>
 		 <li> <a href="gettraces.cgi"> gettraces </a>  </li>
-		 <li> <a href="progfippi.cgi"> progfippi </a>  </li>
 		 <li> <a href="runstats.cgi"> runstats </a>  </li>
-		 <li> <a href="startdaq.cgi"> startdaq </a>  </li>
+
 	 </ul></p>
 	 <p><b>When no other task is in progress</b>, view/refresh
     <ul>
@@ -49,11 +50,9 @@ Shortcuts: <a href="cgitraces.cgi"> ADC traces </a>,
 	<h2>DAQ Results</h2>
 	<p> <b>After</b> the data acquisition, <b>open/download</b> </p>
    <ul>
-   	<li> <a href="LMdata.txt"> 0x500</a> List mode data with waveforms (from run type 0x500, text) </li>
-		<li> <a href="LMdata.dat"> 0x501</a> List mode data without waveforms (from run type 0x501, csv) </li>
-		<li> <a href="LMdata.dt2"> 0x502</a> List mode with PSA (from run type 0x502, csv)</li>
-		<li> <a href="LMdata.dt3"> 0x503</a> List mode coincidence data (from run type 0x503, csv)</li>
-		<li> <a href="LMdata.b00"> 0x400/402</a> Binary list mode data (from run types 0x400, 0x402)</li>
+		<li> <a href="LMdata0.bin"> 0x100 </a> Binary list mode data (from run type 0x100 [Pixie-16])</li>
+	  	<li> <a href="LMdata0.b00"> 0x400/402</a> Binary list mode data (from run types 0x400, 0x402)</li>
+		<li> <a href="LMdata_m0.dt3"> 0x401</a> Text list mode data (from run type 0x401)</li>
 	   <li> <a href="MCA.csv"> MCA spectra </a> as csv file</li>
 	   <li> <a href="RS.csv"> Run statistics </a> as csv file (full)</li>
 		<li> <a href="psa2D.csv"> PSA histogram </a> as csv file</li>
@@ -67,10 +66,6 @@ Shortcuts: <a href="cgitraces.cgi"> ADC traces </a>,
 	   <li> <a href="adcpage.html"> ADC traces</a>.
 	</ul>
 	
-	
-
-   <p>To view LM waveforms from latest 0x500 DAQ,  <a href="cgiwaveforms.cgi?evno=0"> click here</a>.</p>
-
 	<h2> Help </h2>
 	<p> XIA support website for <a href="http://support.xia.com/default.asp?W772"> Pixie-Net </a> </p>
 </div>

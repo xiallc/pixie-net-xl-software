@@ -38,23 +38,17 @@ Shortcuts: <a href="cgitraces.cgi"> ADC traces </a>,
 	<h2>DAQ Results</h2>
 	<p> <b>After</b> the data acquisition, open/download </p>
    <ul>
-   	<li> <a href="LMdata.txt"> 0x500</a> List mode data with waveforms (from run type 0x500, text) </li>
-		<li> <a href="LMdata.dat"> 0x501</a> List mode data without waveforms (from run type 0x501, csv) </li>
-		<li> <a href="LMdata.dt2"> 0x502</a> List mode with PSA (from run type 0x502, csv)</li>
-		<li> <a href="LMdata.dt3"> 0x503</a> List mode coincidence data (from run type 0x503, csv)</li>
-		<li> <a href="LMdata.b00"> 0x400/402</a> Binary list mode data (from run types 0x400, 0x402)</li>
+		<li> <a href="LMdata0.bin"> 0x100 </a> Binary list mode data (from run type 0x100 [Pixie-16])</li>
+	  	<li> <a href="LMdata0.b00"> 0x400/402</a> Binary list mode data (from run types 0x400, 0x402)</li>
+		<li> <a href="LMdata_m0.dt3"> 0x401</a> Text list mode data (from run type 0x401)</li>
 	   <li> <a href="MCA.csv"> MCA spectra </a> as csv file</li>
 	   <li> <a href="RS.csv"> Run statistics </a> as csv file (full)</li>
 		<li> <a href="psa2D.csv"> PSA histogram </a> as csv file</li>
 	</ul>
 	
-	<p> To view <b>very short</b> list mode data files (run type 0x501) as a table,  <a href="lmtablepage.html"> click here</a>. 
-	    (Large files take very long to format as table.)  </p>
    <p>To view most recent ADC traces in a plot,  <a href="adcpage.html"> click here</a>.</p>
 
-   <p>To view LM waveforms from latest 0x500 DAQ,  <a href="cgiwaveforms.cgi?evno=0"> click here</a>.</p>
 
-	
 	<h2> CGI Current Data </h2>
 	<p><b>When no other task is in progress</b>, view/refresh
     <ul>

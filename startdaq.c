@@ -184,10 +184,10 @@ int main(void) {
   PollTime     = fippiconfig.POLL_TIME;
   //CW           = (int)floor(fippiconfig.COINCIDENCE_WINDOW*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
 
-  if( (RunType==0x100) || (RunType==0x400) || (RunType==0x301)  ) {      // check run type
-   // 0x100, 0x400, 0x301 are ok
+  if( (RunType==0x100) || (RunType==0x400) || (RunType==0x401) || (RunType==0x301)  ) {      // check run type
+   // 0x100, 0x400, 0x401, 0x301 are ok
   } else {
-      printf( "This function only support runtypes 0x100 (P16) or 0x400 or 0x301 \n");
+      printf( "This function only support runtypes 0x100 (P16), 0x400, 0x401, or 0x301 \n");
       return(-1);
   }
 
@@ -253,7 +253,7 @@ int main(void) {
    for( ch=0; ch < NCHANNELS; ch++) eventcount_ch[ch] = 0;
    starttime = time(NULL);                         // capture OS start time
 
-   if( (RunType==0x100) ||  (RunType==0x400) )  {    // list mode runtypes  
+   if( (RunType==0x100) ||  (RunType==0x400) ||  (RunType==0x401) )  {    // list mode runtypes  
    
    
       if(RunType==0x100){
@@ -284,7 +284,19 @@ int main(void) {
  //           printf( "N blocks %d \n",(int)floor((TL[ch]*TRACEENA[ch] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400));
         }
         fwrite( buffer1, 2, FILE_HEAD_LENGTH_400, fil );     // write to file
-      }           
+      }  
+      
+ 
+      if(RunType==0x401){
+         // write a 0x401 header
+         sprintf(filename,"%s_m%d.dt3","LMdata",fippiconfig.MODULE_ID); //file name: .dt3
+   		fil = fopen(filename, "w"); // create .dt3 file
+         fprintf(fil, "\nModule:\t%hu\n",         fippiconfig.MODULE_ID);
+   		fprintf(fil, "Run Type:\t%hu\n",         0x401);
+   		fprintf(fil, "Run Start Time :\t %lld \n\n", (long long)starttime);
+   		fprintf(fil, "Event\tChannel\tTimeStamp\tEnergy\tRT\tApeak\tBsum\tQ0\tQ1\tPSAval\n");
+      }
+
     }
 
     // Run Start Control
@@ -714,6 +726,25 @@ int main(void) {
                                 }   // end trace write
                            } //energy limit
                         }      // 0x400
+
+                        if(RunType==0x401) {// && ch<NCHANNEL_MAX400)   {
+                        // ASCII file, no trace (like AutoPRocessLMData=3)
+                           chw = ch & 0x03;         // map channels into 0-3, assume only one set of 4 connected
+                           WR_tm_tai = (unsigned long long)timeL + TWOTO32* (unsigned long long)timeH;  // full timestamp
+                           // "Event\tChannel\tTimeStamp\tEnergy\tRT\tApeak\tBsum\tQ0\tQ1\tPSAval\n
+                           fprintf(fil, "%u\t%hu\t%llu\t%hu\t%hu\t%hu\t%hu\t%hu\t%hu\t%hu\n", 
+                              eventcount, 
+                              chw,
+                              WR_tm_tai>>1,     // full timestamp in 2ns units  
+                              energy, 
+                              0,    // no rise time
+                              psa_ampl, 
+                              psa_base,
+                              psa_Q0,
+                              psa_Q1,
+                              psa_R       );
+                        }    // 0x401
+
                      } //eth/local storage
                      
                      eventcount++;    
@@ -845,7 +876,7 @@ int main(void) {
 
  
  // clean up  
- if( (RunType==0x100) ||  (RunType==0x400) )  { 
+ if( (RunType==0x100) ||  (RunType==0x400) ||  (RunType==0x401) )  { 
    fclose(fil);
  }
  flock( fd, LOCK_UN );
