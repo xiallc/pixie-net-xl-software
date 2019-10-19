@@ -1,4 +1,4 @@
-TARGET = adcinit bootfpga cgitraces.cgi gettraces progfippi runstats cgistats.cgi startdaq findsettings
+TARGET = adcinit bootfpga cgitraces.cgi gettraces progfippi runstats cgistats.cgi startdaq findsettings cgisettings.cgi
 LIBS = -lm 
 CFLAGS = -std=c99 -Wall
 CXXFLAGS = -Wall -O3 -DNDEBUG   -pthread -std=gnu++98
@@ -25,6 +25,9 @@ bootfpga: bootfpga.o PixieNetCommon.o PixieNetDefs.h
 	
 cgitraces.cgi: cgitraces.o PixieNetCommon.o PixieNetConfig.o PixieNetDefs.h
 	g++ cgitraces.o PixieNetCommon.o PixieNetConfig.o $(LIBS) -o cgitraces.cgi
+
+cgisettings.cgi: cgisettings.o PixieNetCommon.o PixieNetConfig.o PixieNetDefs.h
+	g++ cgisettings.o PixieNetCommon.o PixieNetConfig.o $(LIBS) -o cgisettings.cgi
 
 gettraces: gettraces.o PixieNetCommon.o PixieNetConfig.o PixieNetDefs.h
 	g++ gettraces.o PixieNetCommon.o PixieNetConfig.o $(LIBS) -o gettraces
