@@ -57,6 +57,31 @@
 
 using namespace std;
 
+  void split( std::vector<std::string> &resutls,
+             const std::string &input, const char *delims )
+  {
+    resutls.clear();
+    
+    size_t prev_delim_end = 0;
+    size_t delim_start = input.find_first_of( delims, prev_delim_end );
+    
+    while( delim_start != std::string::npos )
+    {
+      if( (delim_start-prev_delim_end) > 0 )
+        resutls.push_back( input.substr(prev_delim_end,(delim_start-prev_delim_end)) );
+      
+      prev_delim_end = input.find_first_not_of( delims, delim_start + 1 );
+      if( prev_delim_end != std::string::npos )
+        delim_start = input.find_first_of( delims, prev_delim_end + 1 );
+      else
+        delim_start = std::string::npos;
+    }//while( this_pos < input.size() )
+    
+    if( prev_delim_end < input.size() )
+      resutls.push_back( input.substr(prev_delim_end) );
+  }//split(...)
+  
+
   // trim from start
   static inline std::string &ltrim(std::string &s)
   {
@@ -135,7 +160,7 @@ using namespace std;
   {
     label.clear();
     values.clear();
-    const size_t pos = line.find_first_of( " \t,;&=" );
+    const size_t pos = line.find_first_of( " \t,;=" );
     if( !pos || pos == string::npos )
       return false;
     label = line.substr( 0, pos );
@@ -148,7 +173,7 @@ using namespace std;
 
 int main(void) {
 
-//  int k;
+  int k;
 //  FILE * fil;
 //  char line[LINESZ];
    
@@ -163,44 +188,34 @@ int main(void) {
     string strReplace = "MODULE_ID";
     string strNew = "MODULE_ID       7758";
     string remainder;
- //   int total_n=0;
-//    int n;
-    char * linecomp ="<none>";
+    int NCH=8;
+    char * data;
+    string val[NCH];
 
-  char * data;
-   float val[32] = {0.0};
-  data = getenv("QUERY_STRING");
+
+
+   data = getenv("QUERY_STRING");
    
    std::string webdata(data);
-   split_label_values( webdata, strReplace, remainder );      // extract label from webdata (break on &)
-  // split_label_values( strReplace, label, strReplace );      // extract label from webdata (break on =, use 2nd half)
+   split_label_values( webdata, strReplace, remainder );      // extract label from webdata (break on =)
 
-  /*
-  k=0;
-  while (1 == sscanf(data + total_n, "%*[^0123456789]%d%n", &val[k], &n))
+
+   //strNew = remainder;
+   vector<string> fields;
+   split( fields, remainder, " \t,;=&" );    // divide along = and &
+   
+   strNew = strReplace + "              ";       // rebuild value string line: label
+     
+   for(k=0;k<NCH;k++)                        //  values
    {
-       total_n += n;
-       printf("%d\n", val[k]);
-       k++;
+      strNew = strNew + "  "+  fields[2*k+2]  ;
    }
-
-   sscanf(data,"%d %d %d %d %d %d %d %d",&v00, &v01, &v02, &v03, &v04, &v05, &v06, &v07);
-   sprintf(linecomp,"%s    %d  %d   %d  %d   %d  %d   %d  %d",strReplace.c_str(),val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7]);  
-
- //  std::string strNew(linecomp);
-*/
-
-   stringstream ss(remainder);
-   ss >> val[0];
-   ss >> val[1];
-
-  // sprintf(linecomp," %4.3f %4.3f",val[0], val[1]);
- //  sprintf(linecomp," helloe %f",0.1234);
-
-   strNew = remainder;
- 
-  // read the settings file and replace a line
-
+   
+   strNew = strNew + "  "; 
+   for(k=NCH;k<NCHANNELS;k++)                // fill up to max number of channels
+   {
+      strNew = strNew + "  "+  "1.6  "  ;
+   }
 
 
 
@@ -211,8 +226,6 @@ int main(void) {
         cout << "Error opening files on server!" << endl;
         return -1;
     }
-
-
 
     while( safe_get_line( filein, line, LINESZ ) )  // get lines
     {
@@ -225,27 +238,19 @@ int main(void) {
        if(equal!=0)
                newline = line;
        else
-          //     newline = line;
                newline = strNew;
    
        newline += "\n";
        fileout << newline;
     }
 
-  //  strReplace += "\n";
-    fileout << strReplace;
+    remove("settings.ini");
+    rename("settings.txt","settings.ini");
 
-//    std::string strNew2(linecomp);
-//    fileout <<strNew2; 
- //   fileout << linecomp;
+    printf("Settings file sucessfully updated on server (Pixie-Net)");
 
-//    printf("Settings file updated on server, parameter %s\n",strReplace.c_str());
 
-  //  remove("settings.ini");
-  //  rename("settings.txt","settings.ini");
-   
- // clean up  
- //fclose(fil);
+
  return 0;
 }
 
@@ -253,57 +258,3 @@ int main(void) {
 
 
 
-
-/*
-int replace_config_file_lines( const char * const filename,
-                               const char * const linereplacement,
-                               const char * const targetlabel)
-{
- 
-string line;
-string label, values;
-std::string targetstr(targetlabel);
-
- cerr << "linereplacement" << linereplacement << endl;
- cerr << "targetlabel" << targetlabel << endl;
- 
- ifstream input( filename, ios::in | ios::binary );
- 
- if( !input )
- {
-   cerr << "Failed to open '" << filename << "'" << endl;
-   return -1;
- }
-
- ofstream output("settings.tmp"); 
- 
- while( safe_get_line( input, line, LINESZ ) )                          // get lines
- {
- //  trim( line );
- //  if( line.empty() || line[0] == '#' )                                 // check for empty lines
- //    continue;
-   
-
-   const bool success = split_label_values( line, label, values );      // extract label from line
-   
-   if( !success || label.empty() || values.empty() )
-   {
-     cerr << "Warning: encountered invalid config file line '" << line
-     << "', skipping" << endl;
-     continue;
-   }
-   
-   int equal;
-   equal = label.compare(targetstr);
-   if(equal!=0)
-      printf("%s\n",line.c_str());
-   else
-      printf("%s\n",linereplacement);
-
-
- }///more lines in config file
- 
- return 0;
-}//replace_config_file_lines(..)
-
-*/

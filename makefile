@@ -1,4 +1,4 @@
-TARGET = adcinit bootfpga cgitraces.cgi gettraces progfippi runstats cgistats.cgi startdaq findsettings cgisettings.cgi
+TARGET = adcinit bootfpga cgitraces.cgi gettraces progfippi runstats cgistats.cgi startdaq findsettings cgisettings.cgi cgiwritesettings.cgi
 LIBS = -lm 
 CFLAGS = -std=c99 -Wall
 CXXFLAGS = -Wall -O3 -DNDEBUG   -pthread -std=gnu++98
@@ -61,6 +61,9 @@ clockprog: clockprog.o PixieNetCommon.o PixieNetDefs.h
 
 pollcsr: pollcsr.o PixieNetDefs.h
 	gcc pollcsr.o $(LIBS) -o pollcsr
+
+cgiwritesettings.cgi: cgiwritesettings.o PixieNetDefs.h
+	g++ cgiwritesettings.o PixieNetCommon.o  $(LIBS) -o cgiwritesettings.cgi
 
 clean:
 	-rm -f *.o

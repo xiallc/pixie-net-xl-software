@@ -46,6 +46,14 @@ $(document).ready(function(){
 		 })  		// end get
 	  });		   // end button click refresh
 
+	  $("#apply").click(function(){		// function for  refresh button
+
+		  $.get("progfippi.cgi", function (data) {	//jQuery get function executes progfippi on Pixie-Net -> settings file applied
+		  		alert(data);	    
+		 })  		// end get
+	  });		   // end button click refresh
+
+
 	  $("#read").click(function(){							// function for  read settings button
 
 		  $.get("cgisettings.cgi", function (data) {	   //jQuery get function executes cgisettings on Pixie-Net -> return data is list of analog settings
@@ -106,7 +114,7 @@ $(document).ready(function(){
 						v7:$("#offset07").val()
 				  },
 			     function (data) {	   
-		  		alert("Data:  " + data + newline);
+		  		alert(data);
 			 })  // end get
   	 });  // end blur (deselect)
 
@@ -130,6 +138,8 @@ $(document).ready(function(){
 <div id="graphdiv2"  style="width:500px; height:300px;"></div> 
 
 <input id='read' type="button" value="Read Settings">
+<input id='apply' type="button" value="Apply Settings (progfippi)">
+
 <p> Channel Offset   Analog Gain   Tau
 <p> 00 <input class="fieldo" type="text" id="offset00" value="0.000">
        <input class="field" type="text" id="again00" value="0.000">
