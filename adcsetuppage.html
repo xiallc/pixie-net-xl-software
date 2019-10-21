@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Pixie-Net ADC</title>
+
+<script type="text/javascript"  src="dygraph-combined.js"></script>
+<script src="jquery-3.4.1.min.js"></script>
+
+<style type="text/css">
+	body { background-color:#d0d0d0; font-family:sans-serif; }
+	div.box { background-color:#ffffff; width:500px; margin:20px auto 50px; padding:50px; border-radius:10px; border:1px solid #808080; box-shadow:8px 15px 20px #404040 }
+	img.logo { float:right; margin:-10px 0 0 30px }
+	h1 { margin:0; font-size:24px }
+	h2 { margin-top:40px; font-size:20px; font-weight:normal; border-bottom:1px solid #ff9040 }
+	p { font-size:14px }
+	a { color:#6060d0; text-decoration:none }
+	a:hover { text-decoration:underline }
+</style>
+
+<script>
+$(document).ready(function(){
+
+	  $("#refresh").click(function(){		// function for  refresh button
+
+		  $.get("gettraces.cgi", function (data) {		  						//jQuery get function executes gettraces on Pixie-Net -> new ADC.csv
+		  	//	alert("Data:  " + data);	    
+			 	var g2 = new Dygraph( 												   // and then recreates the plot in graphdiv2
+							    document.getElementById("graphdiv2"),
+							    "ADC.csv", // path to CSV file
+							    {   // graph options
+								  title: ' ',
+								  colors:
+							            ["Navy", "Maroon",    "DarkMagenta", "Black", 
+							             "Blue", "Red",       "BlueViolet",  "Green", 
+							             "Teal", "Darkorange","Fuchsia",     "Olive" ,
+											 "Aqua", "Gold",      "Gray",        "Lime" ], 
+								  ylabel: 'ADC value',
+								  xlabel: 'Sample number',          
+								  labelsDiv: document.getElementById('legend'),
+							     legend: 'always',
+								  visibility: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true]
+								 }
+							  );
+		 })  		// end get
+	  });		   // end button click refresh
+
+	  $("#read").click(function(){							// function for  read settings button
+
+		  $.get("cgisettings.cgi", function (data) {	   //jQuery get function executes cgisettings on Pixie-Net -> return data is list of analog settings
+		  		//alert("Data:  " + data);
+			  
+			   var dataarray = data.split(',');			  // "split" data string at commas
+				//alert("Data[0]:  " + dataarray[0]);
+	
+				$("#offset00").val(dataarray[5]);			// assign values to offset controls
+				$("#offset01").val(dataarray[9]);
+				$("#offset02").val(dataarray[13]);
+				$("#offset03").val(dataarray[17]);
+				$("#offset04").val(dataarray[21]);
+				$("#offset05").val(dataarray[25]);
+				$("#offset06").val(dataarray[29]);
+				$("#offset07").val(dataarray[33]);
+
+				$("#again00").val(dataarray[6]);			  	// assign values to analog gain controls
+				$("#again01").val(dataarray[10]);
+				$("#again02").val(dataarray[14]);
+				$("#again03").val(dataarray[18]);
+				$("#again04").val(dataarray[22]);
+				$("#again05").val(dataarray[26]);
+				$("#again06").val(dataarray[30]);
+				$("#again07").val(dataarray[34]);
+
+				$("#tau00").val(dataarray[7]);				 // assign values to tau controls
+				$("#tau01").val(dataarray[11]);
+				$("#tau02").val(dataarray[15]);
+				$("#tau03").val(dataarray[19]);
+				$("#tau04").val(dataarray[23]);
+				$("#tau05").val(dataarray[27]);
+				$("#tau06").val(dataarray[31]);
+				$("#tau07").val(dataarray[35]);
+	
+			 })  // end get
+	  });		  // end button click read  settings
+
+
+
+
+    $(".fieldo").focus(function(){							 // change color of control field while editing
+    	$(this).css("background-color", "yellow");
+  	 });
+
+	 $(".fieldo").blur(function(){						   
+    	$(this).css("background-color", "white");		   // restore color of control field when done editing
+	
+		 $.get("cgiwritesettings.cgi", 					 //jQuery get function executes cgisettings on Pixie-Net -> return data is list of analog settings
+		 		 {VOFFSET:"(name)", 
+				 		v0:$("#offset00").val(), 
+						v1:$("#offset01").val(),
+ 					   v2:$("#offset02").val(),
+						v3:$("#offset03").val(),
+						v4:$("#offset04").val(),
+						v5:$("#offset05").val(),
+						v6:$("#offset06").val(),
+						v7:$("#offset07").val()
+				  },
+			     function (data) {	   
+		  		alert("Data:  " + data + newline);
+			 })  // end get
+  	 });  // end blur (deselect)
+
+
+
+
+
+});	// end document ready
+
+
+
+</script>
+
+</head>
+
+
+<body>
+
+<input id='refresh' type="button" value="Refresh Traces">
+
+<div id="graphdiv2"  style="width:500px; height:300px;"></div> 
+
+<input id='read' type="button" value="Read Settings">
+<p> Channel Offset   Analog Gain   Tau
+<p> 00 <input class="fieldo" type="text" id="offset00" value="0.000">
+       <input class="field" type="text" id="again00" value="0.000">
+		 <input class="field" type="text" id="tau00" value="0.000"></p>
+<p> 01 <input class="fieldo" type="text" id="offset01" value="0.000">
+       <input class="field" type="text" id="again01" value="0.000">
+		 <input class="field" type="text" id="tau01" value="0.000"></p>
+<p> 02 <input class="fieldo" type="text" id="offset02" value="0.000">
+       <input class="field" type="text" id="again02" value="0.000">
+		 <input class="field" type="text" id="tau02" value="0.000"></p>
+<p> 03 <input class="fieldo" type="text" id="offset03" value="0.000">
+       <input class="field" type="text" id="again03" value="0.000">
+		 <input class="field" type="text" id="tau03" value="0.000"></p>
+<p> 04 <input class="fieldo" type="text" id="offset04" value="0.000">
+       <input class="field" type="text" id="again04" value="0.000">
+		 <input class="field" type="text" id="tau04" value="0.000"></p>
+<p> 05 <input class="fieldo" type="text" id="offset05" value="0.000">
+       <input class="field" type="text" id="again05" value="0.000">
+		 <input class="field" type="text" id="tau05" value="0.000"></p>
+<p> 06 <input class="fieldo" type="text" id="offset06" value="0.000">
+       <input class="field" type="text" id="again06" value="0.000">
+		 <input class="field" type="text" id="tau06" value="0.000"></p>
+<p> 07 <input class="fieldo" type="text" id="offset07" value="0.000">
+       <input class="field" type="text" id="again07" value="0.000">
+		 <input class="field" type="text" id="tau07" value="0.000"></p>
+
+
+
+
+<script type="text/javascript">
+
+ 
+
+  var g2 = new Dygraph(
+    document.getElementById("graphdiv2"),
+    "ADC.csv", // path to CSV file
+    {   // graph options
+	  title: ' ',
+	  colors:
+            ["Navy", "Maroon",    "DarkMagenta", "Black", 
+             "Blue", "Red",       "BlueViolet",  "Green", 
+             "Teal", "Darkorange","Fuchsia",     "Olive" ,
+				 "Aqua", "Gold",      "Gray",        "Lime" ], 
+	  ylabel: 'ADC value',
+	  xlabel: 'Sample number',          
+	  labelsDiv: document.getElementById('legend'),
+     legend: 'always',
+	  visibility: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true]
+	 }
+  );
+
+
+
+
+</script>
+
+
+
+ 
+
+
+
+<p>Double click to auto zoom </p>
+<p>Click and drag to zoom </p>
+<p>Alt click and drag to pan </p>
+<p>Use browser button to refresh </p>
+<p>Roughly 500 nanoseconds between samples </p>
+
+
+
+</body>
+</html>
+
+
+
+
+
