@@ -15,6 +15,8 @@
 	h1 { margin:0; font-size:24px }
 	h2 { margin-top:40px; font-size:20px; font-weight:normal; border-bottom:1px solid #ff9040 }
 	p { font-size:14px }
+	th { font-size:12px }
+	td { font-size:12px }
 	a { color:#6060d0; text-decoration:none }
 	a:hover { text-decoration:underline }
 </style>
@@ -43,6 +45,8 @@ $(document).ready(function(){
 								  visibility: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true]
 								 }
 							  );
+
+
 		 })  		// end get
 	  });		   // end button click refresh
 
@@ -133,39 +137,86 @@ $(document).ready(function(){
 
 <body>
 
-<input id='refresh' type="button" value="Refresh Traces">
+<body>
+ <div class="box">            
+<img src="Xia_LLC_web_header.jpg" width="500" height="80" border="0"></a>
+<p> </p>
+<p> <h1> Pixie-Net ADC Traces </h1></p>
+
+
+
 
 <div id="graphdiv2"  style="width:500px; height:300px;"></div> 
+<div id = "legend" style="width:500px; height:80px;" ></div>
+
 
 <input id='read' type="button" value="Read Settings">
-<input id='apply' type="button" value="Apply Settings (progfippi)">
+<input id='apply' type="button" value="Apply (progfippi)">
+<input id='showall' type="button" value="Show All" onclick="showall(true)">
+<input id='showall' type="button" value="Hide All" onclick="showall(false)">
+<input id='refresh' type="button" value="Refresh Traces">
+ <p> </p>
 
-<p> Channel Offset   Analog Gain   Tau
-<p> 00 <input class="fieldo" type="text" id="offset00" value="0.000">
-       <input class="field" type="text" id="again00" value="0.000">
-		 <input class="field" type="text" id="tau00" value="0.000"></p>
-<p> 01 <input class="fieldo" type="text" id="offset01" value="0.000">
-       <input class="field" type="text" id="again01" value="0.000">
-		 <input class="field" type="text" id="tau01" value="0.000"></p>
-<p> 02 <input class="fieldo" type="text" id="offset02" value="0.000">
-       <input class="field" type="text" id="again02" value="0.000">
-		 <input class="field" type="text" id="tau02" value="0.000"></p>
-<p> 03 <input class="fieldo" type="text" id="offset03" value="0.000">
-       <input class="field" type="text" id="again03" value="0.000">
-		 <input class="field" type="text" id="tau03" value="0.000"></p>
-<p> 04 <input class="fieldo" type="text" id="offset04" value="0.000">
-       <input class="field" type="text" id="again04" value="0.000">
-		 <input class="field" type="text" id="tau04" value="0.000"></p>
-<p> 05 <input class="fieldo" type="text" id="offset05" value="0.000">
-       <input class="field" type="text" id="again05" value="0.000">
-		 <input class="field" type="text" id="tau05" value="0.000"></p>
-<p> 06 <input class="fieldo" type="text" id="offset06" value="0.000">
-       <input class="field" type="text" id="again06" value="0.000">
-		 <input class="field" type="text" id="tau06" value="0.000"></p>
-<p> 07 <input class="fieldo" type="text" id="offset07" value="0.000">
-       <input class="field" type="text" id="again07" value="0.000">
-		 <input class="field" type="text" id="tau07" value="0.000"></p>
+<table style="width:100%">
+<tr> <th>Channel</th> <th>Inverted</th> <th>Offset</th>   <th>Analog Gain</th>   <th>Digital Gain</th>  <th>Tau</th> <th>Show</th>	  </tr>
+<tr> <td>00  </td>
+	  <td> <input class="fieldp" type="text" size="8" id="polarity00" value="0"> </td>
+     <td> <input class="fieldo" type="text" size="8" id="offset00" value="0.000"> </td>
+     <td> <input class="fielda" type="text" size="8" id="again00" value="0.000">  </td>
+	  <td> <input class="fieldd" type="text" size="8" id="dgain00" value="0.000">  </td>
+	  <td> <input class="fieldt" type="text" size="8" id="tau00" value="0.000">   </td> 
+	  <td> <input type="checkbox" id="0" checked="checked"  onclick="change(this)"></td> </tr>
+<tr> <td>01</td>
+     <td> <input class="fieldp" type="text" size="8" id="polarity01" value="0"> </td>
+	  <td> <input class="fieldo" type="text" size="8" id="offset01" value="0.000">  </td>
+     <td> <input class="fielda" type="text" size="8" id="again01" value="0.000"> </td>
+	  <td> <input class="fieldd" type="text" size="8" id="dgain01" value="0.000">  </td>
+	  <td> <input class="fieldt" type="text" size="8" id="tau01" value="0.000"></td> 
+	  <td> <input type="checkbox" id="1" checked="checked"  onclick="change(this)"> </td> </tr>
+<tr> <td>02 </td>
+	  <td> <input class="fieldp" type="text" size="8" id="polarity02" value="0"> </td>
+	  <td> <input class="fieldo" type="text" size="8" id="offset02" value="0.000">	</td>
+     <td> <input class="fielda" type="text" size="8" id="again02" value="0.000"> </td>
+	  <td> <input class="fieldd" type="text" size="8" id="dgain02" value="0.000">  </td>
+	  <td> <input class="fieldt" type="text" size="8" id="tau02" value="0.000"></td>  
+	  <td> <input type="checkbox" id="2" checked="checked"  onclick="change(this)"> </td> </tr>
+<tr> <td>03 </td>
+     <td> <input class="fieldp" type="text" size="8" id="polarity03" value="0"> </td>
+	  <td> <input class="fieldo" type="text" size="8" id="offset03" value="0.000"> </td>
+     <td> <input class="fielda" type="text" size="8" id="again03" value="0.000"> </td>
+	  <td> <input class="fieldd" type="text" size="8" id="dgain03" value="0.000">  </td>
+	  <td> <input class="fieldt" type="text" size="8" id="tau03" value="0.000"></td> 
+	  <td> <input type="checkbox" id="3" checked="checked"  onclick="change(this)"> </td> </tr>
+<tr> <td>04</td>
+     <td> <input class="fieldp" type="text" size="8" id="polarity04" value="0"> </td>
+	  <td> <input class="fieldo" type="text" size="8" id="offset04" value="0.000"></td>
+     <td> <input class="fielda" type="text" size="8" id="again04" value="0.000"></td>
+	  <td> <input class="fieldd" type="text" size="8" id="dgain04" value="0.000">  </td>
+	  <td> <input class="fieldt" type="text" size="8" id="tau04" value="0.000"></td> 
+	  <td> <input type="checkbox" id="4" checked="checked"  onclick="change(this)">  </td> </tr>
+<tr> <td>05</td>
+     <td> <input class="fieldp" type="text" size="8" id="polarity05" value="0"> </td>
+	  <td> <input class="fieldo" type="text" size="8" id="offset05" value="0.000">  </td>
+     <td> <input class="fielda" type="text" size="8" id="again05" value="0.000"> </td>
+	  <td> <input class="fieldd" type="text" size="8" id="dgain05" value="0.000">  </td>
+	  <td> <input class="fieldt" type="text" size="8" id="tau05" value="0.000"></td> 
+	  <td> <input type="checkbox" id="5" checked="checked"  onclick="change(this)"> </td> </tr>
+<tr> <td>06</td>
+     <td> <input class="fieldp" type="text" size="8" id="polarity06" value="0"> </td>
+	  <td> <input class="fieldo" type="text" size="8" id="offset06" value="0.000">  </td>
+     <td> <input class="fielda" type="text" size="8" id="again06" value="0.000"> </td>
+	  <td> <input class="fieldd" type="text" size="8" id="dgain06" value="0.000">  </td>
+	  <td> <input class="fieldt" type="text" size="8" id="tau06" value="0.000"></td> 
+	  <td> <input type="checkbox" id="6" checked="checked"  onclick="change(this)"> </td> </tr>
+<tr> <td>07</td>
+     <td> <input class="fieldp" type="text" size="8" id="polarity07" value="0"> </td>
+	  <td> <input class="fieldo" type="text" size="8" id="offset07" value="0.000"> </td>
+     <td> <input class="fielda" type="text" size="8" id="again07" value="0.000"> </td>
+	  <td> <input class="fieldd" type="text" size="8" id="dgain07" value="0.000">  </td>
+	  <td> <input class="fieldt" type="text" size="8" id="tau07" value="0.000"></td>  
+	  <td> <input type="checkbox" id="7" checked="checked"  onclick="change(this)">  </td> </tr>
 
+ </table>
 
 
 
@@ -191,21 +242,50 @@ $(document).ready(function(){
 	 }
   );
 
+    function change(el) {
+     	g2.setVisibility(el.id, el.checked);
+	  }
 
+      var graphs = [ g2 ];
+      function showall(val) {
+         for (var idx = 0; idx < graphs.length; idx++) {	  
+            graphs[idx].updateOptions({ 	  visibility: [val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val] });
+         }
+		};
 
 
 </script>
 
 
 
- 
+    <p><b>Show More</b></p>
+    <p>
+		<input type="checkbox" id="8" checked="checked"  onclick="change(this)">
+      <label for="0"> adc08 </label>
+      <input type="checkbox" id="9" checked="checked" onclick="change(this)">
+      <label for="1"> adc09 </label>
+      <input type="checkbox" id="10" checked="checked" onclick="change(this)">
+      <label for="2"> adc10 </label>
+		<input type="checkbox" id="11" checked="checked" onclick="change(this)">
+      <label for="3"> adc11 </label><br>
 
+		<input type="checkbox" id="12" checked="checked"  onclick="change(this)">
+      <label for="0"> adc12 </label>
+      <input type="checkbox" id="13" checked="checked" onclick="change(this)">
+      <label for="1"> adc13 </label>
+      <input type="checkbox" id="14" checked="checked" onclick="change(this)">
+      <label for="2"> adc14 </label>
+		<input type="checkbox" id="15" checked="checked" onclick="change(this)">
+      <label for="3"> adc15 </label><br>
+    </p>
+
+
+ </div>
 
 
 <p>Double click to auto zoom </p>
 <p>Click and drag to zoom </p>
 <p>Alt click and drag to pan </p>
-<p>Use browser button to refresh </p>
 <p>Roughly 500 nanoseconds between samples </p>
 
 
