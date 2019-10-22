@@ -173,82 +173,79 @@ using namespace std;
 
 int main(void) {
 
-  int k;
-//  FILE * fil;
-//  char line[LINESZ];
-   
- 
-
-
-  // ************** XIA code begins **************************
-
+  // ************** XIA main code begins **************************
+    int k, ch;
     string line;
     string newline;
     string label, values;
     string strReplace = "MODULE_ID";
-    string strNew = "MODULE_ID       7758";
+    string strNew = "MODULE_ID       0";
     string remainder;
     int NCH=8;
     char * data;
     string val[NCH];
+    int equal;
 
 
 
-   data = getenv("QUERY_STRING");
-   
-   std::string webdata(data);
-   split_label_values( webdata, strReplace, remainder );      // extract label from webdata (break on =)
+   data = getenv("QUERY_STRING");                           // retrieve webpage arguments   
+   std::string webdata(data);                               // turn into string
+   split_label_values( webdata, strReplace, remainder );    // extract label from webdata (break on =)
 
 
-   //strNew = remainder;
+
+
    vector<string> fields;
-   split( fields, remainder, " \t,;=&" );    // divide along = and &
+   split( fields, remainder, " \t,;=&" );                   // divide remaning arguments along = and &
    
-   strNew = strReplace + "              ";       // rebuild value string line: label
-     
-   for(k=0;k<NCH;k++)                        //  values
+   equal = fields[0].compare("MODULE");                     // replacement string differs for single and multi value 
+ 
+ if(equal==0)                                                              
    {
-      strNew = strNew + "  "+  fields[2*k+2]  ;
-   }
-   
-   strNew = strNew + "  "; 
-   for(k=NCH;k<NCHANNELS;k++)                // fill up to max number of channels
-   {
-      strNew = strNew + "  "+  "1.6  "  ;
-   }
+       strNew = strReplace + "              ";                  // rebuild value string line: label  
+       strNew = strNew + "  "+ fields[2]  ;
+
+   } else {
+      strNew = strReplace + "              ";                  // rebuild value string line: label   
+      for(k=0;k<NCH;k++)                                       // rebuild value string line:  values
+         strNew = strNew + "  "+  fields[2*k+2]  ;
+      
+      strNew = strNew + "  "; 
+      for(k=NCH;k<NCHANNELS;k++)                               // fill up to max number of channels
+      {
+         ch = k % NCH;
+         strNew = strNew + "  "+  fields[2*ch+2]  ;            // duplicating values for unused channels
+      }
+    }
 
 
-
-   ifstream filein( "settings.ini");
-   ofstream fileout("settings.txt"); 
+   ifstream filein( "settings.ini");                        // open input file
+   ofstream fileout("settings.txt");                        // open output file
    if(!filein || !fileout)
     {
         cout << "Error opening files on server!" << endl;
         return -1;
     }
 
-    while( safe_get_line( filein, line, LINESZ ) )  // get lines
-    {
-    
-      split_label_values( line, label, values );      // extract label from line
+    while( safe_get_line( filein, line, LINESZ ) )          // get each line
+    {    
+      split_label_values( line, label, values );            // extract label from line
 
-       int equal;
-       equal = strReplace.compare(label);
-       
-       if(equal!=0)
-               newline = line;
-       else
-               newline = strNew;
-   
+      equal = strReplace.compare(label);                    // compare line label with webpage's label
+                                                            
+      if(equal!=0)
+          newline = line;                                   // if equal, replace
+      else
+          newline = strNew;
+                                                            
        newline += "\n";
-       fileout << newline;
+       fileout << newline;                                 // output to file
     }
 
     remove("settings.ini");
     rename("settings.txt","settings.ini");
 
     printf("Settings file sucessfully updated on server (Pixie-Net)");
-
 
 
  return 0;

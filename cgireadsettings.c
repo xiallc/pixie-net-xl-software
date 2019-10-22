@@ -51,8 +51,6 @@
 int main(void) {		 
 
   int ch;      // ch = abs ch. no; ch_k7 = ch. no in k7
-  unsigned int NCHANNELS_PRESENT;
-
 
    // **************** XIA code begins **********************
 
@@ -75,14 +73,10 @@ int main(void) {
     printf( "Failed to parse FPGA settings from %s, rval=%d\n", settings_file, rval );
     return rval;
   }
-
-
-  NCHANNELS_PRESENT =  fippiconfig.NUMBER_CHANNELS;
-
-
-  // open the output file
+  
+  // always report all 32 channels, even those ununsed
   printf("channel,polarity,offset,analog gain,digital gain,tau,\n");
-  for(ch=0;ch<NCHANNELS_PRESENT;ch++) 
+  for(ch=0;ch<NCHANNELS;ch++)                                           
       printf("%d,%d,%04f,%02f,%04f,%04f,\n",
          ch,
          ((fippiconfig.CHANNEL_CSRA[ch] & (1<<CCSRA_POLARITY))>0),
@@ -91,7 +85,21 @@ int main(void) {
          fippiconfig.DIG_GAIN[ch],
          fippiconfig.TAU[ch]
        ); 
- 
+    // report key module parameters in the end
+    printf("RUN_TYPE,0x%x,",fippiconfig.RUN_TYPE);
+    printf("REQ_RUNTIME,%d,",(int)fippiconfig.REQ_RUNTIME);
+    printf("UDP_OUTPUT,%d,",fippiconfig.UDP_OUTPUT);
+    printf("WR_RUNTIME_CTRL,%d,",fippiconfig.WR_RUNTIME_CTRL);
+    
+    
+   // REQ_RUNTIME,%d,\n", //UDP_OUTPUT,%d,\n", //WR_RUNTIME_CTRL,%d,\n",
+   //      fippiconfig.RUN_TYPE, 
+   //      fippiconfig.REQ_RUNTIME);
+       //  fippiconfig.UDP_OUTPUT
+        // (int)fippiconfig.WR_RUNTIME_CTRL);
+      //  );
+
+
  // clean up  
  return 0;
 }
