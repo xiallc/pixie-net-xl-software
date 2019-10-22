@@ -24,6 +24,8 @@
 <script>
 $(document).ready(function(){
 
+	// ------------- button control functions -----------------------
+
 	  $("#refresh").click(function(){		// function for  refresh button
 
 		  $.get("gettraces.cgi", function (data) {		  						//jQuery get function executes gettraces on Pixie-Net -> new ADC.csv
@@ -65,39 +67,81 @@ $(document).ready(function(){
 			  
 			   var dataarray = data.split(',');			  // "split" data string at commas
 				//alert("Data[0]:  " + dataarray[0]);
-	
-				$("#offset00").val(dataarray[5]);			// assign values to offset controls
-				$("#offset01").val(dataarray[9]);
-				$("#offset02").val(dataarray[13]);
-				$("#offset03").val(dataarray[17]);
-				$("#offset04").val(dataarray[21]);
-				$("#offset05").val(dataarray[25]);
-				$("#offset06").val(dataarray[29]);
-				$("#offset07").val(dataarray[33]);
 
-				$("#again00").val(dataarray[6]);			  	// assign values to analog gain controls
-				$("#again01").val(dataarray[10]);
-				$("#again02").val(dataarray[14]);
-				$("#again03").val(dataarray[18]);
-				$("#again04").val(dataarray[22]);
-				$("#again05").val(dataarray[26]);
-				$("#again06").val(dataarray[30]);
-				$("#again07").val(dataarray[34]);
+				$("#polarity00").val(dataarray[7]);			// assign values to polarity controls
+				$("#polarity01").val(dataarray[13]);
+				$("#polarity02").val(dataarray[19]);
+				$("#polarity03").val(dataarray[25]);
+				$("#polarity04").val(dataarray[31]);
+				$("#polarity05").val(dataarray[37]);
+				$("#polarity06").val(dataarray[43]);
+				$("#polarity07").val(dataarray[49]);
 
-				$("#tau00").val(dataarray[7]);				 // assign values to tau controls
-				$("#tau01").val(dataarray[11]);
-				$("#tau02").val(dataarray[15]);
-				$("#tau03").val(dataarray[19]);
-				$("#tau04").val(dataarray[23]);
-				$("#tau05").val(dataarray[27]);
-				$("#tau06").val(dataarray[31]);
-				$("#tau07").val(dataarray[35]);
+				$("#offset00").val(dataarray[8]);			// assign values to offset controls
+				$("#offset01").val(dataarray[14]);
+				$("#offset02").val(dataarray[20]);
+				$("#offset03").val(dataarray[26]);
+				$("#offset04").val(dataarray[32]);
+				$("#offset05").val(dataarray[38]);
+				$("#offset06").val(dataarray[44]);
+				$("#offset07").val(dataarray[50]);
+
+				$("#again00").val(dataarray[9]);			  	// assign values to analog gain controls
+				$("#again01").val(dataarray[15]);
+				$("#again02").val(dataarray[21]);
+				$("#again03").val(dataarray[27]);
+				$("#again04").val(dataarray[33]);
+				$("#again05").val(dataarray[39]);
+				$("#again06").val(dataarray[45]);
+				$("#again07").val(dataarray[51]);
+
+			   $("#dgain00").val(dataarray[10]);			  	// assign values to analog gain controls
+				$("#dgain01").val(dataarray[16]);
+				$("#dgain02").val(dataarray[22]);
+				$("#dgain03").val(dataarray[28]);
+				$("#dgain04").val(dataarray[34]);
+				$("#dgain05").val(dataarray[40]);
+				$("#dgain06").val(dataarray[46]);
+				$("#dgain07").val(dataarray[52]);
+
+				$("#tau00").val(dataarray[11]);				 // assign values to tau controls
+				$("#tau01").val(dataarray[17]);
+				$("#tau02").val(dataarray[23]);
+				$("#tau03").val(dataarray[29]);
+				$("#tau04").val(dataarray[35]);
+				$("#tau05").val(dataarray[41]);
+				$("#tau06").val(dataarray[47]);
+				$("#tau07").val(dataarray[53]);
 	
 			 })  // end get
 	  });		  // end button click read  settings
 
 
+  	// ------------- control field functions -----------------------
 
+
+    $(".fieldp").focus(function(){							 // change color of control field while editing
+    	$(this).css("background-color", "yellow");
+  	 });
+
+	 $(".fieldp").blur(function(){						   
+    	$(this).css("background-color", "white");		   // restore color of control field when done editing
+	
+		 $.get("cgiwritesettings.cgi", 					 //jQuery get function executes cgisettings on Pixie-Net -> return data is list of analog settings
+		 		 {CCSRA_POLARITY_05:"(name)", 
+				 		v0:$("#polarity00").val(), 
+						v1:$("#polarity01").val(),
+ 					   v2:$("#polarity02").val(),
+						v3:$("#polarity03").val(),
+						v4:$("#polarity04").val(),
+						v5:$("#polarity05").val(),
+						v6:$("#polarity06").val(),
+						v7:$("#polarity07").val()
+				  },
+			     function (data) {	   
+		  		alert(data);
+			 })  // end get
+  	 });  // end blur (deselect)
 
     $(".fieldo").focus(function(){							 // change color of control field while editing
     	$(this).css("background-color", "yellow");
@@ -122,7 +166,81 @@ $(document).ready(function(){
 			 })  // end get
   	 });  // end blur (deselect)
 
+    $(".fielda").focus(function(){							 // change color of control field while editing
+    	$(this).css("background-color", "yellow");
+  	 });
 
+	 $(".fielda").blur(function(){						   
+    	$(this).css("background-color", "white");		   // restore color of control field when done editing
+	
+		 $.get("cgiwritesettings.cgi", 					 //jQuery get function executes cgisettings on Pixie-Net -> return data is list of analog settings
+		 		 {ANALOG_GAIN:"(name)", 
+				 		v0:$("#again00").val(), 
+						v1:$("#again01").val(),
+ 					   v2:$("#again02").val(),
+						v3:$("#again03").val(),
+						v4:$("#again04").val(),
+						v5:$("#again05").val(),
+						v6:$("#again06").val(),
+						v7:$("#again07").val()
+				  },
+			     function (data) {	   
+		  		alert(data);
+			 })  // end get
+  	 });  // end blur (deselect)
+	 
+    $(".fieldd").focus(function(){							 // change color of control field while editing
+    	$(this).css("background-color", "yellow");
+  	 });
+
+	 $(".fieldd").blur(function(){						   
+    	$(this).css("background-color", "white");		   // restore color of control field when done editing
+	
+		 $.get("cgiwritesettings.cgi", 					 //jQuery get function executes cgisettings on Pixie-Net -> return data is list of analog settings
+		 		 {DIG_GAIN:"(name)", 
+				 		v0:$("#dgain00").val(), 
+						v1:$("#dgain01").val(),
+ 					   v2:$("#dgain02").val(),
+						v3:$("#dgain03").val(),
+						v4:$("#dgain04").val(),
+						v5:$("#dgain05").val(),
+						v6:$("#dgain06").val(),
+						v7:$("#dgain07").val()
+				  },
+			     function (data) {	   
+		  		alert(data);
+			 })  // end get
+  	 });  // end blur (deselect)
+
+    $(".fieldt").focus(function(){							 // change color of control field while editing
+    	$(this).css("background-color", "yellow");
+  	 });
+
+	 $(".fieldt").blur(function(){						   
+    	$(this).css("background-color", "white");		   // restore color of control field when done editing
+	
+		 $.get("cgiwritesettings.cgi", 					 //jQuery get function executes cgisettings on Pixie-Net -> return data is list of analog settings
+		 		 {TAU:"(name)", 
+				 		v0:$("#tau00").val(), 
+						v1:$("#tau01").val(),
+ 					   v2:$("#tau02").val(),
+						v3:$("#tau03").val(),
+						v4:$("#tau04").val(),
+						v5:$("#tau05").val(),
+						v6:$("#tau06").val(),
+						v7:$("#tau07").val()
+				  },
+			     function (data) {	   
+		  		alert(data);
+			 })  // end get
+  	 });  // end blur (deselect)
+
+   	// ------------- checkbox functions -----------------------
+
+	  $("#hide").click(function(){		// function for  checkbox  #  
+	//	 $("fieldo").hide();
+		 	alert("click");
+	  });		   // end checkbox click 
 
 
 
@@ -141,7 +259,7 @@ $(document).ready(function(){
  <div class="box">            
 <img src="Xia_LLC_web_header.jpg" width="500" height="80" border="0"></a>
 <p> </p>
-<p> <h1> Pixie-Net ADC Traces </h1></p>
+<p> <h1> Pixie-Net XL ADC Traces </h1></p>
 
 
 
@@ -152,9 +270,9 @@ $(document).ready(function(){
 
 <input id='read' type="button" value="Read Settings">
 <input id='apply' type="button" value="Apply (progfippi)">
-<input id='showall' type="button" value="Show All" onclick="showall(true)">
-<input id='showall' type="button" value="Hide All" onclick="showall(false)">
 <input id='refresh' type="button" value="Refresh Traces">
+<input id='hide' type="button" value="Hide">
+
  <p> </p>
 
 <table style="width:100%">
@@ -258,7 +376,7 @@ $(document).ready(function(){
 
 
 
-    <p><b>Show More</b></p>
+    <p><b>Show More</b> 
     <p>
 		<input type="checkbox" id="8" checked="checked"  onclick="change(this)">
       <label for="0"> adc08 </label>
@@ -278,6 +396,9 @@ $(document).ready(function(){
 		<input type="checkbox" id="15" checked="checked" onclick="change(this)">
       <label for="3"> adc15 </label><br>
     </p>
+	 	 <input id='showall' type="button" value="Show All" onclick="showall(true)">
+	 <input id='showall' type="button" value="Hide All" onclick="showall(false)"></p>
+
 
 
  </div>

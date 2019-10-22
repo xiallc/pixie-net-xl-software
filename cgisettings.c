@@ -81,16 +81,16 @@ int main(void) {
 
 
   // open the output file
-  printf("channel,offset,analog gain,tau,\n");
+  printf("channel,polarity,offset,analog gain,digital gain,tau,\n");
   for(ch=0;ch<NCHANNELS_PRESENT;ch++) 
-      printf("%d,%04f,%02f,%04f,\n",
+      printf("%d,%d,%04f,%02f,%04f,%04f,\n",
          ch,
+         ((fippiconfig.CHANNEL_CSRA[ch] & (1<<CCSRA_POLARITY))>0),
          fippiconfig.VOFFSET[ch],
          fippiconfig.ANALOG_GAIN[ch],
+         fippiconfig.DIG_GAIN[ch],
          fippiconfig.TAU[ch]
-       );
-
- 
+       ); 
  
  // clean up  
  return 0;
