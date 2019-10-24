@@ -94,7 +94,11 @@ int main(void) {
   unsigned int revsn, NCHANNELS_PER_K7, NCHANNELS_PRESENT;
   unsigned int ADC_CLK_MHZ, FILTER_CLOCK_MHZ; //  SYSTEM_CLOCK_MHZ,
   int k7, ch_k7, ch, chw;  // ch = abs ch. no; ch_k7 = ch. no in k7
-  unsigned int psa_base, psa_Q0, psa_Q1, psa_ampl, psa_R;  
+  unsigned int psa_base, psa_Q0, psa_Q1, psa_ampl, psa_R;
+  
+    int verbose = 1;      // TODO: control with argument to function 
+  // 0 print errors and minimal info only
+  // 1 print errors and full info
 
     // *************** PS/PL IO initialization *********************
   // open the device for PD register I/O
@@ -168,7 +172,7 @@ int main(void) {
     return rval;
   }
   const char *settings_file = "settings.ini";
-  rval = init_PixieNetFippiConfig_from_file( settings_file, 1, &fippiconfig );   // second override with user settings, do allow missing
+  rval = init_PixieNetFippiConfig_from_file( settings_file, 2, &fippiconfig );   // second override with user settings, do allow missing, don't print missing
   if( rval != 0 )
   {
     printf( "Failed to parse FPGA settings from %s, rval=%d\n", settings_file, rval );
@@ -187,7 +191,7 @@ int main(void) {
   if( (RunType==0x100) || (RunType==0x400) || (RunType==0x401) || (RunType==0x301)  ) {      // check run type
    // 0x100, 0x400, 0x401, 0x301 are ok
   } else {
-      printf( "This function only support runtypes 0x100 (P16), 0x400, 0x401, or 0x301 \n");
+      printf( "This function only supports runtypes 0x100 (P16), 0x400, 0x401, or 0x301 \n");
       return(-1);
   }
 
@@ -789,7 +793,7 @@ int main(void) {
             mapped[AMZ_DEVICESEL] = CS_MZ;
             tmp0 = mapped[AMZ_RS_TT+0];   // address offset by 1?
             tmp1 = mapped[AMZ_RS_TT+1];
-            printf("%s %4.5G \n","Total_Time",((double)tmp0*65536+(double)tmp1*TWOTO32)*1e-9);    
+             if(verbose) printf("%s %4.5G \n","Total_Time",((double)tmp0*65536+(double)tmp1*TWOTO32)*1e-9);    
            //  printf("%s %d %d \n","Total_Time",tmp0,tmp1);    
 
             // print (small) set of RS to file, visible to web
@@ -845,7 +849,7 @@ int main(void) {
       if(SLOWREAD)      tmp2 =  mapped[AMZ_EXDRD];
       WR_tm_tai = tmp0 +  65536*tmp1 + TWOTO32*tmp2;
 
-      printf( "Current WR time %llu\n",WR_tm_tai );
+      printf( "Run completed. Current WR time %llu\n",WR_tm_tai );
       
       
       /* end debug */

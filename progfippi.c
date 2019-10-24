@@ -66,7 +66,9 @@ int main(void) {
 
   // ******************* read ini file and fill struct with values ********************
 
-
+  int verbose = 0;      // TODO: control with argument to function 
+  // 0 print errors and minimal info only
+  // 1 print errors and full info
   
   PixieNetFippiConfig fippiconfig;		// struct holding the input parameters
   const char *defaults_file = "defaults.ini";
@@ -77,7 +79,7 @@ int main(void) {
     return rval;
   }
   const char *settings_file = "settings.ini";      // TODO restore to settings.ini
-  rval = init_PixieNetFippiConfig_from_file( settings_file, 1, &fippiconfig );   // second override with user settings, do allow missing
+  rval = init_PixieNetFippiConfig_from_file( settings_file, 2, &fippiconfig );   // second override with user settings, do allow missing, don't print missing
   if( rval != 0 )
   {
     printf( "Failed to parse FPGA settings from %s, rval=%d\n", settings_file, rval );
@@ -99,7 +101,6 @@ int main(void) {
   unsigned int ADC_CLK_MHZ, SYSTEM_CLOCK_MHZ, FILTER_CLOCK_MHZ;
   unsigned long long mac;
   unsigned int dip, sip;
-
 
 
   // *************** PS/PL IO initialization *********************
@@ -222,7 +223,7 @@ int main(void) {
     // WR Ethernet interface:
     // Not checking MAC and IP addresses (e.g. DEST_MAC0) for errors, but report for sanity check with hex numbers
     mac = fippiconfig.DEST_MAC1; 
-    printf( " DEST_MAC1 equal to %02llX:%02llX:%02llX:%02llX:%02llX:%02llX\n", 
+    if(verbose) printf( " DEST_MAC1 equal to %02llX:%02llX:%02llX:%02llX:%02llX:%02llX\n", 
             (mac>>40) &0xFF,
             (mac>>32) &0xFF,
             (mac>>24) &0xFF,
@@ -230,13 +231,13 @@ int main(void) {
             (mac>> 8) &0xFF,
             (mac    ) &0xFF) ;
     mac = fippiconfig.DEST_IP1; 
-    printf( " DEST_IP1 0x%08llX equal to %lld.%lld.%lld.%lld\n", mac,
+    if(verbose) printf( " DEST_IP1 0x%08llX equal to %lld.%lld.%lld.%lld\n", mac,
             (mac>>24) &0xFF,
             (mac>>16) &0xFF,
             (mac>> 8) &0xFF,
             (mac    ) &0xFF) ;
     mac = fippiconfig.SRC_IP0; 
-    printf( " SRC_IP1 0x%08llX equal to %lld.%lld.%lld.%lld\n",mac, 
+    if(verbose) printf( " SRC_IP1 0x%08llX equal to %lld.%lld.%lld.%lld\n",mac, 
             (mac>>24) &0xFF,
             (mac>>16) &0xFF,
             (mac>> 8) &0xFF,
@@ -1207,11 +1208,11 @@ int main(void) {
  
    // ADC board temperature
     printf("PXdesk board temperature: %d C \n",(int)board_temperature(mapped, I2C_SELMAIN) );
-    printf("DB0 board temperature: %d C \n",(int)board_temperature(mapped, I2C_SELDB0) );
-    printf("DB1 board temperature: %d C \n",(int)board_temperature(mapped, I2C_SELDB1) );
+    if(verbose) printf("DB0 board temperature: %d C \n",(int)board_temperature(mapped, I2C_SELDB0) );
+    if(verbose) printf("DB1 board temperature: %d C \n",(int)board_temperature(mapped, I2C_SELDB1) );
 
    // ***** ZYNQ temperature
-     printf("MZ Zynq temperature: %d C \n",(int)zynq_temperature() );
+    if(verbose) printf("MZ Zynq temperature: %d C \n",(int)zynq_temperature() );
 
    // ***** check HW info *********
    revsn = hwinfo(mapped,I2C_SELMAIN);
@@ -1219,10 +1220,10 @@ int main(void) {
 //   if(mval==0) printf("WARNING: HW may be incompatible with this SW/FW \n");
 
    revsn = hwinfo(mapped,I2C_SELDB0);
-   printf("DB0 Revision 0x%04X\n",(revsn>>16) & 0xFFFF);
+   if(verbose) printf("DB0 Revision 0x%04X\n",(revsn>>16) & 0xFFFF);
 
    revsn = hwinfo(mapped,I2C_SELDB1);
-   printf("DB1 Revision 0x%04X\n",(revsn>>16) & 0xFFFF);
+   if(verbose) printf("DB1 Revision 0x%04X\n",(revsn>>16) & 0xFFFF);
 
  
  // clean up  
