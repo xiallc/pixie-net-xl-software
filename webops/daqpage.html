@@ -3,7 +3,7 @@
 
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>Pixie-Net MCA</title>
+<title>Pixie-Net DAQ</title>
 
 <script type="text/javascript"  src="dygraph-combined.js"></script>
 <script src="jquery-3.4.1.min.js"></script>
@@ -19,6 +19,17 @@
 	td { font-size:12px }
 	a { color:#6060d0; text-decoration:none }
 	a:hover { text-decoration:underline }
+
+	#myProgress {
+	  width: 100%;
+	  background-color: #ddd;
+	}
+	
+	#myBar {
+	  width: 1%;
+	  height: 30px;
+	  background-color: royalblue;
+}
 </style>
 
 <script>
@@ -30,7 +41,7 @@ $(document).ready(function(){
 	  $("#apply").click(function(){		// function for  refresh button
 		  $("#apply").css("background-color", "lightgray");
 		  $("#read").css("background-color", "lightgray");
-		  $("#refresh").css("background-color", "lightgray");
+		  $("#start").css("background-color", "lightgray");
 		  $.get("progfippi.cgi", function (data) {	//jQuery get function executes progfippi on Pixie-Net -> settings file applied
 		  		alert(data);	    
 		 })  		// end get
@@ -51,27 +62,52 @@ $(document).ready(function(){
 			 })  // end get
 	  });		  // end button click read  settings
 
+	  $("#start").click(function(){		// function for  refresh button
+	  			move()
+	//  		alert("click");
+		  $.get("startdaq.cgi", function (data) {	//jQuery get function executes startdaq on Pixie-Net -> run in progress
+		  		alert(data);  	   
+		 })  		// end get
+	  });		   // end button click refresh
+
 
   	// ------------- control field functions -----------------------
 
 
-    $(".field").focus(function(){							 // change color of control field while editing
+    $("#runtime").focus(function(){							 // change color of control field while editing
     	$(this).css("background-color", "yellow");
 		$("#apply").css("background-color", "yellow");
   	 });
 
-	 $(".field").blur(function(){						   
+	 $("#runtime").blur(function(){						   
     	$(this).css("background-color", "white");		   // restore color of control field when done editing
 	
 		 $.get("cgiwritesettings.cgi", 					 //jQuery get function executes cgiwritesettings on Pixie-Net -> webpage values saved to ini file
-		 		 {OTHER:"(name)", 
-				 		v0:$("#runtime").val(), 
+		 		 {REQ_RUNTIME:"MODULE", 
+				 		v0:$("#runtime").val()
+				  },
+			     function (data) {	   
+		  		alert(data);
+			 })  // end get
+  	 });  // end blur (deselect)
+
+	  $("#runtype").focus(function(){							 // change color of control field while editing
+    	$(this).css("background-color", "yellow");
+		$("#apply").css("background-color", "yellow");
+  	 });
+
+	 $("#runtype").blur(function(){						   
+    	$(this).css("background-color", "white");		   // restore color of control field when done editing
+	
+		 $.get("cgiwritesettings.cgi", 					 //jQuery get function executes cgiwritesettings on Pixie-Net -> webpage values saved to ini file
+		 		 {RUN_TYPE:"MODULE", 
 						v1:$("#runtype").val()
 				  },
 			     function (data) {	   
 		  		alert(data);
 			 })  // end get
   	 });  // end blur (deselect)
+
 
 
 
@@ -92,8 +128,13 @@ $(document).ready(function(){
 <input id='read' type="button" value="Read Settings">
 <input id='apply' type="button" value="Apply (progfippi)">
 <input id='start' type="button" value="Start DAQ">
-
 <p> </p>
+
+<div id="myProgress">
+  <div id="myBar"> </div>
+</div>
+
+
 <table style="width:60%">
 
 <tr id=row00> 
@@ -114,6 +155,27 @@ $(document).ready(function(){
 
 
  </div>
+
+ <script>
+var i = 0;
+function move() {
+  if (i == 0) {
+    i = 1;
+    var elem = document.getElementById("myBar");
+    var width = 1;
+    var id = setInterval(frame, $("#runtime").val() * 10);
+    function frame() {
+      if (width >= 100) {
+        clearInterval(id);
+        i = 0;
+      } else {
+        width++;
+        elem.style.width = width + "%";
+      }
+    }
+  }
+}
+</script>
 
 
 </body>
