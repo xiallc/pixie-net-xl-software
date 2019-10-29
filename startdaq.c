@@ -213,7 +213,7 @@ int main(void) {
          if(BLavg[ch]>MAX_BLAVG)  BLavg[ch] = MAX_BLAVG;
          BLbad[ch] = MAX_BADBL;   // initialize to indicate no good BL found yet
          CCSRA[ch]       =  fippiconfig.CHANNEL_CSRA[ch]; 
-         TRACEENA[ch]    = ( CCSRA[ch] & (1<<CCSRA_TRACEENA)) >0; 
+         TRACEENA[ch]    = (( CCSRA[ch] & (1<<CCSRA_TRACEENA)) >0) && (RunType!=0x301) && (RunType!=0x401); 
          PILEUPCTRL[ch] =  ( CCSRA[ch] & (1<<CCSRA_PILEUPCTRL) ) >0;   // if bit set, only allow "single" non-piledup events
          Emin[ch]  = fippiconfig.EMIN[ch];  
          // printf( "Emin %d\n", Emin[ch]); 
@@ -536,7 +536,7 @@ int main(void) {
                  {    // either don't care  OR pilup test required and  pileup bit not set
                       //printf( "pileup test passed\n");
                      
-                      if( (TL[ch] >0) && TRACEENA[ch] && (RunType!=0x301) )     // check if TL >0 and traces are recorded (bit 8 of CCSRA), and not MCA only rubn
+                      if( (TL[ch] >0) && TRACEENA[ch] )     // check if TL >0 and traces are recorded (bit 8 of CCSRA)
                           tracewrite = 1;
                      else 
                           tracewrite = 0;                   
