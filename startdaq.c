@@ -536,7 +536,7 @@ int main(void) {
                  {    // either don't care  OR pilup test required and  pileup bit not set
                       //printf( "pileup test passed\n");
                      
-                      if( (TL[ch] >0) && TRACEENA[ch] )     // check if TL >0 and traces are recorded (bit 8 of CCSRA)
+                      if( (TL[ch] >0) && TRACEENA[ch] && (RunType!=0x301) )     // check if TL >0 and traces are recorded (bit 8 of CCSRA), and not MCA only rubn
                           tracewrite = 1;
                      else 
                           tracewrite = 0;                   
@@ -625,6 +625,10 @@ int main(void) {
                               wf[k] = w0+(w1<<16);   // re-order 2 sample words from 32bit FIFO      
                 //            if(k==0)  printf("addr %d data %d \n",w1,w0);   
                           }  // end trace length   
+                        } else {
+                          //  advance trace memory address
+                           mapped[AMZ_EXAFRD] = AK7_NEXTEVENT;             // select the "nextevent" address in channel's page
+                           out7 = mapped[AMZ_EXDWR];     // any write ok
                         }   // end trace read or not
       
 
