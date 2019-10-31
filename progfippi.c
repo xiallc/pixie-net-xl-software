@@ -87,7 +87,7 @@ int main(void) {
   }
   
 
-  unsigned int mval, dac, reglo, reghi;
+  unsigned int mval, dac, reglo, reghi,traceena;
   unsigned int CW, SFR, FFR, SL[NCHANNELS], SG[NCHANNELS], FL[NCHANNELS], FG[NCHANNELS], TH[NCHANNELS];
   unsigned int PSAM, TL[NCHANNELS], TD[NCHANNELS], SAVER0[NCHANNELS];
   unsigned int i2cdata[8];
@@ -220,6 +220,16 @@ int main(void) {
       return -900;
     }
 
+    //  UDP_OUTPUT:
+    if(fippiconfig.UDP_OUTPUT > 1) {
+      printf("Invalid UDP_OUTPUT = 0x%x\n",fippiconfig.UDP_OUTPUT);
+      return -900;
+    }
+    if( (fippiconfig.UDP_OUTPUT == 1) && (fippiconfig.RUN_TYPE != 0x100) ) {
+      printf("Invalid UDP_OUTPUT = 0x%x: UDP_OUTPUT only supported for runtype 0x100 at this time\n",fippiconfig.UDP_OUTPUT);
+      return -900;
+    }
+
     // WR Ethernet interface:
     // Not checking MAC and IP addresses (e.g. DEST_MAC0) for errors, but report for sanity check with hex numbers
     mac = fippiconfig.DEST_MAC1; 
@@ -266,6 +276,12 @@ int main(void) {
       printf("Invalid RUN_TYPE = 0x%x, please check manual for a list of supported run types\n",fippiconfig.RUN_TYPE);
       return -1200;
     }
+    // remember to turn off trace capture for no-trace runtypes
+    if( (fippiconfig.RUN_TYPE == 0x301)  || (fippiconfig.RUN_TYPE == 0x401) )
+      traceena = 0;
+    else
+      traceena = 1;
+
 
     //MAX_EVENTS      -- not written to FPGA registers
     if(fippiconfig.MAX_EVENTS > 65535) {
@@ -384,9 +400,8 @@ int main(void) {
 
       // waveforms
       TL[ch] = MULT_TL*(int)floor(fippiconfig.TRACE_LENGTH[ch]*ADC_CLK_MHZ/MULT_TL/(1<<FFR) );       // multiply time in us *  # ticks per us = time in ticks; multiple of MULT_TL
-      if( (TL[ch] > MAX_TL) | (TL[ch] < MULT_TL) )  { //|| TL[ch] < TRACELEN_MIN_250OR100MHZADC)  {
+      if( (TL[ch] > MAX_TL) | (TL[ch] < MULT_TL) )  { 
          printf("Invalid TRACE_LENGTH = %f, must be between %f and %f us\n",fippiconfig.TRACE_LENGTH[ch],(double)MULT_TL/ADC_CLK_MHZ,(double)MAX_TL/ADC_CLK_MHZ);
-        // printf("Invalid TRACE_LENGTH = %f, must be between %f and %f us\n",fippiconfig.TRACE_LENGTH[ch],(double)TRACELEN_MIN_250OR100MHZADC/ADC_CLK_MHZ,(double)MAX_TL/ADC_CLK_MHZ);
          return -4000-ch;
          // Note: enfore TL >32 which is the minimum for 0x400 if traces are recorded. For no trace, use CCSRA bit to disable trace
       }
@@ -777,8 +792,8 @@ int main(void) {
          
          // package
          reglo = 4096 - (int)(fippiconfig.CHANTRIG_STRETCH[ch]*FILTER_CLOCK_MHZ);               //  ChanTrigStretch goes into [11:0] of FipReg2   // in us
-         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_FTRIGSEL,   SelExtFastTrig   );     
-         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_TRACEENA,    13   );     
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_FTRIGSEL,   SelExtFastTrig   );    
+         if(traceena) reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_TRACEENA,    13   );   // add trace enable bit only in run types with trace capture  
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_CFDMODE,     15   );   
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_QDCENA,      14   );  
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_GLOBTRIG,    16   );     
