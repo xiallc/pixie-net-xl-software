@@ -526,6 +526,7 @@ int main(void) {
                      // compute and histogram E
                      ph = C1[ch]*(double)lsum+Cg[ch]*(double)gsum+C0[ch]*(double)tsum;
                      //printf("ph %f, BLavg %f, E %f\n",ph,baseline[ch], ph-baseline[ch]);
+                     printf("lsum %d, tsum %d gsum %d; E (ph) ARM FPGA %f   ",lsum, tsum, gsum, ph);
                      ph = ph-baseline[ch];
                      if ((ph<0.0)|| (ph>65536.0))	ph =0.0;	// out of range energies -> 0
                      energy = (int)floor(ph);
@@ -598,7 +599,7 @@ int main(void) {
                           }  // end trace length   
                         }   // end if trace enabled
       
-
+                        printf(" %d \n",hdr[6]); 
                         // now store list mode data
                         timeL   =  hdr[2]     + (hdr[3]<<16);
                         timeH   =  hdr[4];
@@ -787,8 +788,8 @@ int main(void) {
 
          loopcount ++;
          currenttime = time(NULL);
-      } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-   //   } while (eventcount <= 3); // run for a fixed number of events   
+   //   } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
+      } while (eventcount <= 8); // run for a fixed number of events   
 
 
 

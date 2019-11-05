@@ -915,7 +915,53 @@ int main(void) {
          mapped[AMZ_EXAFWR] = AK7_P16REG17+2;               // write to  k7's addr to select channel's register N+2    
          mapped[AMZ_EXDWR]  = reghi & 0xFFFF;               // write next 16 bit                                       
          mapped[AMZ_EXAFWR] = AK7_P16REG17+3;               // write to  k7's addr to select channel's register N+3    
-         mapped[AMZ_EXDWR]  = reghi >> 16;                  // write highest 16 bit                                    
+         mapped[AMZ_EXDWR]  = reghi >> 16;                  // write highest 16 bit          
+         
+         
+        // ......... Ecomp Regs  ....................... 
+
+      // Compute Coefficients for E Computation  
+      double C0, C1, Cg;
+      double dt, elm, q;
+      dt  = 1.0/FILTER_CLOCK_MHZ;
+      q   = exp(-1.0*dt/fippiconfig.TAU[ch]);
+      elm = exp(-1.0*dt*SL[ch]/fippiconfig.TAU[ch]);
+      C0  = (q-1.0)*elm/(1.0-elm);
+      Cg  = 1.0-q;
+      C1  = (1.0-q)/(1.0-elm);
+      if(ch==10) printf("E coefs ch %d:  %f  %f   %f\n", ch, C0, Cg, C1);    
+      
+      C0 = C0 * fippiconfig.DIG_GAIN[ch];   // multiply with digital gain 
+      Cg = Cg * fippiconfig.DIG_GAIN[ch];
+      C1 = C1 * fippiconfig.DIG_GAIN[ch];
+
+      C0 = 0;   // multiply with digital gain 
+      Cg = 0;
+      C1 = 0.01;
+
+      C0 = C0 * 67108864 * (-1.0);    // upshift (*2^26) to have sufficient digits for integer representation [and make positive for FPGA]
+      Cg = Cg * 67108864;
+      C1 = C1 * 67108864;
+
+      // now write 
+      reglo = (int)floor(C1);
+      mapped[AMZ_EXAFWR] = AK7_P16REG_C0+0;               // write to  k7's addr to select channel's register N      
+      mapped[AMZ_EXDWR]  = reglo & 0xFFFF;                // write lower 16 bit                                      
+      mapped[AMZ_EXAFWR] = AK7_P16REG_C0+1;               // write to  k7's addr to select channel's register N+1    
+      mapped[AMZ_EXDWR]  = reglo >> 16;                   // write next 16 bit                                       
+
+      reglo = (int)floor(Cg);
+      mapped[AMZ_EXAFWR] = AK7_P16REG_CG+0;               // write to  k7's addr to select channel's register N      
+      mapped[AMZ_EXDWR]  = reglo & 0xFFFF;                // write lower 16 bit                                      
+      mapped[AMZ_EXAFWR] = AK7_P16REG_CG+1;               // write to  k7's addr to select channel's register N+1    
+      mapped[AMZ_EXDWR]  = reglo >> 16;                   // write next 16 bit                                       
+
+      reglo = (int)floor(C0);
+      mapped[AMZ_EXAFWR] = AK7_P16REG_C1+0;               // write to  k7's addr to select channel's register N      
+      mapped[AMZ_EXDWR]  = reglo & 0xFFFF;                // write lower 16 bit                                      
+      mapped[AMZ_EXAFWR] = AK7_P16REG_C1+1;               // write to  k7's addr to select channel's register N+1    
+      mapped[AMZ_EXDWR]  = reglo >> 16;                   // write next 16 bit                                       
+
          
       }  // end for NCHANNEL_PER_K7
 

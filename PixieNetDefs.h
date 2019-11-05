@@ -262,6 +262,9 @@
 #define AK7_P16REG07          0x56
 #define AK7_P16REG13          0x5A
 #define AK7_P16REG17          0x5C
+#define AK7_P16REG_C0         0x62
+#define AK7_P16REG_CG         0x64
+#define AK7_P16REG_C1         0x66
 
 #define AK7_CSROUT            0x80
 #define AK7_SYSSYTATUS        0x81
