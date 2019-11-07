@@ -234,7 +234,10 @@ int main(void) {
       Cg[k] = 1.0-q;
       C1[k] = (1.0-q)/(1.0-elm);
      // printf("E coefs ch %d:  %f  %f   %f\n", k, C0[k], Cg[k], C1[k]);    
-      
+  //    if(k==10) printf("dt %f, q %f, elm %f\n", dt, q ,elm);    
+  //   if(k==10) printf("E coefs ch %d: C0 %f Cg %f C1  %f\n", ch, C0, Cg, C1);    
+
+ 
       C0[k] = C0[k] * Dgain[k];
       Cg[k] = Cg[k] * Dgain[k];
       C1[k] = C1[k] * Dgain[k];
@@ -526,7 +529,13 @@ int main(void) {
                      // compute and histogram E
                      ph = C1[ch]*(double)lsum+Cg[ch]*(double)gsum+C0[ch]*(double)tsum;
                      //printf("ph %f, BLavg %f, E %f\n",ph,baseline[ch], ph-baseline[ch]);
-                     printf("lsum %d, tsum %d gsum %d; E (ph) ARM FPGA %f   ",lsum, tsum, gsum, ph);
+              //       printf("lsum    %d, tsum     %d, gsum    %d\n",lsum, tsum, gsum);
+              //       printf("c1      %f, c0       %f, cg      %f\n",C1[ch], C0[ch], Cg[ch]);
+              //       printf("c1      %f, c0       %f, cg      %f\n",C1[ch]* 67108864, C0[ch]* 67108864 *(-1.0), Cg[ch]* 67108864);
+              //       printf("lsum*c1 %f, tsum*c0  %f, gsum*cg %f\n",lsum*C1[ch], tsum*C0[ch], gsum*Cg[ch]);
+                     printf("wsum ARM %f, ",ph);
+                     //printf("lsum %d, tsum %d gsum %d; E (ph) ARM FPGA %f   ",lsum, tsum, gsum, ph);
+
                      ph = ph-baseline[ch];
                      if ((ph<0.0)|| (ph>65536.0))	ph =0.0;	// out of range energies -> 0
                      energy = (int)floor(ph);
@@ -599,7 +608,7 @@ int main(void) {
                           }  // end trace length   
                         }   // end if trace enabled
       
-                        printf(" %d \n",hdr[6]); 
+                        printf("wsum FPGA %d \n",hdr[6]); 
                         // now store list mode data
                         timeL   =  hdr[2]     + (hdr[3]<<16);
                         timeH   =  hdr[4];
@@ -789,7 +798,7 @@ int main(void) {
          loopcount ++;
          currenttime = time(NULL);
    //   } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-      } while (eventcount <= 8); // run for a fixed number of events   
+      } while (eventcount <= 20); // run for a fixed number of events   
 
 
 
