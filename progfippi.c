@@ -944,7 +944,7 @@ int main(void) {
   //     C0 = 17;    
   //    Cg = 18;
   //    C1 = 19;
-      if(ch==10) printf("E coefs scaled ch %d: C0  %u Cg %u C1  %u\n", ch, (int)floor(C0), (int)floor(Cg), (int)floor(C1) );    
+  //    if(ch==10) printf("E coefs scaled ch %d: C0  %u Cg %u C1  %u\n", ch, (int)floor(C0), (int)floor(Cg), (int)floor(C1) );    
 
 
       // now write 

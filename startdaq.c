@@ -80,7 +80,7 @@ int main(void) {
   unsigned int hdr[32];
   unsigned int out0, out2, out3, out7, pileup, exttsL, exttsH;
   unsigned int evstats, R1, timeL, timeH, hit;
-  unsigned int lsum, tsum, gsum, energy, bin; 
+  unsigned int lsum, tsum, gsum, wsum, energy, energyF, bin; 
   unsigned int mca[NCHANNELS][MAX_MCA_BINS] ={{0}};    // full MCA for end of run
   unsigned int wmca[NCHANNELS][WEB_MCA_BINS] ={{0}};    // smaller MCA during run
   unsigned int wf[MAX_TL/2];    // two 16bit values per word
@@ -99,6 +99,9 @@ int main(void) {
     int verbose = 1;      // TODO: control with argument to function 
   // 0 print errors and minimal info only
   // 1 print errors and full info
+
+    int useWsum;
+    int useFWE; 
 
     // *************** PS/PL IO initialization *********************
   // open the device for PD register I/O
@@ -183,6 +186,11 @@ int main(void) {
   ReqRunTime   = fippiconfig.REQ_RUNTIME;
   PollTime     = fippiconfig.POLL_TIME;
 
+  useWsum = ((fippiconfig.C_CONTROL & 0x00000001) == 1);   // if 0, use weighted sum for E, BL computation, else classic 3 sums and multiply
+  useFWE  = ((fippiconfig.C_CONTROL & 0x00000002) == 2);   // if 1, use full E computed by FPGA, incl BLcut/avg, else locally compute BLavg  and cmbine with E sums. 
+  printf( "useWsum = %d, useFWE = %d \n", useWsum, useFWE);
+
+
   if( (RunType==0x100) || (RunType==0x400) || (RunType==0x401) || (RunType==0x301)  ) {      // check run type
    // 0x100, 0x400, 0x401, 0x301 are ok
   } else {
@@ -234,9 +242,6 @@ int main(void) {
       Cg[k] = 1.0-q;
       C1[k] = (1.0-q)/(1.0-elm);
      // printf("E coefs ch %d:  %f  %f   %f\n", k, C0[k], Cg[k], C1[k]);    
-  //    if(k==10) printf("dt %f, q %f, elm %f\n", dt, q ,elm);    
-  //   if(k==10) printf("E coefs ch %d: C0 %f Cg %f C1  %f\n", ch, C0, Cg, C1);    
-
  
       C0[k] = C0[k] * Dgain[k];
       Cg[k] = Cg[k] * Dgain[k];
@@ -376,77 +381,95 @@ int main(void) {
     
       //----------- Periodically read BL and update average -----------
       // this will be moved into the FPGA soon
-      if(loopcount % BLREADPERIOD == 0) {  //|| (loopcount ==0) ) {     // sometimes 0 mod N not zero and first few events have wrong E? watch
-         for(k7=0;k7<N_K7_FPGAS;k7++)
-         {
-            mapped[AMZ_DEVICESEL] =  cs[k7];	            // select FPGA 
-  
-            for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++) {
-
-               ch = ch_k7+k7*NCHANNELS_PER_K7;
-
-               if( (GoodChanMASK[k7] & (1<<ch_k7)) >0 ) {
-               
-                  // read raw BL sums 
-                  mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
-                  mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
-      
-                  mapped[AMZ_EXAFRD] = AK7_BLLOCK;    // read from 0xD4 to lock BL registers (no data)
-                  tmp0 = mapped[AMZ_EXDRD];
-      
-                  mapped[AMZ_EXAFRD] = AK7_BLSTART+0;        // lsum low 16 bit
-                  tmp0 =  mapped[AMZ_EXDRD];
-                  if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
-                  mapped[AMZ_EXAFRD] = AK7_BLSTART+1;        // lsum high 16 bit
-                  tmp1 =  mapped[AMZ_EXDRD];
-                  if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
-                  lsum = tmp0 + (tmp1<<16); 
-      
-                  mapped[AMZ_EXAFRD] = AK7_BLSTART+2;        // tsum low 16 bit
-                  tmp0 =  mapped[AMZ_EXDRD];
-                  if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
-                  mapped[AMZ_EXAFRD] = AK7_BLSTART+3;        // tsum high 16 bit
-                  tmp1 =  mapped[AMZ_EXDRD];
-                  if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
-                  tsum = tmp0 + (tmp1<<16); 
-      
-                  mapped[AMZ_EXAFRD] = AK7_BLSTART+6;        // gsum low 16 bit
-                  tmp0 =  mapped[AMZ_EXDRD];
-                  if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
-                  mapped[AMZ_EXAFRD] = AK7_BLSTART+7;        // gsum high 16 bit, unlock
-                  tmp1 =  mapped[AMZ_EXDRD];
-                  if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
-                  gsum = tmp0 + (tmp1<<16); 
-      
-                  if (tsum>0 && ((tsum&0x80000000)==0) )		// tum=0 or high bit set indicates bad baseline
-                  {
-                    ph = C1[ch]*lsum+Cg[ch]*gsum+C0[ch]*tsum;
-                    //if (ch==0) printf("ph %f, BLcut %d, BLavg %d, baseline %f\n",ph,BLcut[ch],BLavg[ch],baseline[ch] );
-                    if( (BLcut[ch]==0) || (abs(ph-baseline[ch])<BLcut[ch]) || (BLbad[ch] >=MAX_BADBL) )       // only accept "good" baselines < BLcut, or if too many bad in a row (to start over)
-                    {
-                        if( (BLavg[ch]==0) || (BLbad[ch] >=MAX_BADBL) )
-                        {
-                            baseline[ch] = ph;
-                            BLbad[ch] = 0;
+      if(useFWE==0) {
+         if(loopcount % BLREADPERIOD == 0) {  //|| (loopcount ==0) ) {     // sometimes 0 mod N not zero and first few events have wrong E? watch
+            for(k7=0;k7<N_K7_FPGAS;k7++)
+            {
+               mapped[AMZ_DEVICESEL] =  cs[k7];	            // select FPGA 
+     
+               for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++) {
+   
+                  ch = ch_k7+k7*NCHANNELS_PER_K7;
+   
+                  if( (GoodChanMASK[k7] & (1<<ch_k7)) >0 ) {
+                  
+                     // read raw BL sums 
+                     mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
+                     mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
+         
+                     mapped[AMZ_EXAFRD] = AK7_BLLOCK;    // read from 0xD4 to lock BL registers (no data)
+                     tmp0 = mapped[AMZ_EXDRD];
+         
+                      if(useWsum==0) {       // full BL read
+                        mapped[AMZ_EXAFRD] = AK7_BLSTART+0;        // lsum low 16 bit
+                        tmp0 =  mapped[AMZ_EXDRD];
+                        if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
+                        mapped[AMZ_EXAFRD] = AK7_BLSTART+1;        // lsum high 16 bit
+                        tmp1 =  mapped[AMZ_EXDRD];
+                        if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
+                        lsum = tmp0 + (tmp1<<16); 
+            
+                        mapped[AMZ_EXAFRD] = AK7_BLSTART+2;        // tsum low 16 bit
+                        tmp0 =  mapped[AMZ_EXDRD];
+                        if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
+                        mapped[AMZ_EXAFRD] = AK7_BLSTART+3;        // tsum high 16 bit
+                        tmp1 =  mapped[AMZ_EXDRD];
+                        if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
+                        tsum = tmp0 + (tmp1<<16); 
+            
+                        mapped[AMZ_EXAFRD] = AK7_BLSTART+6;        // gsum low 16 bit
+                        tmp0 =  mapped[AMZ_EXDRD];
+                        if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
+                        mapped[AMZ_EXAFRD] = AK7_BLSTART+7;        // gsum high 16 bit, unlock
+                        tmp1 =  mapped[AMZ_EXDRD];
+                        if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
+                        gsum = tmp0 + (tmp1<<16); 
+   
+                        ph = C1[ch]*lsum+Cg[ch]*gsum+C0[ch]*tsum;
+                     } else {   // combined BL read
+                        mapped[AMZ_EXAFRD] = AK7_BLSTART+4;        // wsum low 16 bit
+                        tmp0 =  mapped[AMZ_EXDRD];
+                        if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
+                        mapped[AMZ_EXAFRD] = AK7_BLSTART+5;        // wsum high 16 bit
+                        tmp1 =  mapped[AMZ_EXDRD];
+                        if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
+                        wsum = tmp0 + (tmp1<<16);      
+                        
+                        mapped[AMZ_EXAFRD] = AK7_BLSTART+7;        // gsum high 16 bit, unlock
+                        tmp1 =  mapped[AMZ_EXDRD];
+   
+                        ph = (double)wsum;
+                        tsum = wsum;                  // for bad BL test below
+                     }
+         
+                     if (tsum>0 && ((tsum&0x80000000)==0) )		// tum=0 or high bit set indicates bad baseline
+                     {
+                     //  ph = C1[ch]*lsum+Cg[ch]*gsum+C0[ch]*tsum;
+                     //  if (ch==10) printf("BL wsum ARM %f FPGA %d\n ",ph, wsum);
+                     //  ph = (double)wsum;
+                       //if (ch==0) printf("ph %f, BLcut %d, BLavg %d, baseline %f\n",ph,BLcut[ch],BLavg[ch],baseline[ch] );
+                       if( (BLcut[ch]==0) || (abs(ph-baseline[ch])<BLcut[ch]) || (BLbad[ch] >=MAX_BADBL) )       // only accept "good" baselines < BLcut, or if too many bad in a row (to start over)
+                       {
+                           if( (BLavg[ch]==0) || (BLbad[ch] >=MAX_BADBL) )
+                           {
+                               baseline[ch] = ph;
+                               BLbad[ch] = 0;
+                           } else {
+                               // BL average: // avg = old avg + (new meas - old avg)/2^BLavg
+                               baseline[ch] = baseline[ch] + (ph-baseline[ch])/(1<<BLavg[ch]);
+                               BLbad[ch] = 0;
+                               
+   
+                           } // end BL avg
                         } else {
-                            // BL average: // avg = old avg + (new meas - old avg)/2^BLavg
-                            baseline[ch] = baseline[ch] + (ph-baseline[ch])/(1<<BLavg[ch]);
-                            BLbad[ch] = 0;
-                            
-
-                        } // end BL avg
-                     } else {
-                        BLbad[ch] = BLbad[ch]+1;
-                    }     // end BLcut check
-                                     
-                    ph = C1[ch]*lsum+Cg[ch]*gsum+C0[ch]*tsum;
-                    //if (ch==0) printf("ph %f, BLcut %d, BLavg %d, baseline %f\n",ph,BLcut[ch],BLavg[ch],baseline[ch] );
-
-                  }       // end tsum >0 check
-               }        // end if good channel
-            }          // end for channels
-         }             // end for K7s
-      }             // end periodicity check
+                           BLbad[ch] = BLbad[ch]+1;
+                       }     // end BLcut check                                     
+                     }       // end tsum >0 check
+                  }        // end if good channel
+               }          // end for channels
+            }             // end for K7s
+         }             // end periodicity check
+       } // end use FW E comp 
          
       
       // -----------poll for events -----------
@@ -509,6 +532,7 @@ int main(void) {
                      printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
               */                       
                      timeL   =  hdr[6]     + (hdr[7]<<16); 
+                     wsum    =  hdr[6]                   ;
                      tsum    =  hdr[0]     + (hdr[1]<<16);
                      lsum    =  hdr[2]     + (hdr[3]<<16);
                      gsum    =  hdr[4]     + (hdr[5]<<16);
@@ -527,29 +551,24 @@ int main(void) {
                       //printf( "pileup test passed, start computing E\n");              
 
                      // compute and histogram E
-                     ph = C1[ch]*(double)lsum+Cg[ch]*(double)gsum+C0[ch]*(double)tsum;
+                     if(useWsum==0)
+                        ph = C1[ch]*(double)lsum+Cg[ch]*(double)gsum+C0[ch]*(double)tsum;
+                     else
+                        ph = (double)wsum;
                      //printf("ph %f, BLavg %f, E %f\n",ph,baseline[ch], ph-baseline[ch]);
-              //       printf("lsum    %d, tsum     %d, gsum    %d\n",lsum, tsum, gsum);
-              //       printf("c1      %f, c0       %f, cg      %f\n",C1[ch], C0[ch], Cg[ch]);
-              //       printf("c1      %f, c0       %f, cg      %f\n",C1[ch]* 67108864, C0[ch]* 67108864 *(-1.0), Cg[ch]* 67108864);
-              //       printf("lsum*c1 %f, tsum*c0  %f, gsum*cg %f\n",lsum*C1[ch], tsum*C0[ch], gsum*Cg[ch]);
-                     printf("wsum ARM %f, ",ph);
+                     //printf("lsum    %d, tsum     %d, gsum    %d\n",lsum, tsum, gsum);
+                     //printf("c1      %f, c0       %f, cg      %f\n",C1[ch], C0[ch], Cg[ch]);
+                     //printf("c1      %f, c0       %f, cg      %f\n",C1[ch]* 67108864, C0[ch]* 67108864 *(-1.0), Cg[ch]* 67108864);
+                     //printf("lsum*c1 %f, tsum*c0  %f, gsum*cg %f\n",lsum*C1[ch], tsum*C0[ch], gsum*Cg[ch]);
+                 //    printf("ch %d: Energy wsum ARM %f FPGA %d \n ",ch, ph, wsum);
                      //printf("lsum %d, tsum %d gsum %d; E (ph) ARM FPGA %f   ",lsum, tsum, gsum, ph);
 
-                     ph = ph-baseline[ch];
+                     ph = (double)ph-baseline[ch];  // ph = ph-baseline[ch];
                      if ((ph<0.0)|| (ph>65536.0))	ph =0.0;	// out of range energies -> 0
                      energy = (int)floor(ph);
+                  //   printf("ch %d: Energy ph ARM %d ",ch, energy);
                      //if ((hit & (1<< HIT_LOCALHIT))==0)	  	energy =0;	   // not a local hit -> 0
-   
-                     //if(eventcount<4)   printf( "now incrementing MCA, E = %d\n", energy); 
-                     //  histogramming if E< max mcabin
-                     bin = energy >> Binfactor[ch];
-                     if( (bin<MAX_MCA_BINS) && (bin>0) ) {
-                        mca[ch][bin] =  mca[ch][bin] + 1;	// increment mca
-                        bin = bin >> WEB_LOGEBIN;
-                        if(bin>0) wmca[ch][bin] = wmca[ch][bin] + 1;	// increment wmca
-                     }
-                  
+                    
                      // cfd needs some more computation
                      cfdout2 = 0x1000000 - cfdout2;   // convert to positive
                      ph = (double)cfdout1 / ( (double)cfdout1 + (double)cfdout2 );              
@@ -567,17 +586,19 @@ int main(void) {
 
                      // at this point, key data of event is known. Now can
                      // [optional] send it to DM for further decision making (to be implemented), then
-                     //  initiate Ethernet data output of full event data
+                     //  initiate Ethernet data output of full event data  
                      //           OR
-                     // save to local storage
+                     // save to local storage    
 
                      if(fippiconfig.UDP_OUTPUT==1)             // Ethernet storage 
                      {
                         mapped[AMZ_EXAFWR] = AK7_PAGE;         // specify   K7's addr:    PAGE register
                         mapped[AMZ_EXDWR]  = PAGE_SYS;         //  PAGE 0: system, page 0x10n = channel n
-                        
-                        mapped[AMZ_EXAFWR] =  AK7_ETH_ENERGY;  // specify   K7's addr:    energy for Eth data packet
-                        mapped[AMZ_EXDWR]  =  energy;
+                     
+                        if(useFWE==0) {    // only overwrite FPGA's energy if local computation is preferred
+                           mapped[AMZ_EXAFWR] =  AK7_ETH_ENERGY;  // specify   K7's addr:    energy for Eth data packet
+                           mapped[AMZ_EXDWR]  =  energy;
+                        }
                         mapped[AMZ_EXAFWR] =  AK7_ETH_CFD;     // specify   K7's addr:    cfd for Eth data packet
                         mapped[AMZ_EXDWR]  =  cfd;
                         mapped[AMZ_EXAFWR] =  AK7_ETH_CTRL;    // specify   K7's addr:    Ethernet output control register
@@ -604,17 +625,19 @@ int main(void) {
                               w1 = mapped[AMZ_EXDRD];      // read 16 bits  , increments trace memory address
                               if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
                               wf[k] = w0+(w1<<16);   // re-order 2 sample words from 32bit FIFO      
-                //            if(k==0)  printf("addr %d data %d \n",w1,w0);   
                           }  // end trace length   
                         }   // end if trace enabled
       
-                        printf("wsum FPGA %d \n",hdr[6]); 
                         // now store list mode data
                         timeL   =  hdr[2]     + (hdr[3]<<16);
                         timeH   =  hdr[4];
+                        energyF =  hdr[6];
                         out7    =  0;           // baseline placeholder, float actually
                         exttsL  =  hdr[16]    + (hdr[17]<<16);
                         exttsH  =  hdr[18];
+
+                        if(useFWE==1)  energy = energyF;   // overwrite local computation with FPGA result
+                //      printf("Energy ph FPGA %d \n\n",hdr[6]);
 
                         // compute PSA results from raw data
                         // need to subtract baseline in correct scale (1/4) and length (QDC#_LENGTH[ch])
@@ -728,6 +751,23 @@ int main(void) {
                         }    // 0x401
 
                      } //eth/local storage
+
+                     //if(eventcount<4)   printf( "now incrementing MCA, E = %d\n", energy); 
+                     //  histogramming if E< max mcabin
+                     bin = energy >> Binfactor[ch];
+                     if( (bin<MAX_MCA_BINS) && (bin>0) ) {
+                        mca[ch][bin] =  mca[ch][bin] + 1;	// increment mca
+                        bin = bin >> WEB_LOGEBIN;
+                        if(bin>0) wmca[ch][bin] = wmca[ch][bin] + 1;	// increment wmca
+                     }
+
+                     //debug - 2nd MCA in next channel
+                     bin = energyF >> Binfactor[ch];
+                     if( (bin<MAX_MCA_BINS) && (bin>0) ) {
+                        mca[ch+1][bin] =  mca[ch+1][bin] + 1;	// increment mca
+                        bin = bin >> WEB_LOGEBIN;
+                        if(bin>0) wmca[ch+1][bin] = wmca[ch+1][bin] + 1;	// increment wmca
+                     }
                      
                      eventcount++;    
                      eventcount_ch[ch]++;
@@ -797,8 +837,8 @@ int main(void) {
 
          loopcount ++;
          currenttime = time(NULL);
-   //   } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-      } while (eventcount <= 20); // run for a fixed number of events   
+      } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
+   //   } while (eventcount <= 20); // run for a fixed number of events   
 
 
 
