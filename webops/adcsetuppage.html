@@ -56,7 +56,7 @@ $(document).ready(function(){
 		  $("#apply").css("background-color", "lightgray");
 		  $("#read").css("background-color", "lightgray");
 		  $("#refresh").css("background-color", "lightgray");
-		  $("#hide").css("background-color", "lightgray");
+	//	  $("#hide").css("background-color", "lightgray");
 		  $.get("progfippi.cgi", function (data) {	//jQuery get function executes progfippi on Pixie-Net -> settings file applied
 		  		alert(data);	    
 		 })  		// end get
@@ -79,6 +79,14 @@ $(document).ready(function(){
 				$("#polarity05").val(dataarray[37]);
 				$("#polarity06").val(dataarray[43]);
 				$("#polarity07").val(dataarray[49]);
+				$("#polarity08").val(dataarray[55]);			// assign values to polarity controls
+				$("#polarity09").val(dataarray[61]);
+				$("#polarity10").val(dataarray[67]);
+				$("#polarity11").val(dataarray[73]);
+				$("#polarity12").val(dataarray[79]);
+				$("#polarity13").val(dataarray[85]);
+				$("#polarity14").val(dataarray[91]);
+				$("#polarity15").val(dataarray[97]);
 
 				$("#offset00").val(dataarray[8]);			// assign values to offset controls
 				$("#offset01").val(dataarray[14]);
@@ -88,6 +96,14 @@ $(document).ready(function(){
 				$("#offset05").val(dataarray[38]);
 				$("#offset06").val(dataarray[44]);
 				$("#offset07").val(dataarray[50]);
+            $("#offset08").val(dataarray[56]);         // assign values to offset controls
+            $("#offset09").val(dataarray[62]);
+            $("#offset10").val(dataarray[68]);
+            $("#offset11").val(dataarray[74]);
+            $("#offset12").val(dataarray[80]);
+            $("#offset13").val(dataarray[86]);
+            $("#offset14").val(dataarray[92]);
+            $("#offset15").val(dataarray[98]);
 
 				$("#again00").val(dataarray[9]);			  	// assign values to analog gain controls
 				$("#again01").val(dataarray[15]);
@@ -97,6 +113,14 @@ $(document).ready(function(){
 				$("#again05").val(dataarray[39]);
 				$("#again06").val(dataarray[45]);
 				$("#again07").val(dataarray[51]);
+            $("#again08").val(dataarray[57]);          // assign values to analog gain controls
+            $("#again09").val(dataarray[63]);
+            $("#again10").val(dataarray[69]);
+            $("#again11").val(dataarray[75]);
+            $("#again12").val(dataarray[81]);
+            $("#again13").val(dataarray[87]);
+            $("#again14").val(dataarray[93]);
+            $("#again15").val(dataarray[99]);
 
 			   $("#dgain00").val(dataarray[10]);			  	// assign values to analog gain controls
 				$("#dgain01").val(dataarray[16]);
@@ -106,6 +130,14 @@ $(document).ready(function(){
 				$("#dgain05").val(dataarray[40]);
 				$("#dgain06").val(dataarray[46]);
 				$("#dgain07").val(dataarray[52]);
+            $("#dgain08").val(dataarray[58]);            // assign values to analog gain controls
+            $("#dgain09").val(dataarray[64]);
+            $("#dgain10").val(dataarray[70]);
+            $("#dgain11").val(dataarray[76]);
+            $("#dgain12").val(dataarray[82]);
+            $("#dgain13").val(dataarray[88]);
+            $("#dgain14").val(dataarray[94]);
+            $("#dgain15").val(dataarray[100]);
 
 				$("#tau00").val(dataarray[11]);				 // assign values to tau controls
 				$("#tau01").val(dataarray[17]);
@@ -115,7 +147,15 @@ $(document).ready(function(){
 				$("#tau05").val(dataarray[41]);
 				$("#tau06").val(dataarray[47]);
 				$("#tau07").val(dataarray[53]);
-	
+            $("#tau08").val(dataarray[59]);            // assign values to tau controls
+            $("#tau09").val(dataarray[65]);
+            $("#tau10").val(dataarray[71]);
+            $("#tau11").val(dataarray[77]);
+            $("#tau12").val(dataarray[83]);
+            $("#tau13").val(dataarray[89]);
+            $("#tau14").val(dataarray[95]);
+            $("#tau15").val(dataarray[101]); 
+ 
 			 })  // end get
 			 $("#read1").css("background-color", "green");
 	  });		  // end button click read  settings
@@ -138,11 +178,11 @@ $(document).ready(function(){
 		 $(this).css("background-color", "green");
 	  });		   // end button click refresh
 
-	 $("#hide").click(function(){		// hide extra controls  
-	    $("#first").toggle();
-		 $("#row08").toggle();
-		 	alert("click");
-	  });		   // end checkbox click 
+//	 $("#hide").click(function(){		// hide extra controls  
+//	    $("#first").toggle();
+//		 $("#row08").toggle();
+//		 	alert("click");
+//	  });		   // end button click 
 
 
 
@@ -166,7 +206,15 @@ $(document).ready(function(){
 						v4:$("#polarity04").val(),
 						v5:$("#polarity05").val(),
 						v6:$("#polarity06").val(),
-						v7:$("#polarity07").val()
+						v7:$("#polarity07").val(),
+						v8:$("#polarity08").val(), 
+						v9:$("#polarity09").val(),
+ 					   v10:$("#polarity10").val(),
+						v11:$("#polarity11").val(),
+						v12:$("#polarity12").val(),
+						v13:$("#polarity13").val(),
+						v14:$("#polarity14").val(),
+						v15:$("#polarity15").val()
 				  },
 			     function (data) {	   
 		  		alert(data);
@@ -190,7 +238,15 @@ $(document).ready(function(){
 						v4:$("#offset04").val(),
 						v5:$("#offset05").val(),
 						v6:$("#offset06").val(),
-						v7:$("#offset07").val()
+						v7:$("#offset07").val(),
+                  v8:$("#offset08").val(), 
+                  v9:$("#offset09").val(),
+                  v10:$("#offset10").val(),
+                  v11:$("#offset11").val(),
+                  v12:$("#offset12").val(),
+                  v13:$("#offset13").val(),
+                  v14:$("#offset14").val(),
+                  v15:$("#offset15").val()
 				  },
 			     function (data) {	   
 		  		alert(data);
@@ -214,7 +270,15 @@ $(document).ready(function(){
 						v4:$("#again04").val(),
 						v5:$("#again05").val(),
 						v6:$("#again06").val(),
-						v7:$("#again07").val()
+						v7:$("#again07").val(),
+                  v8:$("#again08").val(), 
+                  v9:$("#again09").val(),
+                  v10:$("#again10").val(),
+                  v11:$("#again11").val(),
+                  v12:$("#again12").val(),
+                  v13:$("#again13").val(),
+                  v14:$("#again14").val(),
+                  v15:$("#again15").val()
 				  },
 			     function (data) {	   
 		  		alert(data);
@@ -238,7 +302,15 @@ $(document).ready(function(){
 						v4:$("#dgain04").val(),
 						v5:$("#dgain05").val(),
 						v6:$("#dgain06").val(),
-						v7:$("#dgain07").val()
+						v7:$("#dgain07").val(),
+                  v8:$("#dgain08").val(), 
+                  v9:$("#dgain09").val(),
+                  v10:$("#dgain10").val(),
+                  v11:$("#dgain11").val(),
+                  v12:$("#dgain12").val(),
+                  v13:$("#dgain13").val(),
+                  v14:$("#dgain14").val(),
+                  v15:$("#dgain15").val()
 				  },
 			     function (data) {	   
 		  		alert(data);
@@ -262,7 +334,15 @@ $(document).ready(function(){
 						v4:$("#tau04").val(),
 						v5:$("#tau05").val(),
 						v6:$("#tau06").val(),
-						v7:$("#tau07").val()
+						v7:$("#tau07").val(),
+                  v8:$("#tau08").val(), 
+                  v9:$("#tau09").val(),
+                  v10:$("#tau10").val(),
+                  v11:$("#tau11").val(),
+                  v12:$("#tau12").val(),
+                  v13:$("#tau13").val(),
+                  v14:$("#tau14").val(),
+                  v15:$("#tau15").val()
 				  },
 			     function (data) {	   
 		  		alert(data);
@@ -308,8 +388,6 @@ Initialize:
 <input id='read' class='readbutton' type="button" value="Read Settings">
 <input id='apply' type="button" value="Apply (progfippi)">
 <input id='refresh' type="button" value="Refresh Traces">
-<input id='hide' type="button" value="Show/Hide More">
-
  <p> </p>
 
 <table style="width:100%">
@@ -370,6 +448,62 @@ Initialize:
 	  <td> <input class="fieldd" type="text" size="8" id="dgain07" value="0.000">  </td>
 	  <td> <input class="fieldt" type="text" size="8" id="tau07" value="0.000"></td>  
 	  <td> <input type="checkbox" id="7" checked="checked"  onclick="change(this)">  </td> </tr>
+<tr id=row08> <td>08</td>
+     <td> <input class="fieldp" type="text" size="8" id="polarity08" value="0"> </td>
+	  <td> <input class="fieldo" type="text" size="8" id="offset08" value="0.000">  </td>
+     <td> <input class="fielda" type="text" size="8" id="again08" value="0.000"> </td>
+	  <td> <input class="fieldd" type="text" size="8" id="dgain08" value="0.000">  </td>
+	  <td> <input class="fieldt" type="text" size="8" id="tau08" value="0.000"></td> 
+	  <td> <input type="checkbox" id="8" checked="checked"  onclick="change(this)"> </td> </tr>
+<tr id=row09> <td>09</td>
+     <td> <input class="fieldp" type="text" size="8" id="polarity09" value="0"> </td>
+	  <td> <input class="fieldo" type="text" size="8" id="offset09" value="0.000"> </td>
+     <td> <input class="fielda" type="text" size="8" id="again09" value="0.000"> </td>
+	  <td> <input class="fieldd" type="text" size="8" id="dgain09" value="0.000">  </td>
+	  <td> <input class="fieldt" type="text" size="8" id="tau09" value="0.000"></td>  
+	  <td> <input type="checkbox" id="9" checked="checked"  onclick="change(this)">  </td> </tr>
+<tr id=row10> <td>10</td>
+     <td> <input class="fieldp" type="text" size="8" id="polarity10" value="0"> </td>
+	  <td> <input class="fieldo" type="text" size="8" id="offset10" value="0.000">  </td>
+     <td> <input class="fielda" type="text" size="8" id="again10" value="0.000"> </td>
+	  <td> <input class="fieldd" type="text" size="8" id="dgain10" value="0.000">  </td>
+	  <td> <input class="fieldt" type="text" size="8" id="tau10" value="0.000"></td> 
+	  <td> <input type="checkbox" id="10" checked="checked"  onclick="change(this)"> </td> </tr>
+<tr id=row11> <td>11</td>
+     <td> <input class="fieldp" type="text" size="8" id="polarity11" value="0"> </td>
+	  <td> <input class="fieldo" type="text" size="8" id="offset11" value="0.000"> </td>
+     <td> <input class="fielda" type="text" size="8" id="again11" value="0.000"> </td>
+	  <td> <input class="fieldd" type="text" size="8" id="dgain11" value="0.000">  </td>
+	  <td> <input class="fieldt" type="text" size="8" id="tau11" value="0.000"></td>  
+	  <td> <input type="checkbox" id="11" checked="checked"  onclick="change(this)">  </td> </tr>
+<tr id=row12> <td>12</td>
+     <td> <input class="fieldp" type="text" size="8" id="polarity12" value="0"> </td>
+	  <td> <input class="fieldo" type="text" size="8" id="offset12" value="0.000">  </td>
+     <td> <input class="fielda" type="text" size="8" id="again12" value="0.000"> </td>
+	  <td> <input class="fieldd" type="text" size="8" id="dgain12" value="0.000">  </td>
+	  <td> <input class="fieldt" type="text" size="8" id="tau12" value="0.000"></td> 
+	  <td> <input type="checkbox" id="12" checked="checked"  onclick="change(this)"> </td> </tr>
+<tr id=row13> <td>13</td>
+     <td> <input class="fieldp" type="text" size="8" id="polarity13" value="0"> </td>
+	  <td> <input class="fieldo" type="text" size="8" id="offset13" value="0.000"> </td>
+     <td> <input class="fielda" type="text" size="8" id="again13" value="0.000"> </td>
+	  <td> <input class="fieldd" type="text" size="8" id="dgain13" value="0.000">  </td>
+	  <td> <input class="fieldt" type="text" size="8" id="tau13" value="0.000"></td>  
+	  <td> <input type="checkbox" id="13" checked="checked"  onclick="change(this)">  </td> </tr>
+<tr id=row14> <td>14</td>
+     <td> <input class="fieldp" type="text" size="8" id="polarity14" value="0"> </td>
+	  <td> <input class="fieldo" type="text" size="8" id="offset14" value="0.000">  </td>
+     <td> <input class="fielda" type="text" size="8" id="again14" value="0.000"> </td>
+	  <td> <input class="fieldd" type="text" size="8" id="dgain14" value="0.000">  </td>
+	  <td> <input class="fieldt" type="text" size="8" id="tau14" value="0.000"></td> 
+	  <td> <input type="checkbox" id="14" checked="checked"  onclick="change(this)"> </td> </tr>
+<tr id=row15> <td>15</td>
+     <td> <input class="fieldp" type="text" size="8" id="polarity15" value="0"> </td>
+	  <td> <input class="fieldo" type="text" size="8" id="offset15" value="0.000"> </td>
+     <td> <input class="fielda" type="text" size="8" id="again15" value="0.000"> </td>
+	  <td> <input class="fieldd" type="text" size="8" id="dgain15" value="0.000">  </td>
+	  <td> <input class="fieldt" type="text" size="8" id="tau15" value="0.000"></td>  
+	  <td> <input type="checkbox" id="15" checked="checked"  onclick="change(this)">  </td> </tr>
 
  </table>
 
@@ -413,28 +547,7 @@ Initialize:
 
 
 
-    <p><b>Show More on Plot</b> 
-    <p>
-		<input type="checkbox" id="8" checked="checked"  onclick="change(this)">
-      <label for="8"> adc08 </label>
-      <input type="checkbox" id="9" checked="checked" onclick="change(this)">
-      <label for="9"> adc09 </label>
-      <input type="checkbox" id="10" checked="checked" onclick="change(this)">
-      <label for="10"> adc10 </label>
-		<input type="checkbox" id="11" checked="checked" onclick="change(this)">
-      <label for="11"> adc11 </label><br>
 
-		<input type="checkbox" id="12" checked="checked"  onclick="change(this)">
-      <label for="12"> adc12 </label>
-      <input type="checkbox" id="13" checked="checked" onclick="change(this)">
-      <label for="13"> adc13 </label>
-      <input type="checkbox" id="14" checked="checked" onclick="change(this)">
-      <label for="14"> adc14 </label>
-		<input type="checkbox" id="15" checked="checked" onclick="change(this)">
-      <label for="15"> adc15 </label><br>
-    </p>
-	 	 <input id='showall' type="button" value="Show All" onclick="showall(true)">
-	 <input id='showall' type="button" value="Hide All" onclick="showall(false)"></p>
 
 
 
