@@ -526,11 +526,11 @@ int main(void) {
                         // the next 5 words only need to be read if storing data locally 
                      }
     
-             /*      printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
+                 /*  printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
                      printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
                      printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
                      printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
-              */                       
+                */                     
                      timeL   =  hdr[6]     + (hdr[7]<<16); 
                      wsum    =  hdr[6]                   ;
                      tsum    =  hdr[0]     + (hdr[1]<<16);
@@ -612,7 +612,7 @@ int main(void) {
                            mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;   // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
                            hdr[k] = mapped[AMZ_EXDRD];      // read 16 bits
                            if(SLOWREAD)  hdr[k] = mapped[AMZ_EXDRD];      // read 16 bits
-                         }  // the next 8 64bit words only need to be read if reading CFD data
+                         }  // the next 8 64bit words only need to be read if reading QDC data
 
                         // waveform read (if accepted)
                         if(TRACEENA[ch]==1)  {   
@@ -641,6 +641,7 @@ int main(void) {
 
                         // compute PSA results from raw data
                         // need to subtract baseline in correct scale (1/4) and length (QDC#_LENGTH[ch])
+                   //     printf( "Read PSA words (12-15): %d %d %d %d\n",hdr[12], hdr[13], hdr[14], hdr[15] );
                         psa_base = hdr[12];
                         if( fippiconfig.QDCLen4[ch]) 
                            bscale = 32.0;
@@ -692,12 +693,12 @@ int main(void) {
                         }      // 0x100     
       
                          if(RunType==0x400) {// && ch<NCHANNEL_MAX400)   {
-                            if( energy > Emin[ch]) {
+                        //    if( energy > Emin[ch]) {
 
                                 out2 = hdr[12]    + (hdr[13]<<16);    // raw PSA for debug
                                 out3 = hdr[14]    + (hdr[15]<<16);
                                 chw = ch & 0x03;         // map channels into 0-3, assume only one set of 4 connected
-                              //printf( "Channel hit %d, channel recorded %d, energy %d, Emin %d\n",ch, chw, energy, Emin[ch]); 
+                           //   printf( "Channel hit %d, channel recorded %d, energy %d, Emin %d\n",ch, chw, energy, Emin[ch]); 
                                 hit = (1<<chw) + 0x20 + (0x100<<chw);
                                 if(TRACEENA[ch])
                                     TraceBlks = (int)floor(TL[ch]/BLOCKSIZE_400);
@@ -729,7 +730,7 @@ int main(void) {
                                   fwrite( wf, TL[ch]/2, 4, fil );
                               
                                 }   // end trace write
-                           } //energy limit
+                      //     } //energy limit
                         }      // 0x400
 
                         if(RunType==0x401) {// && ch<NCHANNEL_MAX400)   {

@@ -74,7 +74,7 @@ int main(void) {
     return rval;
   }
   
-  // always report all 32 channels, even those ununsed
+  // always report all 32 channels, even those unused
   printf("channel,polarity,offset,analog gain,digital gain,tau,\n");
   for(ch=0;ch<NCHANNELS;ch++)                                           
       printf("%d,%d,%04f,%02f,%04f,%04f,\n",

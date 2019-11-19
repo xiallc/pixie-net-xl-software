@@ -181,7 +181,7 @@ int main(void) {
     string strReplace = "MODULE_ID";
     string strNew = "MODULE_ID       0";
     string remainder;
-    int NCH=8;
+    int NCH=16;
     char * data;
     string val[NCH];
     int equal;
@@ -196,7 +196,7 @@ int main(void) {
 
 
    vector<string> fields;
-   split( fields, remainder, " \t,;=&" );                   // divide remaning arguments along = and &
+   split( fields, remainder, " \t,;=&" );                   // divide remaining arguments along = and &
    
    equal = fields[0].compare("MODULE");                     // replacement string differs for single and multi value 
  

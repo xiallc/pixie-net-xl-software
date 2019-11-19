@@ -850,13 +850,28 @@ int main(void) {
             reghi = fippiconfig.QDCLen2[ch];                      //  QDC       // in samples
             reghi = reghi + (fippiconfig.QDCLen3[ch]<<16);        //  QDC       // in samples  
           } else {
+
+
+            if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
+            {
+            // PN style PSA
+               reglo = (fippiconfig.QDCLen0[ch]>>1)+1;                           //  L0 FPGA expects "len/2 + 1" for effective "len" 
+               reghi = fippiconfig.QDCLen0[ch]*2 + 8 + fippiconfig.QDCLen2[ch]*2;    //  D0 FPGA expects total length + delay (=end)
+               mval  = (fippiconfig.QDCLen1[ch]>>1)+1;
+               reglo = reglo + (mval<<16);                                       //  L1 FPGA expects "len/2 + 1" for effective "len"                                                                                
+               mval  = fippiconfig.QDCLen1[ch]*2 + 8 + fippiconfig.QDCLen3[ch]*2;     //  D1 FPGA expects total length + delay (=end)
+               reghi = reghi + (mval<<16);     
+            } // end revsn
+            if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
+            {
             // P4e style PSA
-            reglo = (fippiconfig.QDCLen0[ch]>>2)+1;                      //  L0 FPGA expects "len/4 + 1" for effective "len" 
-            reghi = fippiconfig.QDCLen0[ch] + 4 + fippiconfig.QDCLen2[ch];                 //  D0 FPGA expects total length + delay (=end)
-            mval  = (fippiconfig.QDCLen1[ch]>>2)+1;
-            reglo = reglo + (mval<<16);                                 //  L1 FPGA expects "len/4 + 1" for effective "len"                                                                                
-            mval  = fippiconfig.QDCLen1[ch] +4 + fippiconfig.QDCLen3[ch];                 //  D1 FPGA expects total length + delay (=end)
-            reghi = reghi + (mval<<16);        
+               reglo = (fippiconfig.QDCLen0[ch]>>2)+1;                           //  L0 FPGA expects "len/4 + 1" for effective "len" 
+               reghi = fippiconfig.QDCLen0[ch] + 4 + fippiconfig.QDCLen2[ch];    //  D0 FPGA expects total length + delay (=end)
+               mval  = (fippiconfig.QDCLen1[ch]>>2)+1;
+               reglo = reglo + (mval<<16);                                       //  L1 FPGA expects "len/4 + 1" for effective "len"                                                                                
+               mval  = fippiconfig.QDCLen1[ch] +4 + fippiconfig.QDCLen3[ch];     //  D1 FPGA expects total length + delay (=end)
+               reghi = reghi + (mval<<16);     
+            } // end revsn
           }
          
          // now write 
