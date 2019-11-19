@@ -126,49 +126,32 @@ int main( void ) {
       close(fd);
       fclose(fil);
       return(-1);
-   } else {
-      printf(" FPGA file loaded (%d words).\n", nWords);
-   }
+   } 
    fclose(fil);
  
    // ************************ FPGA programming  *********************************
 
   mapped[AMZ_DEVICESEL] = CS_MZ;	  // read/write from/to MZ 
 
- /* // test read write
-  mval = mapped[0x1];	
-  printf("0x1 read: 0x%x\n",mval);
-  mval = 0x0;
-  mapped[0x6] = mval;	
-  mval = mapped[AMZ_CSROUTH];	
-  printf("0x1 read: 0x%x\n\n",mval);
-  */
+
 
   // progb toggle
   mval = mapped[AFPGAPROG];	
-//  printf("AFPGAPROG read: 0x%x\n",mval);
   mval = 0x0000;
   mapped[AFPGAPROG] = mval;
-//  printf("AFPGAPROG write: 0x%x\n",mval);
   usleep(I2CWAIT);
-//  mval = mval | 0x0200;    // Set  FPGA Progb = 1 to start configuration
   mval = 0x0001;
   mapped[AFPGAPROG] = mval;
-//  printf("AFPGAPROG write: 0x%x\n",mval);
   usleep(I2CWAIT);
   mval = mapped[AFPGAPROG];	
-//  printf("AFPGAPROG read: 0x%x\n",mval);
-
 
   // check INIT, continue when high
   // Initialize counter1 to 0. If mval.15==0, finished clearing communication FPGA 
   mval = mapped[AMZ_CSROUTL];	
-//  printf("ACSROUT read: 0x%x\n",mval);
   counter1 = 0;
   while ((mval& 0x8000) == 0x0000 && counter1 < 100) {
       usleep(I2CWAIT);
       mval = mapped[AMZ_CSROUTL];
-   //   printf("ACSROUT read: 0x%x\n",mval);
       counter1++;
   }
   if (counter1 == 100)
@@ -178,10 +161,6 @@ int main( void ) {
           munmap(map_addr, size);      
           close(fd);
          return(-2);
-  }
-  else
-  {
-      printf(" FPGA cleared (CSR = 0x%x)\n",mval);
   }
 
   
