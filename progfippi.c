@@ -856,10 +856,10 @@ int main(void) {
             {
             // PN style PSA
                reglo = (fippiconfig.QDCLen0[ch]>>1)+1;                           //  L0 FPGA expects "len/2 + 1" for effective "len" 
-               reghi = fippiconfig.QDCLen0[ch]*2 + 4 + fippiconfig.QDCLen2[ch]*2;    //  D0 FPGA expects total length + delay (=end)
+               reghi = fippiconfig.QDCLen0[ch]*2 + 6 + fippiconfig.QDCLen2[ch]*2;    //  D0 FPGA expects total length + delay (=end)
                mval  = (fippiconfig.QDCLen1[ch]>>1)+1;
                reglo = reglo + (mval<<16);                                       //  L1 FPGA expects "len/2 + 1" for effective "len"                                                                                
-               mval  = fippiconfig.QDCLen1[ch]*2 + 4 + fippiconfig.QDCLen3[ch]*2;     //  D1 FPGA expects total length + delay (=end)
+               mval  = fippiconfig.QDCLen1[ch]*2 + 6 + fippiconfig.QDCLen3[ch]*2;     //  D1 FPGA expects total length + delay (=end)
                reghi = reghi + (mval<<16);     
             } // end revsn
             if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
