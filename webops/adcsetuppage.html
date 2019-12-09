@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -11,7 +11,6 @@
 <style type="text/css">
 	body { background-color:#d0d0d0; font-family:sans-serif; }
 	div.box { background-color:#ffffff; width:500px; margin:20px auto 50px; padding:50px; border-radius:10px; border:1px solid #808080; box-shadow:8px 15px 20px #404040 }
-	img.logo { float:right; margin:-10px 0 0 30px }
 	h1 { margin:0; font-size:24px }
 	h2 { margin-top:40px; font-size:20px; font-weight:normal; border-bottom:1px solid #ff9040 }
 	p { font-size:14px }
@@ -22,7 +21,7 @@
 </style>
 
 <script>
-$(document).ready(function(){
+$(function(){
 
 	// ------------- button control functions -----------------------
 
@@ -156,7 +155,7 @@ $(document).ready(function(){
             $("#tau14").val(dataarray[95]);
             $("#tau15").val(dataarray[101]); 
  
-			 })  // end get
+			 });  // end get
 			 $("#read1").css("background-color", "green");
 	  });		  // end button click read  settings
 
@@ -165,7 +164,7 @@ $(document).ready(function(){
 	     $.get("progfippi.cgi", function (data) {	//jQuery get function executes progfippi on Pixie-Net -> settings file applied
 		  		alert(data);	
     		   
-		 })  		// end get
+		 });  		// end get
 		 $(this).css("background-color", "green");
 	  });		   // end button click refresh
 
@@ -174,7 +173,7 @@ $(document).ready(function(){
 		  $.get("bootfpga.cgi", function (data) {	//jQuery get function executes bootfpga on Pixie-Net 
 		  		alert(data);
 	    	  
-		 })  		// end get
+		 });  		// end get
 		 $(this).css("background-color", "green");
 	  });		   // end button click refresh
 
@@ -365,10 +364,8 @@ $(document).ready(function(){
 
 
 <body>
-
-<body>
  <div class="box">            
-<img src="Xia_LLC_web_header.jpg" width="500" height="80" border="0"></a>
+<img src="Xia_LLC_web_header.jpg" width="500" height="80" border="0" alt="XIA Logo">
 <p> </p>
 <p> <h1> Pixie-Net XL ADC Setup </h1></p>
 
@@ -393,117 +390,117 @@ Initialize:
 <table style="width:100%">
 <tr> <th>Channel</th> <th>Inverted</th> <th>Offset</th>   <th>Analog Gain</th>   <th>Digital Gain</th>  <th>Tau</th> <th>Show</th>	  </tr>
 <tr id=row00> <td>00  </td>
-	  <td> <input class="fieldp" type="text" size="8" id="polarity00" value="0"> </td>
-     <td> <input class="fieldo" type="text" size="8" id="offset00" value="0.000"> </td>
-     <td> <input class="fielda" type="text" size="8" id="again00" value="0.000">  </td>
-	  <td> <input class="fieldd" type="text" size="8" id="dgain00" value="0.000">  </td>
-	  <td> <input class="fieldt" type="text" size="8" id="tau00" value="0.000">   </td> 
-	  <td> <input type="checkbox" id="0" checked="checked"  onclick="change(this)"></td> </tr>
+	  <td><label for="polarity00"></label><input class="fieldp" type="text" size="8" id="polarity00" value="0"> </td>
+     <td><label for="offset00"></label><input class="fieldo" type="text" size="8" id="offset00" value="0.000"> </td>
+     <td><label for="again00"></label><input class="fielda" type="text" size="8" id="again00" value="0.000">  </td>
+	  <td><label for="dgain00"></label><input class="fieldd" type="text" size="8" id="dgain00" value="0.000">  </td>
+	  <td><label for="tau00"></label><input class="fieldt" type="text" size="8" id="tau00" value="0.000">   </td>
+	  <td><label for="0"></label><input type="checkbox" id="0" checked="checked" onclick="change(this)"></td> </tr>
 <tr id=row01> <td>01</td>
-     <td> <input class="fieldp" type="text" size="8" id="polarity01" value="0"> </td>
-	  <td> <input class="fieldo" type="text" size="8" id="offset01" value="0.000">  </td>
-     <td> <input class="fielda" type="text" size="8" id="again01" value="0.000"> </td>
-	  <td> <input class="fieldd" type="text" size="8" id="dgain01" value="0.000">  </td>
-	  <td> <input class="fieldt" type="text" size="8" id="tau01" value="0.000"></td> 
-	  <td> <input type="checkbox" id="1" checked="checked"  onclick="change(this)"> </td> </tr>
+     <td><label for="polarity01"></label><input class="fieldp" type="text" size="8" id="polarity01" value="0"> </td>
+	  <td><label for="offset01"></label><input class="fieldo" type="text" size="8" id="offset01" value="0.000">  </td>
+     <td><label for="again01"></label><input class="fielda" type="text" size="8" id="again01" value="0.000"> </td>
+	  <td><label for="dgain01"></label><input class="fieldd" type="text" size="8" id="dgain01" value="0.000">  </td>
+	  <td><label for="tau01"></label><input class="fieldt" type="text" size="8" id="tau01" value="0.000"></td>
+	  <td><label for="1"></label><input type="checkbox" id="1" checked="checked" onclick="change(this)"> </td> </tr>
 <tr id=row02> <td>02 </td>
-	  <td> <input class="fieldp" type="text" size="8" id="polarity02" value="0"> </td>
-	  <td> <input class="fieldo" type="text" size="8" id="offset02" value="0.000">	</td>
-     <td> <input class="fielda" type="text" size="8" id="again02" value="0.000"> </td>
-	  <td> <input class="fieldd" type="text" size="8" id="dgain02" value="0.000">  </td>
-	  <td> <input class="fieldt" type="text" size="8" id="tau02" value="0.000"></td>  
-	  <td> <input type="checkbox" id="2" checked="checked"  onclick="change(this)"> </td> </tr>
+	  <td><label for="polarity02"></label><input class="fieldp" type="text" size="8" id="polarity02" value="0"> </td>
+	  <td><label for="offset02"></label><input class="fieldo" type="text" size="8" id="offset02" value="0.000">	</td>
+     <td><label for="again02"></label><input class="fielda" type="text" size="8" id="again02" value="0.000"> </td>
+	  <td><label for="dgain02"></label><input class="fieldd" type="text" size="8" id="dgain02" value="0.000">  </td>
+	  <td><label for="tau02"></label><input class="fieldt" type="text" size="8" id="tau02" value="0.000"></td>
+	  <td><label for="2"></label><input type="checkbox" id="2" checked="checked" onclick="change(this)"> </td> </tr>
 <tr id=row03> <td>03 </td>
-     <td> <input class="fieldp" type="text" size="8" id="polarity03" value="0"> </td>
-	  <td> <input class="fieldo" type="text" size="8" id="offset03" value="0.000"> </td>
-     <td> <input class="fielda" type="text" size="8" id="again03" value="0.000"> </td>
-	  <td> <input class="fieldd" type="text" size="8" id="dgain03" value="0.000">  </td>
-	  <td> <input class="fieldt" type="text" size="8" id="tau03" value="0.000"></td> 
-	  <td> <input type="checkbox" id="3" checked="checked"  onclick="change(this)"> </td> </tr>
+     <td><label for="polarity03"></label><input class="fieldp" type="text" size="8" id="polarity03" value="0"> </td>
+	  <td><label for="offset03"></label><input class="fieldo" type="text" size="8" id="offset03" value="0.000"> </td>
+     <td><label for="again03"></label><input class="fielda" type="text" size="8" id="again03" value="0.000"> </td>
+	  <td><label for="dgain03"></label><input class="fieldd" type="text" size="8" id="dgain03" value="0.000">  </td>
+	  <td><label for="tau03"></label><input class="fieldt" type="text" size="8" id="tau03" value="0.000"></td>
+	  <td><label for="3"></label><input type="checkbox" id="3" checked="checked" onclick="change(this)"> </td> </tr>
 <tr id=row04> <td>04</td>
-     <td> <input class="fieldp" type="text" size="8" id="polarity04" value="0"> </td>
-	  <td> <input class="fieldo" type="text" size="8" id="offset04" value="0.000"></td>
-     <td> <input class="fielda" type="text" size="8" id="again04" value="0.000"></td>
-	  <td> <input class="fieldd" type="text" size="8" id="dgain04" value="0.000">  </td>
-	  <td> <input class="fieldt" type="text" size="8" id="tau04" value="0.000"></td> 
-	  <td> <input type="checkbox" id="4" checked="checked"  onclick="change(this)">  </td> </tr>
+     <td><label for="polarity04"></label><input class="fieldp" type="text" size="8" id="polarity04" value="0"> </td>
+	  <td><label for="offset04"></label><input class="fieldo" type="text" size="8" id="offset04" value="0.000"></td>
+     <td><label for="again04"></label><input class="fielda" type="text" size="8" id="again04" value="0.000"></td>
+	  <td><label for="dgain04"></label><input class="fieldd" type="text" size="8" id="dgain04" value="0.000">  </td>
+	  <td><label for="tau04"></label><input class="fieldt" type="text" size="8" id="tau04" value="0.000"></td>
+	  <td><label for="4"></label><input type="checkbox" id="4" checked="checked" onclick="change(this)">  </td> </tr>
 <tr id=row05> <td>05</td>
-     <td> <input class="fieldp" type="text" size="8" id="polarity05" value="0"> </td>
-	  <td> <input class="fieldo" type="text" size="8" id="offset05" value="0.000">  </td>
-     <td> <input class="fielda" type="text" size="8" id="again05" value="0.000"> </td>
-	  <td> <input class="fieldd" type="text" size="8" id="dgain05" value="0.000">  </td>
-	  <td> <input class="fieldt" type="text" size="8" id="tau05" value="0.000"></td> 
-	  <td> <input type="checkbox" id="5" checked="checked"  onclick="change(this)"> </td> </tr>
+     <td><label for="polarity05"></label><input class="fieldp" type="text" size="8" id="polarity05" value="0"> </td>
+	  <td><label for="offset05"></label><input class="fieldo" type="text" size="8" id="offset05" value="0.000">  </td>
+     <td><label for="again05"></label><input class="fielda" type="text" size="8" id="again05" value="0.000"> </td>
+	  <td><label for="dgain05"></label><input class="fieldd" type="text" size="8" id="dgain05" value="0.000">  </td>
+	  <td><label for="tau05"></label><input class="fieldt" type="text" size="8" id="tau05" value="0.000"></td>
+	  <td><label for="5"></label><input type="checkbox" id="5" checked="checked" onclick="change(this)"> </td> </tr>
 <tr id=row06> <td>06</td>
-     <td> <input class="fieldp" type="text" size="8" id="polarity06" value="0"> </td>
-	  <td> <input class="fieldo" type="text" size="8" id="offset06" value="0.000">  </td>
-     <td> <input class="fielda" type="text" size="8" id="again06" value="0.000"> </td>
-	  <td> <input class="fieldd" type="text" size="8" id="dgain06" value="0.000">  </td>
-	  <td> <input class="fieldt" type="text" size="8" id="tau06" value="0.000"></td> 
-	  <td> <input type="checkbox" id="6" checked="checked"  onclick="change(this)"> </td> </tr>
+     <td><label for="polarity06"></label><input class="fieldp" type="text" size="8" id="polarity06" value="0"> </td>
+	  <td><label for="offset06"></label><input class="fieldo" type="text" size="8" id="offset06" value="0.000">  </td>
+     <td><label for="again06"></label><input class="fielda" type="text" size="8" id="again06" value="0.000"> </td>
+	  <td><label for="dgain06"></label><input class="fieldd" type="text" size="8" id="dgain06" value="0.000">  </td>
+	  <td><label for="tau06"></label><input class="fieldt" type="text" size="8" id="tau06" value="0.000"></td>
+	  <td><label for="6"></label><input type="checkbox" id="6" checked="checked" onclick="change(this)"> </td> </tr>
 <tr id=row07> <td>07</td>
-     <td> <input class="fieldp" type="text" size="8" id="polarity07" value="0"> </td>
-	  <td> <input class="fieldo" type="text" size="8" id="offset07" value="0.000"> </td>
-     <td> <input class="fielda" type="text" size="8" id="again07" value="0.000"> </td>
-	  <td> <input class="fieldd" type="text" size="8" id="dgain07" value="0.000">  </td>
-	  <td> <input class="fieldt" type="text" size="8" id="tau07" value="0.000"></td>  
-	  <td> <input type="checkbox" id="7" checked="checked"  onclick="change(this)">  </td> </tr>
+     <td><label for="polarity07"></label><input class="fieldp" type="text" size="8" id="polarity07" value="0"> </td>
+	  <td><label for="offset07"></label><input class="fieldo" type="text" size="8" id="offset07" value="0.000"> </td>
+     <td><label for="again07"></label><input class="fielda" type="text" size="8" id="again07" value="0.000"> </td>
+	  <td><label for="dgain07"></label><input class="fieldd" type="text" size="8" id="dgain07" value="0.000">  </td>
+	  <td><label for="tau07"></label><input class="fieldt" type="text" size="8" id="tau07" value="0.000"></td>
+	  <td><label for="7"></label><input type="checkbox" id="7" checked="checked" onclick="change(this)">  </td> </tr>
 <tr id=row08> <td>08</td>
-     <td> <input class="fieldp" type="text" size="8" id="polarity08" value="0"> </td>
-	  <td> <input class="fieldo" type="text" size="8" id="offset08" value="0.000">  </td>
-     <td> <input class="fielda" type="text" size="8" id="again08" value="0.000"> </td>
-	  <td> <input class="fieldd" type="text" size="8" id="dgain08" value="0.000">  </td>
-	  <td> <input class="fieldt" type="text" size="8" id="tau08" value="0.000"></td> 
-	  <td> <input type="checkbox" id="8" checked="checked"  onclick="change(this)"> </td> </tr>
+     <td><label for="polarity08"></label><input class="fieldp" type="text" size="8" id="polarity08" value="0"> </td>
+	  <td><label for="offset08"></label><input class="fieldo" type="text" size="8" id="offset08" value="0.000">  </td>
+     <td><label for="again08"></label><input class="fielda" type="text" size="8" id="again08" value="0.000"> </td>
+	  <td><label for="dgain08"></label><input class="fieldd" type="text" size="8" id="dgain08" value="0.000">  </td>
+	  <td><label for="tau08"></label><input class="fieldt" type="text" size="8" id="tau08" value="0.000"></td>
+	  <td><label for="8"></label><input type="checkbox" id="8" checked="checked" onclick="change(this)"> </td> </tr>
 <tr id=row09> <td>09</td>
-     <td> <input class="fieldp" type="text" size="8" id="polarity09" value="0"> </td>
-	  <td> <input class="fieldo" type="text" size="8" id="offset09" value="0.000"> </td>
-     <td> <input class="fielda" type="text" size="8" id="again09" value="0.000"> </td>
-	  <td> <input class="fieldd" type="text" size="8" id="dgain09" value="0.000">  </td>
-	  <td> <input class="fieldt" type="text" size="8" id="tau09" value="0.000"></td>  
-	  <td> <input type="checkbox" id="9" checked="checked"  onclick="change(this)">  </td> </tr>
+     <td><label for="polarity09"></label><input class="fieldp" type="text" size="8" id="polarity09" value="0"> </td>
+	  <td><label for="offset09"></label><input class="fieldo" type="text" size="8" id="offset09" value="0.000"> </td>
+     <td><label for="again09"></label><input class="fielda" type="text" size="8" id="again09" value="0.000"> </td>
+	  <td><label for="dgain09"></label><input class="fieldd" type="text" size="8" id="dgain09" value="0.000">  </td>
+	  <td><label for="tau09"></label><input class="fieldt" type="text" size="8" id="tau09" value="0.000"></td>
+	  <td><label for="9"></label><input type="checkbox" id="9" checked="checked" onclick="change(this)">  </td> </tr>
 <tr id=row10> <td>10</td>
-     <td> <input class="fieldp" type="text" size="8" id="polarity10" value="0"> </td>
-	  <td> <input class="fieldo" type="text" size="8" id="offset10" value="0.000">  </td>
-     <td> <input class="fielda" type="text" size="8" id="again10" value="0.000"> </td>
-	  <td> <input class="fieldd" type="text" size="8" id="dgain10" value="0.000">  </td>
-	  <td> <input class="fieldt" type="text" size="8" id="tau10" value="0.000"></td> 
-	  <td> <input type="checkbox" id="10" checked="checked"  onclick="change(this)"> </td> </tr>
+     <td><label for="polarity10"></label><input class="fieldp" type="text" size="8" id="polarity10" value="0"> </td>
+	  <td><label for="offset10"></label><input class="fieldo" type="text" size="8" id="offset10" value="0.000">  </td>
+     <td><label for="again10"></label><input class="fielda" type="text" size="8" id="again10" value="0.000"> </td>
+	  <td><label for="dgain10"></label><input class="fieldd" type="text" size="8" id="dgain10" value="0.000">  </td>
+	  <td><label for="tau10"></label><input class="fieldt" type="text" size="8" id="tau10" value="0.000"></td>
+	  <td><label for="10"></label><input type="checkbox" id="10" checked="checked" onclick="change(this)"> </td> </tr>
 <tr id=row11> <td>11</td>
-     <td> <input class="fieldp" type="text" size="8" id="polarity11" value="0"> </td>
-	  <td> <input class="fieldo" type="text" size="8" id="offset11" value="0.000"> </td>
-     <td> <input class="fielda" type="text" size="8" id="again11" value="0.000"> </td>
-	  <td> <input class="fieldd" type="text" size="8" id="dgain11" value="0.000">  </td>
-	  <td> <input class="fieldt" type="text" size="8" id="tau11" value="0.000"></td>  
-	  <td> <input type="checkbox" id="11" checked="checked"  onclick="change(this)">  </td> </tr>
+     <td><label for="polarity11"></label><input class="fieldp" type="text" size="8" id="polarity11" value="0"> </td>
+	  <td><label for="offset11"></label><input class="fieldo" type="text" size="8" id="offset11" value="0.000"> </td>
+     <td><label for="again11"></label><input class="fielda" type="text" size="8" id="again11" value="0.000"> </td>
+	  <td><label for="dgain11"></label><input class="fieldd" type="text" size="8" id="dgain11" value="0.000">  </td>
+	  <td><label for="tau11"></label><input class="fieldt" type="text" size="8" id="tau11" value="0.000"></td>
+	  <td><label for="11"></label><input type="checkbox" id="11" checked="checked" onclick="change(this)">  </td> </tr>
 <tr id=row12> <td>12</td>
-     <td> <input class="fieldp" type="text" size="8" id="polarity12" value="0"> </td>
-	  <td> <input class="fieldo" type="text" size="8" id="offset12" value="0.000">  </td>
-     <td> <input class="fielda" type="text" size="8" id="again12" value="0.000"> </td>
-	  <td> <input class="fieldd" type="text" size="8" id="dgain12" value="0.000">  </td>
-	  <td> <input class="fieldt" type="text" size="8" id="tau12" value="0.000"></td> 
-	  <td> <input type="checkbox" id="12" checked="checked"  onclick="change(this)"> </td> </tr>
+     <td><label for="polarity12"></label><input class="fieldp" type="text" size="8" id="polarity12" value="0"> </td>
+	  <td><label for="offset12"></label><input class="fieldo" type="text" size="8" id="offset12" value="0.000">  </td>
+     <td><label for="again12"></label><input class="fielda" type="text" size="8" id="again12" value="0.000"> </td>
+	  <td><label for="dgain12"></label><input class="fieldd" type="text" size="8" id="dgain12" value="0.000">  </td>
+	  <td><label for="tau12"></label><input class="fieldt" type="text" size="8" id="tau12" value="0.000"></td>
+	  <td><label for="12"></label><input type="checkbox" id="12" checked="checked" onclick="change(this)"> </td> </tr>
 <tr id=row13> <td>13</td>
-     <td> <input class="fieldp" type="text" size="8" id="polarity13" value="0"> </td>
-	  <td> <input class="fieldo" type="text" size="8" id="offset13" value="0.000"> </td>
-     <td> <input class="fielda" type="text" size="8" id="again13" value="0.000"> </td>
-	  <td> <input class="fieldd" type="text" size="8" id="dgain13" value="0.000">  </td>
-	  <td> <input class="fieldt" type="text" size="8" id="tau13" value="0.000"></td>  
-	  <td> <input type="checkbox" id="13" checked="checked"  onclick="change(this)">  </td> </tr>
+     <td><label for="polarity13"></label><input class="fieldp" type="text" size="8" id="polarity13" value="0"> </td>
+	  <td><label for="offset13"></label><input class="fieldo" type="text" size="8" id="offset13" value="0.000"> </td>
+     <td><label for="again13"></label><input class="fielda" type="text" size="8" id="again13" value="0.000"> </td>
+	  <td><label for="dgain13"></label><input class="fieldd" type="text" size="8" id="dgain13" value="0.000">  </td>
+	  <td><label for="tau13"></label><input class="fieldt" type="text" size="8" id="tau13" value="0.000"></td>
+	  <td><label for="13"></label><input type="checkbox" id="13" checked="checked" onclick="change(this)">  </td> </tr>
 <tr id=row14> <td>14</td>
-     <td> <input class="fieldp" type="text" size="8" id="polarity14" value="0"> </td>
-	  <td> <input class="fieldo" type="text" size="8" id="offset14" value="0.000">  </td>
-     <td> <input class="fielda" type="text" size="8" id="again14" value="0.000"> </td>
-	  <td> <input class="fieldd" type="text" size="8" id="dgain14" value="0.000">  </td>
-	  <td> <input class="fieldt" type="text" size="8" id="tau14" value="0.000"></td> 
-	  <td> <input type="checkbox" id="14" checked="checked"  onclick="change(this)"> </td> </tr>
+     <td><label for="polarity14"></label><input class="fieldp" type="text" size="8" id="polarity14" value="0"> </td>
+	  <td><label for="offset14"></label><input class="fieldo" type="text" size="8" id="offset14" value="0.000">  </td>
+     <td><label for="again14"></label><input class="fielda" type="text" size="8" id="again14" value="0.000"> </td>
+	  <td><label for="dgain14"></label><input class="fieldd" type="text" size="8" id="dgain14" value="0.000">  </td>
+	  <td><label for="tau14"></label><input class="fieldt" type="text" size="8" id="tau14" value="0.000"></td>
+	  <td><label for="14"></label><input type="checkbox" id="14" checked="checked" onclick="change(this)"> </td> </tr>
 <tr id=row15> <td>15</td>
-     <td> <input class="fieldp" type="text" size="8" id="polarity15" value="0"> </td>
-	  <td> <input class="fieldo" type="text" size="8" id="offset15" value="0.000"> </td>
-     <td> <input class="fielda" type="text" size="8" id="again15" value="0.000"> </td>
-	  <td> <input class="fieldd" type="text" size="8" id="dgain15" value="0.000">  </td>
-	  <td> <input class="fieldt" type="text" size="8" id="tau15" value="0.000"></td>  
-	  <td> <input type="checkbox" id="15" checked="checked"  onclick="change(this)">  </td> </tr>
+     <td><label for="polarity15"></label><input class="fieldp" type="text" size="8" id="polarity15" value="0"> </td>
+	  <td><label for="offset15"></label><input class="fieldo" type="text" size="8" id="offset15" value="0.000"> </td>
+     <td><label for="again15"></label><input class="fielda" type="text" size="8" id="again15" value="0.000"> </td>
+	  <td><label for="dgain15"></label><input class="fieldd" type="text" size="8" id="dgain15" value="0.000">  </td>
+	  <td><label for="tau15"></label><input class="fieldt" type="text" size="8" id="tau15" value="0.000"></td>
+	  <td><label for="15"></label><input type="checkbox" id="15" checked="checked" onclick="change(this)">  </td> </tr>
 
  </table>
 
@@ -536,13 +533,6 @@ Initialize:
 	  }
 
       var graphs = [ g2 ];
-      function showall(val) {
-         for (var idx = 0; idx < graphs.length; idx++) {	  
-            graphs[idx].updateOptions({ 	  visibility: [val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val] });
-         }
-		};
-
-
 </script>
 
 
