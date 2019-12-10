@@ -78,7 +78,7 @@ int main(void) {
   unsigned int w0, w1, tmp0, tmp1, tmp2, cfdout1, cfdout2, cfdsrc, cfdfrc, cfd; //, tmp3;
   unsigned long long WR_tm_tai, WR_tm_tai_start, WR_tm_tai_stop, WR_tm_tai_next;
   unsigned int hdr[32];
-  unsigned int out0, out2, out3, out7, pileup, exttsL, exttsH;
+  unsigned int out0, out2, out3, out7, pileup, exttsL, exttsH, hdrids;
   unsigned int evstats, R1, timeL, timeH, hit;
   unsigned int lsum, tsum, gsum, wsum, energy, energyF, bin; 
   unsigned int mca[NCHANNELS][MAX_MCA_BINS] ={{0}};    // full MCA for end of run
@@ -185,6 +185,9 @@ int main(void) {
   SyncT        = fippiconfig.SYNC_AT_START;
   ReqRunTime   = fippiconfig.REQ_RUNTIME;
   PollTime     = fippiconfig.POLL_TIME;
+  hdrids       = (CHAN_HEAD_LENGTH_100<<12) & 0xF000;
+  hdrids       = hdrids + (fippiconfig.CRATE_ID<<8);
+  hdrids       = hdrids + (fippiconfig.SLOT_ID<<4);
 
   useWsum = ((fippiconfig.C_CONTROL & 0x00000001) == 1);   // if 0, use weighted sum for E, BL computation, else classic 3 sums and multiply
   useFWE  = ((fippiconfig.C_CONTROL & 0x00000002) == 2);   // if 1, use full E computed by FPGA, incl BLcut/avg, else locally compute BLavg  and cmbine with E sums. 
@@ -498,8 +501,8 @@ int main(void) {
                R1 = 1 << ch_k7;
                if(evstats & R1)	{	                        //  if there is an event in the header memory for this channel
       
-                     mapped[AMZ_EXAFWR] = AK7_PAGE;         // specify   K7's addr     addr 3 = channel/system
-                     mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;   //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
+                    mapped[AMZ_EXAFWR] = AK7_PAGE;         // specify   K7's addr     addr 3 = channel/system
+                    mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;   //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
                     
                     if(  eventcount_ch[ch]==0) {
                      // dummy reads
@@ -507,10 +510,11 @@ int main(void) {
                         hdr[0] = mapped[AMZ_EXDRD];         // read 16 bits
                      }            
    
-                     // read 3 64bit words from header
+                     // read 1 64bit word from header
                      // once E and cfd are computed in FPGA, this can be reduced to 3-4 16bit words . 
-                     for( k=0; k < 3; k++)
-                     {
+                   //  for( k=0; k < 3; k++)
+                   //  {
+                        k=0;
                         mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;   // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
                         hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
                          if(SLOWREAD)  hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
@@ -524,23 +528,23 @@ int main(void) {
                         hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
                          if(SLOWREAD)   hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
                         // the next 5 words only need to be read if storing data locally 
-                     }
+                   //  }
     
                  /*  printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
                      printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
                      printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
                      printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
                 */                     
-                     timeL   =  hdr[6]     + (hdr[7]<<16); 
-                     wsum    =  hdr[6]                   ;
-                     tsum    =  hdr[0]     + (hdr[1]<<16);
-                     lsum    =  hdr[2]     + (hdr[3]<<16);
-                     gsum    =  hdr[4]     + (hdr[5]<<16);
-                     cfdout1 =  hdr[8]     + ((hdr[9]&0xFF) <<16);
-                     cfdout2 = ((hdr[9]&0xFF00)>>8) + (hdr[10]<<16);    
-                     cfdsrc  = (hdr[11]>>1)&0x1;            // cfd source (sample in group for >125 MHz ADCs)
-                     cfdfrc  = (hdr[11]>>2)&0x1;            // cfd forced if 1
-                     pileup  = (hdr[11]>>3)&0x1;
+                //     timeL   =  hdr[6]     + (hdr[7]<<16); 
+                //     wsum    =  hdr[6]                   ;
+                //     tsum    =  hdr[0]     + (hdr[1]<<16);
+                //     lsum    =  hdr[2]     + (hdr[3]<<16);
+                //     gsum    =  hdr[4]     + (hdr[5]<<16);
+                     cfdout1 =  hdr[0]     + ((hdr[1]&0xFF) <<16);
+                     cfdout2 = ((hdr[1]&0xFF00)>>8) + (hdr[2]<<16);    
+                     cfdsrc  = (hdr[3]>>1)&0x1;            // cfd source (sample in group for >125 MHz ADCs)
+                     cfdfrc  = (hdr[3]>>2)&0x1;            // cfd forced if 1
+                     pileup  = (hdr[3]>>3)&0x1;
 
                  //    printf( "time Low: 0x%08X = %0f ms \n",timeL,timeL*13.333/1000000 );
                  //    printf( "ch. %d, cfdout1 %d, cfdout2 %d, cfdsrc %d, cfdfrc %d ",ch,cfdout1,cfdout2,cfdsrc,cfdfrc); 
@@ -548,27 +552,8 @@ int main(void) {
        
                  if( (PILEUPCTRL[ch]==0)     || (PILEUPCTRL[ch]==1 && !pileup )    )
                  {    // either don't care  OR pilup test required and  pileup bit not set
-                      //printf( "pileup test passed, start computing E\n");              
-
-                     // compute and histogram E
-                     if(useWsum==0)
-                        ph = C1[ch]*(double)lsum+Cg[ch]*(double)gsum+C0[ch]*(double)tsum;
-                     else
-                        ph = (double)wsum;
-                     //printf("ph %f, BLavg %f, E %f\n",ph,baseline[ch], ph-baseline[ch]);
-                     //printf("lsum    %d, tsum     %d, gsum    %d\n",lsum, tsum, gsum);
-                     //printf("c1      %f, c0       %f, cg      %f\n",C1[ch], C0[ch], Cg[ch]);
-                     //printf("c1      %f, c0       %f, cg      %f\n",C1[ch]* 67108864, C0[ch]* 67108864 *(-1.0), Cg[ch]* 67108864);
-                     //printf("lsum*c1 %f, tsum*c0  %f, gsum*cg %f\n",lsum*C1[ch], tsum*C0[ch], gsum*Cg[ch]);
-                 //    printf("ch %d: Energy wsum ARM %f FPGA %d \n ",ch, ph, wsum);
-                     //printf("lsum %d, tsum %d gsum %d; E (ph) ARM FPGA %f   ",lsum, tsum, gsum, ph);
-
-                     ph = (double)ph-baseline[ch];  // ph = ph-baseline[ch];
-                     if ((ph<0.0)|| (ph>65536.0))	ph =0.0;	// out of range energies -> 0
-                     energy = (int)floor(ph);
-                  //   printf("ch %d: Energy ph ARM %d ",ch, energy);
-                     //if ((hit & (1<< HIT_LOCALHIT))==0)	  	energy =0;	   // not a local hit -> 0
-                    
+                      //printf( "pileup test passed, start computing E\n");      
+        
                      // cfd needs some more computation
                      cfdout2 = 0x1000000 - cfdout2;   // convert to positive
                      ph = (double)cfdout1 / ( (double)cfdout1 + (double)cfdout2 );              
@@ -584,6 +569,13 @@ int main(void) {
                        cfd = cfd + (cfdfrc<<15);
                      }
 
+                     // read FPGA E
+                     mapped[AMZ_EXAFRD] = AK7_EFIFO;              // select the "EFIFO" address in channel's page
+                     energyF = mapped[AMZ_EXDWR];                 // read 16 bits
+                     if(SLOWREAD)  energyF = mapped[AMZ_EXDRD];   // read 16 bits
+                    
+
+
                      // at this point, key data of event is known. Now can
                      // [optional] send it to DM for further decision making (to be implemented), then
                      //  initiate Ethernet data output of full event data  
@@ -595,10 +587,10 @@ int main(void) {
                         mapped[AMZ_EXAFWR] = AK7_PAGE;         // specify   K7's addr:    PAGE register
                         mapped[AMZ_EXDWR]  = PAGE_SYS;         //  PAGE 0: system, page 0x10n = channel n
                      
-                        if(useFWE==0) {    // only overwrite FPGA's energy if local computation is preferred
-                           mapped[AMZ_EXAFWR] =  AK7_ETH_ENERGY;  // specify   K7's addr:    energy for Eth data packet
-                           mapped[AMZ_EXDWR]  =  energy;
-                        }
+                 //       if(useFWE==0) {    // only overwrite FPGA's energy if local computation is preferred
+                 //          mapped[AMZ_EXAFWR] =  AK7_ETH_ENERGY;  // specify   K7's addr:    energy for Eth data packet
+                 //          mapped[AMZ_EXDWR]  =  energy;
+                 //       }
                         mapped[AMZ_EXAFWR] =  AK7_ETH_CFD;     // specify   K7's addr:    cfd for Eth data packet
                         mapped[AMZ_EXDWR]  =  cfd;
                         mapped[AMZ_EXAFWR] =  AK7_ETH_CTRL;    // specify   K7's addr:    Ethernet output control register
@@ -609,9 +601,9 @@ int main(void) {
                         // read 5 more 64bit words from header (still in channel page)
                         for( k=0; k < 20; k++)
                         {
-                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;   // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
-                           hdr[k] = mapped[AMZ_EXDRD];      // read 16 bits
-                           if(SLOWREAD)  hdr[k] = mapped[AMZ_EXDRD];      // read 16 bits
+                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;           // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
+                           hdr[k] = mapped[AMZ_EXDRD];                  // read 16 bits
+                           if(SLOWREAD)  hdr[k] = mapped[AMZ_EXDRD];    // read 16 bits
                          }  // the next 8 64bit words only need to be read if reading QDC data
 
                         // waveform read (if accepted)
@@ -627,14 +619,35 @@ int main(void) {
                               wf[k] = w0+(w1<<16);   // re-order 2 sample words from 32bit FIFO      
                           }  // end trace length   
                         }   // end if trace enabled
-      
-                        // now store list mode data
+
+
+                        // now assemble list mode data
                         timeL   =  hdr[2]     + (hdr[3]<<16);
                         timeH   =  hdr[4];
-                        energyF =  hdr[6];
                         out7    =  0;           // baseline placeholder, float actually
                         exttsL  =  hdr[16]    + (hdr[17]<<16);
                         exttsH  =  hdr[18];
+                        tsum    =  hdr[8]     + (hdr[9]<<16);
+                        lsum    =  hdr[10]    + (hdr[11]<<16);
+                        gsum    =  hdr[12]    + (hdr[13]<<16);
+
+                         // compute and histogram E
+                           ph = C1[ch]*(double)lsum+Cg[ch]*(double)gsum+C0[ch]*(double)tsum;
+
+                        //printf("ph %f, BLavg %f, E %f\n",ph,baseline[ch], ph-baseline[ch]);
+                        //printf("lsum    %d, tsum     %d, gsum    %d\n",lsum, tsum, gsum);
+                        //printf("c1      %f, c0       %f, cg      %f\n",C1[ch], C0[ch], Cg[ch]);
+                        //printf("c1      %f, c0       %f, cg      %f\n",C1[ch]* 67108864, C0[ch]* 67108864 *(-1.0), Cg[ch]* 67108864);
+                        //printf("lsum*c1 %f, tsum*c0  %f, gsum*cg %f\n",lsum*C1[ch], tsum*C0[ch], gsum*Cg[ch]);
+                    //    printf("ch %d: Energy wsum ARM %f FPGA %d \n ",ch, ph, wsum);
+                        //printf("lsum %d, tsum %d gsum %d; E (ph) ARM FPGA %f   ",lsum, tsum, gsum, ph);
+   
+                        ph = (double)ph-baseline[ch];  // ph = ph-baseline[ch];
+                        if ((ph<0.0)|| (ph>65536.0))	ph =0.0;	// out of range energies -> 0
+                        energy = (int)floor(ph);
+                     //   printf("ch %d: Energy ph ARM %d ",ch, energy);
+                        //if ((hit & (1<< HIT_LOCALHIT))==0)	  	energy =0;	   // not a local hit -> 0
+             
 
                         if(useFWE==1)  energy = energyF;   // overwrite local computation with FPGA result
                 //      printf("Energy ph FPGA %d \n\n",hdr[6]);
@@ -642,25 +655,25 @@ int main(void) {
                         // compute PSA results from raw data
                         // need to subtract baseline in correct scale (1/4) and length (QDC#_LENGTH[ch])
                    //     printf( "Read PSA words (12-15): %d %d %d %d\n",hdr[12], hdr[13], hdr[14], hdr[15] );
-                        psa_base = hdr[12];
+                        psa_base = hdr[0];
                         if( fippiconfig.QDCLen4[ch]) 
                            bscale = 32.0;
                         else
                            bscale = 4.0;
                         
-                        tmpD = (double)hdr[13] - (double)psa_base/bscale * fippiconfig.QDCLen0[ch]; //  subtract QDCL0 x base/bscale from raw value
+                        tmpD = (double)hdr[19] - (double)psa_base/bscale * fippiconfig.QDCLen0[ch]; //  subtract QDCL0 x base/bscale from raw value
                         if( (tmpD>0) && (tmpD<65535))
                            psa_Q0 = (int)floor(tmpD);
                         else
                            psa_Q0 = 0;
                         
-                        tmpD = (double)hdr[14] - (double)psa_base/bscale * fippiconfig.QDCLen1[ch]; //  subtract QDCL1 x base/bscale from raw value
+                        tmpD = (double)hdr[5] - (double)psa_base/bscale * fippiconfig.QDCLen1[ch]; //  subtract QDCL1 x base/bscale from raw value
                         if( (tmpD>0) && (tmpD<65535))
                            psa_Q1 = (int)floor(tmpD);
                         else
                            psa_Q1 = 0;
                         
-                        psa_ampl = hdr[15] - psa_base;
+                        psa_ampl = hdr[6] - psa_base;
       
                         if(psa_Q0!=0)
                            psa_R = (int)floor(1000.0*(double)psa_Q1/(double)psa_Q0);
@@ -669,7 +682,7 @@ int main(void) {
    
                         if(RunType==0x100)   {   
                              // assemble the header words. For now, report always 10 32bit word headers (all except QDC)
-                             out0  = hdr[0]  + (hdr[1]<<16); // pileup, EL, HL, and crate/slot/channel #
+                             out0  = hdrids + ch  + (hdr[1]<<16); // pileup, EL, HL, and crate/slot/channel #
                              out2  = timeH + (cfd<<16)   ;            // h[4]=timeH, h[5]=cfd placeholder
                              out3 = energy + (hdr[7]<<16);            // h[6]=energy placeholder, h[7] = flag and TL
                      
@@ -695,8 +708,8 @@ int main(void) {
                          if(RunType==0x400) {// && ch<NCHANNEL_MAX400)   {
                         //    if( energy > Emin[ch]) {
 
-                                out2 = hdr[12]    + (hdr[13]<<16);    // raw PSA for debug
-                                out3 = hdr[14]    + (hdr[15]<<16);
+                                out2 = hdr[0]    + (hdr[18]<<16);    // raw PSA for debug
+                                out3 = hdr[5]    + (hdr[6]<<16);
                                 chw = ch & 0x03;         // map channels into 0-3, assume only one set of 4 connected
                            //   printf( "Channel hit %d, channel recorded %d, energy %d, Emin %d\n",ch, chw, energy, Emin[ch]); 
                                 hit = (1<<chw) + 0x20 + (0x100<<chw);
@@ -779,16 +792,20 @@ int main(void) {
                        for( k=0; k < 20; k++)
                         {
                            mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
-                           hdr[k] = mapped[AMZ_EXDRD];      // read 16 bits
+                           hdr[k] = mapped[AMZ_EXDRD];      // read 16 bits, no double read required
                           // the next 8 words only need to be read if reading CFD data
                          }
 
                        //  now also advance trace memory address if traces are enabled
                        if(TRACEENA[ch]==1)  { 
-                          mapped[AMZ_EXAFRD] = AK7_NEXTEVENT;             // select the "nextevent" address in channel's page
-                          out7 = mapped[AMZ_EXDWR];     // any write ok
+                          mapped[AMZ_EXAFRD] = AK7_SKIPTRACE;             // select the "skiptrace" address in channel's page
+                          out7 = mapped[AMZ_EXDWR];     // any read ok
                        }  // end if trace enabled 
                   }  // end not acceptable
+                  
+                  // read for nextevent
+                  mapped[AMZ_EXAFRD] = AK7_NEXTEVENT;             // select the "skiptrace" address in channel's page
+                  out7 = mapped[AMZ_EXDWR];     // any read ok
                }     // end event in this channel
             }        // end for ch
          }           // end event in any channel

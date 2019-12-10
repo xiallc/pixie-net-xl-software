@@ -271,8 +271,10 @@
 #define AK7_ADCFRAME          0x86
 #define AK7_WR_TM_TAI         0x8D
 
-#define AK7_NEXTEVENT         0xDB
+#define AK7_NEXTEVENT         0xDA
+#define AK7_SKIPTRACE         0xDB
 #define AK7_HDRMEM_D          0xDC
+#define AK7_EFIFO             0xDD
 #define AK7_TRCMEM_B          0xDE
 #define AK7_BLLOCK            0xD4
 #define AK7_BLSTART           0xC8
