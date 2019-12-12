@@ -1,92 +1,103 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>Pixie-Net ADC</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="text/javascript"  src="dygraph-combined.js"></script>
+  <title>Pixie-Net ADC</title>
 
-<script type="text/javascript"  src="dygraph-combined.js"></script>
+  <style type="text/css">
+    body { background-color:#d0d0d0; font-family:sans-serif; }
+    h1 { margin:0; font-size:24px }
+    h2 { margin-top:15px; font-size:20px; font-weight:normal; border-bottom:1px solid #ff9040 }
+    p { font-size:14px }
+    li { font-size:14px }
+    a { color:#6060d0; text-decoration:none }
+    a:hover { text-decoration:underline }
 
-<style type="text/css">
-	body { background-color:#d0d0d0; font-family:sans-serif; }
-	div.box { background-color:#ffffff; width:500px; margin:20px auto 50px; padding:50px; border-radius:10px; border:1px solid #808080; box-shadow:8px 15px 20px #404040 }
-	img.logo { float:right; margin:-10px 0 0 30px }
-	h1 { margin:0; font-size:24px }
-	h2 { margin-top:40px; font-size:20px; font-weight:normal; border-bottom:1px solid #ff9040 }
-	p { font-size:14px }
-	a { color:#6060d0; text-decoration:none }
-	a:hover { text-decoration:underline }
-</style>
+    .header { padding: 20px; text-align: center; background: #1e73be; color: white; }
+    .header h1 { font-size: 40px; 	}
 
+    /* Ensure proper sizing */
+    * { box-sizing: border-box; }
 
+    /* Column container */
+    .row { display: flex; flex-wrap: wrap; }
+
+    /* Sidebar/left column */
+    .side { height: 100%; width: 180px; position: fixed; background-color: white; padding: 20px; }
+    .side a { float: left; display: block; color: #002b80; text-align: left; padding: 10px 10px; text-decoration: none; }
+    .side a:hover { background-color: #ddd; color: #1e73be; }
+
+    /* bottom help section */
+    .fixed_bot { position: fixed; bottom: 0; left: 0; width: 180px; padding: 20px }
+    .fixed_bot  p {font-size: 12px; }
+    .fixed_bot  a {font-size: 14px; }
+
+    /* Main column */
+    .main { margin-left: 180px; padding: 20px; }
+
+    .w3-card-2{
+      background-color:white;
+      border-radius:3px;
+      padding: 10px;
+      margin-bottom: 20px;
+      box-shadow:0 4px 10px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12)
+    }
+
+    .tooltip { position: relative; display: inline-block; border-bottom: 1px dotted black; }
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 250px;
+      background-color: #1e73be;
+      color: white;
+      text-align: left;
+      border-radius: 6px;
+      padding: 5px 5px;
+      position: absolute;
+      z-index: 1;
+    }
+    .tooltip:hover .tooltiptext { visibility: visible; width: 250px; top: 100%; left: 80%; margin-left: -60px;	}
+
+  </style>
 </head>
 
 
 <body>
- <div class="box">            
-<img src="Xia_LLC_web_header.jpg" width="500" height="80" border="0"></a>
-<p> </p>
-<p> <h1> Pixie-Net ADC Traces </h1></p>
 
+<div class="header">
+  <h1>Pixie-Net ADC Traces (file)</h1>
+</div>
 
+<div class="row">
+  <div class="side">
+    <img src="xialogo.jpg" width="140" height=auto alt="XIA Logo">
+    <p> </p>
+    <a href="index.html"> Home </a>
+    <a href="cgitraces.cgi"> Current ADC traces </a>
+    <a href="cgistats.cgi"> Current run statistics </a>
+    <a href="mcapage.html">Most recent MCA spectra</a>
+    <a href="webops/webopsindex.html"> Web interface </a>
 
-<div id="graphdiv2"  style="width:500px; height:300px;"></div>  
-<div id = "legend" style="width:500px; height:80px;" ></div>
-<script type="text/javascript">
+    <div class="fixed_bot">
+      <h2>Help</h2>
+      <i><p>This page displays the ADC waveforms saved to file ADC.csv by gettraces. </p>
+        <p>Double click to auto zoom </p>
+        <p>Click and drag to zoom </p>
+        <p>Alt click and drag to pan </p>
+        <p>Use browser button to refresh </p>
+        <p>Roughly 500 nanoseconds between samples </p></i>
+    </div>
+  </div>
 
- 
+  <div class="main">
+    <div class="w3-card-2">
+      <div id="graphdiv2"  style="width:500px; height:300px; background-color:white;"></div>
+      <div id = "legend" style="width:500px; height:80px; background-color:white;" ></div>
 
-  var g2 = new Dygraph(
-    document.getElementById("graphdiv2"),
-    "ADC.csv", // path to CSV file
-    {   // graph options
-	  title: ' ',
-	  colors:
-            ["Navy", "Maroon",    "DarkMagenta", "Black", 
-             "Blue", "Red",       "BlueViolet",  "Green", 
-             "Teal", "Darkorange","Fuchsia",     "Olive" ,
-				 "Aqua", "Gold",      "Gray",        "Lime" ], 
-	  ylabel: 'ADC value',
-	  xlabel: 'Sample number',          
-	  labelsDiv: document.getElementById('legend'),
-     legend: 'always',
-	  visibility: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true]
-	 }
-  );
-   function change(el) {
-     	g2.setVisibility(el.id, el.checked);
-	  }
-
- //    function changeall(el) {				   // todo: update the checkbox status also?
- //    	g2.setVisibility(0, el.checked);
-//		g2.setVisibility(1, el.checked);
-//		g2.setVisibility(2, el.checked);
-//		g2.setVisibility(3, el.checked);
-//		g2.setVisibility(4, el.checked);
-//		g2.setVisibility(5, el.checked);
-//		g2.setVisibility(6, el.checked);
-//		g2.setVisibility(7, el.checked);
-//		g2.setVisibility(8, el.checked);
-//		g2.setVisibility(9, el.checked);
-//		g2.setVisibility(10, el.checked);
-//		g2.setVisibility(11, el.checked);
-//		g2.setVisibility(12, el.checked);
-//		g2.setVisibility(13, el.checked);
-//		g2.setVisibility(14, el.checked);
-//		g2.setVisibility(15, el.checked);
-
-      var graphs = [ g2 ];
-      function showall(val) {
-         for (var idx = 0; idx < graphs.length; idx++) {	  
-            graphs[idx].updateOptions({ 	  visibility: [val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val] });
-         }
-		};
-
-
-</script>
-<input id='showall' type="button" value="Show All" onclick="showall(true)">
-<input id='showall' type="button" value="Hide All" onclick="showall(false)">
-
+      <input id='showall' type="button" value="Show All" onclick="showall(true)">
+      <input id='hideall' type="button" value="Hide All" onclick="showall(false)">
 
     <p><b>Show</b></p>
     <p>
@@ -96,51 +107,72 @@
       <label for="1"> adc01 </label>
       <input type="checkbox" id="2" checked="checked" onclick="change(this)">
       <label for="2"> adc02 </label>
-		<input type="checkbox" id="3" checked="checked" onclick="change(this)">
+      <input type="checkbox" id="3" checked="checked" onclick="change(this)">
       <label for="3"> adc03 </label><br>
 
-		<input type="checkbox" id="4" checked="checked"  onclick="change(this)">
-      <label for="0"> adc04 </label>
+      <input type="checkbox" id="4" checked="checked"  onclick="change(this)">
+      <label for="4"> adc04 </label>
       <input type="checkbox" id="5" checked="checked" onclick="change(this)">
-      <label for="1"> adc05 </label>
+      <label for="5"> adc05 </label>
       <input type="checkbox" id="6" checked="checked" onclick="change(this)">
-      <label for="2"> adc06 </label>
-		<input type="checkbox" id="7" checked="checked" onclick="change(this)">
-      <label for="3"> adc07 </label><br>
+      <label for="6"> adc06 </label>
+	  <input type="checkbox" id="7" checked="checked" onclick="change(this)">
+      <label for="7"> adc07 </label><br>
 
-		<input type="checkbox" id="8" checked="checked"  onclick="change(this)">
-      <label for="0"> adc08 </label>
+      <input type="checkbox" id="8" checked="checked"  onclick="change(this)">
+      <label for="8"> adc08 </label>
       <input type="checkbox" id="9" checked="checked" onclick="change(this)">
-      <label for="1"> adc09 </label>
+      <label for="9"> adc09 </label>
       <input type="checkbox" id="10" checked="checked" onclick="change(this)">
-      <label for="2"> adc10 </label>
-		<input type="checkbox" id="11" checked="checked" onclick="change(this)">
-      <label for="3"> adc11 </label><br>
+      <label for="10"> adc10 </label>
+      <input type="checkbox" id="11" checked="checked" onclick="change(this)">
+      <label for="11"> adc11 </label><br>
 
-		<input type="checkbox" id="12" checked="checked"  onclick="change(this)">
-      <label for="0"> adc12 </label>
+      <input type="checkbox" id="12" checked="checked"  onclick="change(this)">
+      <label for="12"> adc12 </label>
       <input type="checkbox" id="13" checked="checked" onclick="change(this)">
-      <label for="1"> adc13 </label>
+      <label for="13"> adc13 </label>
       <input type="checkbox" id="14" checked="checked" onclick="change(this)">
-      <label for="2"> adc14 </label>
-		<input type="checkbox" id="15" checked="checked" onclick="change(this)">
-      <label for="3"> adc15 </label><br>
-
-
-
+      <label for="14"> adc14 </label>
+      <input type="checkbox" id="15" checked="checked" onclick="change(this)">
+      <label for="15"> adc15 </label><br>
     </p>
+    </div>
+  </div>
+</div>
 
+<script type="text/javascript">
 
- </div>
+  var g2 = new Dygraph(
+      document.getElementById("graphdiv2"),
+      "ADC.csv", // path to CSV file
+      {   // graph options
+        title: ' ',
+        colors:
+                ["Navy", "Maroon",    "DarkMagenta", "Black",
+                  "Blue", "Red",       "BlueViolet",  "Green",
+                  "Teal", "Darkorange","Fuchsia",     "Olive" ,
+                  "Aqua", "Gold",      "Gray",        "Lime" ],
+        ylabel: 'ADC value',
+        xlabel: 'Sample number',
+        labelsDiv: document.getElementById('legend'),
+        legend: 'always',
+        visibility: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true]
+      }
+  );
 
-<p>Double click to auto zoom </p>
-<p>Click and drag to zoom </p>
-<p>Alt click and drag to pan </p>
-<p>Use browser button to refresh </p>
-<p>Roughly 500 nanoseconds between samples </p>
+  function change(el) {
+    g2.setVisibility(el.id, el.checked);
+  }
 
+  var graphs = [ g2 ];
+  function showall(val) {
+    for (var idx = 0; idx < graphs.length; idx++) {
+      graphs[idx].updateOptions({ 	  visibility: [val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val] });
+    }
+  }
 
-
+</script>
 </body>
 </html>
 

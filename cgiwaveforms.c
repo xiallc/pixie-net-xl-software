@@ -148,14 +148,18 @@ int main(void) {
    // -------- read the webpage template and print  ---------
 
    fil1 = fopen("adcpage.html","r");
-   for( k = 0; k < 30; k ++ )
+   for( k = 0; k < 96; k ++ )
    {
      
       fgets(line, LINESZ, fil1);     // read from template, first part
-      if(k==5) 
+      if(k==7) 
          printf("<title>Pixie-Net Waveforms</title>\n");
-      else if(k==28)
+      else if(k==69)
          printf("<p> <h1> Pixie-Net Waveforms </h1></p>\n");
+      else if(k==84) 
+         printf("<i><p>This page displays the LM waveforms saved to file LMdata.txt by startdaq, acquire, etc in run type 0x500  </p>\n");
+      else if(k==89) 
+         printf("<p>4 or 8 nanoseconds between samples </p>\n");
       else
         printf("%s",line);            // "print" to webserver on stdout  
    }   
@@ -170,7 +174,7 @@ int main(void) {
    printf("    <input type=\"submit\" value=\"submit\" >              ");
    printf("    </form>                                                 ");
 
-   for( k = 30; k < 40; k ++ )
+   for( k = 96; k < 146; k ++ )
    {
       fgets(line, LINESZ, fil1);     // read from template, first part
       printf("%s",line);            // "print" to webserver on stdout  
@@ -189,12 +193,9 @@ int main(void) {
    printf("      \"%d,%d\\n \"  ,  \n",k,wf[k-1]);
  
    // finish printing the webpage
-   for( k = 41; k < 75; k ++ )
+   for( k = 147; k < 178; k ++ )
    {
       fgets(line, LINESZ, fil1);        // read from template
-      if(k==74) 
-         printf("<p>4 nanoseconds between samples </p>\n");
-      else
       printf("%s",line);               // "print" to webserver on stdout
    }   
 

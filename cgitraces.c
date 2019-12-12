@@ -156,10 +156,15 @@ int main(void) {
 
    // read the webpage template and print 
    fil = fopen("adcpage.html","r");
-   for( k = 0; k < 40; k ++ )
+   for( k = 0; k < 147; k ++ )
    {
       fgets(line, LINESZ, fil);     // read from template, first part
-      printf("%s",line);            // "print" to webserver on stdout  
+      if(k==69)
+         printf("<h1>Pixie-Net ADC Traces (current)</h1>\n");            // "print" to webserver on stdout  
+      else if(k==84)
+         printf("<i><p>This page displays the ADC waveforms just read from the Pixie-Net</p>\n");            // "print" to webserver on stdout  
+      else
+         printf("%s",line);            // "print" to webserver on stdout  
    }   
    
    fgets(line, LINESZ, fil);        // read from template, the line listing the ADC.csv file. This is not printed
@@ -183,7 +188,7 @@ int main(void) {
 
 
    // finish printing the webpage
-   for( k = 41; k < 140; k ++ )
+   for( k = 148; k < 176; k ++ )
    {
       fgets(line, LINESZ, fil);        // read from template
       printf("%s",line);               // "print" to webserver on stdout

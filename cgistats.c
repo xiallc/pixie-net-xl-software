@@ -79,15 +79,17 @@ int main(void) {
 
   // read the webpage template and print 
   fil = fopen("rspage.html","r");
-  for( k = 0; k < 61; k ++ )
+  for( k = 0; k < 108; k ++ )
   {
       fgets(line, LINESZ, fil);     // read from template, first part
-      if(k==5)
+      if(k==7)
          printf("<title>Pixie-Net Run Statistics (current)</title>\n");
-      else if(k==50)      
+      else if(k==73)      
          printf("<p> <h1> Pixie-Net Run Statistics (current) </h1>\n");
-      else if(k==51)  
-         printf(" (Do not execute during data acquisition) </p>\n");
+      else if(k==88)  
+         printf(" <i><p>This page displays the current run statistics just read from the Pixie-Net. </p>\n");
+      else if(k==89)  
+         printf(" <p><b>Do not refresh while a DAQ is in progress, it will interfere with the data collection.</b> </p>\n");
       else
          printf("%s",line);            // "print" to webserver on stdout  
   }   
@@ -104,7 +106,7 @@ int main(void) {
 
 
   // finish printing the webpage
-  for( k = 61; k < 115; k ++ )
+  for( k = 108; k < 157; k ++ )
   {
       fgets(line, LINESZ, fil);        // read from template
       printf("%s",line);               // "print" to webserver on stdout
