@@ -370,6 +370,8 @@ int main(void) {
          mapped[AMZ_EXDWR]  =  (WR_tm_tai_stop>>32) & 0x00000000FFFF; 
       } // end K7s
    }  
+
+
    
    mapped[AMZ_DEVICESEL] = CS_MZ;	// select MZ
    mapped[AMZ_CSRIN] = 0x0001;      // RunEnable=1 > nLive=0 (DAQ on)
@@ -504,6 +506,11 @@ int main(void) {
                     mapped[AMZ_EXAFWR] = AK7_PAGE;         // specify   K7's addr     addr 3 = channel/system
                     mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;   //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
                     
+                                      
+                  // read for nextevent
+                  mapped[AMZ_EXAFRD] = AK7_NEXTEVENT;             // select the "nextevent" address in channel's page
+                  out7 = mapped[AMZ_EXDWR];     // any read ok
+
                     if(  eventcount_ch[ch]==0) {
                      // dummy reads
                         mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;  // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
@@ -530,9 +537,9 @@ int main(void) {
                         // the next 5 words only need to be read if storing data locally 
                    //  }
     
-                 /*  printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
+                 /*   printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
                      printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
-                     printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
+                    printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
                      printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
                 */                     
                 //     timeL   =  hdr[6]     + (hdr[7]<<16); 
@@ -567,13 +574,7 @@ int main(void) {
                        cfd = (int)floor(ph*32768); 
                        cfd = (cfd&0x7FFF);                  // combine cfd value and bits
                        cfd = cfd + (cfdfrc<<15);
-                     }
-
-                     // read FPGA E
-                     mapped[AMZ_EXAFRD] = AK7_EFIFO;              // select the "EFIFO" address in channel's page
-                     energyF = mapped[AMZ_EXDWR];                 // read 16 bits
-                     if(SLOWREAD)  energyF = mapped[AMZ_EXDRD];   // read 16 bits
-                    
+                     }               
 
 
                      // at this point, key data of event is known. Now can
@@ -606,6 +607,12 @@ int main(void) {
                            if(SLOWREAD)  hdr[k] = mapped[AMZ_EXDRD];    // read 16 bits
                          }  // the next 8 64bit words only need to be read if reading QDC data
 
+                        // read FPGA E
+                        mapped[AMZ_EXAFRD] = AK7_EFIFO;              // select the "EFIFO" address in channel's page
+                        energyF = mapped[AMZ_EXDWR];                 // read 16 bits
+                        if(SLOWREAD)  energyF = mapped[AMZ_EXDRD];   // read 16 bits
+
+
                         // waveform read (if accepted)
                         if(TRACEENA[ch]==1)  {   
                           for( k=0; k < (TL[ch]/2); k++)
@@ -620,7 +627,12 @@ int main(void) {
                           }  // end trace length   
                         }   // end if trace enabled
 
-
+                /*     printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
+                     printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
+                     printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
+                     printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
+                     printf( "Read 3 H-L: 0x %X %X %X %X\n",hdr[15], hdr[14], hdr[13], hdr[12] );
+                 */
                         // now assemble list mode data
                         timeL   =  hdr[2]     + (hdr[3]<<16);
                         timeH   =  hdr[4];
@@ -630,6 +642,9 @@ int main(void) {
                         tsum    =  hdr[8]     + (hdr[9]<<16);
                         lsum    =  hdr[10]    + (hdr[11]<<16);
                         gsum    =  hdr[12]    + (hdr[13]<<16);
+
+                     //   printf( "tsum %d, lsum %d, gsum %d\n",tsum, lsum, gsum );  
+                     //   printf( "timeL %d, extTSL %d\n",timeL, exttsL );
 
                          // compute and histogram E
                            ph = C1[ch]*(double)lsum+Cg[ch]*(double)gsum+C0[ch]*(double)tsum;
@@ -645,12 +660,12 @@ int main(void) {
                         ph = (double)ph-baseline[ch];  // ph = ph-baseline[ch];
                         if ((ph<0.0)|| (ph>65536.0))	ph =0.0;	// out of range energies -> 0
                         energy = (int)floor(ph);
-                     //   printf("ch %d: Energy ph ARM %d ",ch, energy);
+                        if(eventcount % 100 == 0) printf("ch %d: Energy ph ARM %05d ",ch, energy);
                         //if ((hit & (1<< HIT_LOCALHIT))==0)	  	energy =0;	   // not a local hit -> 0
              
 
                         if(useFWE==1)  energy = energyF;   // overwrite local computation with FPGA result
-                //      printf("Energy ph FPGA %d \n\n",hdr[6]);
+                       if(eventcount % 100 == 0) printf("Energy ph FPGA %05d \n",energyF);      //if(eventcount % 100 == 0)
 
                         // compute PSA results from raw data
                         // need to subtract baseline in correct scale (1/4) and length (QDC#_LENGTH[ch])
@@ -802,10 +817,6 @@ int main(void) {
                           out7 = mapped[AMZ_EXDWR];     // any read ok
                        }  // end if trace enabled 
                   }  // end not acceptable
-                  
-                  // read for nextevent
-                  mapped[AMZ_EXAFRD] = AK7_NEXTEVENT;             // select the "skiptrace" address in channel's page
-                  out7 = mapped[AMZ_EXDWR];     // any read ok
                }     // end event in this channel
             }        // end for ch
          }           // end event in any channel
@@ -856,7 +867,7 @@ int main(void) {
          loopcount ++;
          currenttime = time(NULL);
       } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-   //   } while (eventcount <= 20); // run for a fixed number of events   
+  //   } while (eventcount <= 100); // run for a fixed number of events   
 
 
 
