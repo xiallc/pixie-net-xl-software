@@ -327,13 +327,15 @@
 #define CCSRA_POLARITY     5  // input signal polarity control
 #define CCSRA_VETOENA      6  // veto channel trigger - 1: enable; 0: disable
 #define CCSRA_HISTOE       7  // histogram energy in the on-board MCA
-#define CCSRA_TRACEENA     8  // trace capture and associated header data - 1: enable; 0: disable
+#define CCSRA_TRACEENA     8  // trace capture - 1: enable; 0: disable
 #define CCSRA_QDCENA       9  // QDC summing and associated header data - 1: enable; 0: disable
 #define CCSRA_CFDMODE     10  // CFD for real time, trace capture and QDC capture - 1: enable; 0: disable 
 #define CCSRA_GLOBTRIG    11  // global trigger for validation - 1: enable; 0: disable
 #define CCSRA_ESUMSENA    12  // raw energy sums and baseline in event header - 1: enable; 0: disable
 #define CCSRA_CHANTRIG    13  // channel trigger for validation - 1: enable; 0: disable
 #define CCSRA_ENARELAY    14  // Control input relay: 1: connect, 0: disconnect
+
+
 
 #define CCSRA_PILEUPCTRL    15	
 #define CCSRC_INVERSEPILEUP 0
@@ -361,6 +363,12 @@
 #define FiPPI_GROUP			8	// Group trigger
 #define FiPPI_LIVE			9	// Individual live time measurement
 #define SelExtFastTrig		12	// Select external trigger to record event, instead of local fast trigger
+#define FiPPI_TRACEENA     13
+#define FiPPI_QDCENA       14
+#define FiPPI_CFDMODE      15
+#define FiPPI_GLOBTRIG     16
+#define FiPPI_CHANTRIG     17
+#define FiPPI_HDRENA       18  //  header data for most LM runs - 1: enable; 0: disable
 
 // other FW control register bits
 #define SCSR_WRRUNTIMECTRL			1	// Enable WR run time Control

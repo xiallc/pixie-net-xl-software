@@ -212,7 +212,7 @@ typedef struct PixieNetFippiConfig {
     CCSRA_POLARITY_05     // input signal polarity control
     CCSRA_VETOENA_06      // veto channel trigger - 1: enable; 0: disable
     CCSRA_HISTOE_07       // histogram energy in the on-board MCA
-    CCSRA_TRACEENA_08     // trace capture and associated header data - 1: enable; 0: disable
+    CCSRA_TRACEENA_08     // trace capture - 1: enable; 0: disable
     CCSRA_QDCENA_09       // QDC summing and associated header data - 1: enable; 0: dsiable
     CCSRA_CFDMODE_10      // CFD for real time, trace capture and QDC capture - 1: enable; 0: disable 
     CCSRA_GLOBTRIG_11     // global trigger for validation - 1: enable; 0: disable

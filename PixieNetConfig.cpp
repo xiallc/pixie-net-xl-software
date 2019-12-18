@@ -838,7 +838,7 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
   if( (ignore_missing==0 && ret==1) || (ret<0) )    return -32;
   if(ret==0) 
    for( int i = 0; i < NCHANNELS; ++i )
-     config->CHANNEL_CSRA[i] = SetOrClrBit(15, config->CHANNEL_CSRA[i], bits[i]);  
+     config->CHANNEL_CSRA[i] = SetOrClrBit(15, config->CHANNEL_CSRA[i], bits[i]);       
  
   //   for( int i = 0; i < NCHANNELS; ++i )
   //     printf("CHANNEL_CSRA = 0x%x\n",config->CHANNEL_CSRA[i]);                       
