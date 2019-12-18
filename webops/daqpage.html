@@ -32,8 +32,8 @@
 
 		/* bottom help section */
 		.fixed_bot { position: fixed; bottom: 0; left: 0; width: 180px; padding: 20px }
-		.fixed_bot  p {font-size: 12px; }
-		.fixed_bot  a {font-size: 14px; }
+		.fixed_bot  p {font-size: 11px; }
+		.fixed_bot  a {font-size: 12px; }
 
 		/* Main column */
 		.main { margin-left: 180px; padding: 20px; }
@@ -170,22 +170,18 @@ $(document).ready(function(){
 	<div class="side">
 		<img src="xialogo.jpg" width="140" height=auto alt="XIA Logo">
 		<p> </p>
-		<a href="webops/webopsindex.html"> Web interface </a>
+		<a href="webopsindex.html"> Web interface </a>
 		<a href="adcsetuppage.html"> ADC setup </a>
 		<a href="cgistats.cgi"> Current run statistics </a>
 		<a href="daqpage.html"> DAQ control </a>
-		<a href="mcapage.html">Most recent MCA spectra</a>
+		<a href="mcapage.html">Most recent <br> MCA spectra</a>
 		<a href="../index.html"> Home  </a>
 
 		<div class="fixed_bot">
 			<h2>Help</h2>
-			<i style="font-size: 12px">This set of pages allows DAQ and parameter control (after login).
-				For more help, try the </i>
-			<div class="tooltip"> <b style="font-size: 12px"> tooltips</b>
-				<span class="tooltiptext">Bold dotted underlined text shows more information when hoovering the mouse over it</span>
-			</div>  <i style="font-size: 12px"> or see  </i>
-			<a href="Pixie_Net_XL_Manual.pdf"> Pixie-Net XL manual </a>
-			<a href="http://support.xia.com/default.asp?W772"> XIA Pixie-Net website</a>
+			<i>
+			<p>This page can be used to start DAQ runs (function startdaq).  </p>
+			<p> Click "Read Settings" before making changes</p></i>
 		</div>
 	</div>
 

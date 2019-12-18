@@ -30,8 +30,8 @@
 
     /* bottom help section */
 	.fixed_bot { position: fixed; bottom: 0; left: 0; width: 180px; padding: 20px }
-	.fixed_bot  p {font-size: 12px; }
-	.fixed_bot  a {font-size: 14px; }
+	.fixed_bot  p {font-size: 11px; }
+	.fixed_bot  a {font-size: 12px; }
 
 	/* Main column */
 	.main { margin-left: 180px; padding: 20px; }
@@ -76,22 +76,38 @@
 		<a href="index.html"> Home </a>
 		<a href="cgitraces.cgi"> Current ADC traces </a>
 		<a href="cgistats.cgi"> Current run statistics </a>
-		<a href="mcapage.html">Most recent MCA spectra</a>
+		<a href="mcapage.html">Most recent <br> MCA spectra</a>
 		<a href="webops/webopsindex.html"> Web interface </a>
 
 		<div class="fixed_bot">
 			<h2>Help</h2>
-			<i style="font-size: 12px">If you're seeing this page, it means you have successfully set up your Pixie-Net XL.
+			<i style="font-size: 11px">If you're seeing this page, it means you have successfully set up your Pixie-Net XL.
 				For more help, try the </i>
-			<div class="tooltip"> <b style="font-size: 12px"> tooltips</b>
+			<div class="tooltip"> <b style="font-size: 11px"> tooltips</b>
 				<span class="tooltiptext">Bold dotted underlined text shows more information when hoovering the mouse over it</span>
-			</div>  <i style="font-size: 12px"> or see  </i>
+			</div>  <i style="font-size: 11px"> or see  </i>
 			<a href="Pixie_Net_XL_Manual.pdf"> Pixie-Net XL manual </a>
 			<a href="http://support.xia.com/default.asp?W772"> XIA Pixie-Net website</a>
 		</div>
 	</div>
 
 	<div class="main">
+
+		<div class="w3-card-2">
+			<h2> Current Status (cgi) </h2>
+			<p> <div class="tooltip"> <b>When no other task is in progress</b>
+				<span class="tooltiptext">These links execute cgi scripts on the Pixie-Net XL and display the result in webpages. DAQ must not be active during such cgi tasks.</span>
+			</div>, view/refresh
+			<ul>
+				<li> <a href="cgitraces.cgi"> ADC traces </a> 	   </li>
+			   <li> <a href="cgistats.cgi"> Run statistics </a> (full) </li>
+			 </ul>
+
+			 <p> <div class="tooltip"> <b>For a web interface </b>
+				<span class="tooltiptext">This web interface replaces many of the typed terminal commands but requires login to control access to DAQs and settings.</span>
+			</div>, <a href="webops/webopsindex.html"> click here </a> (login required)
+		</div>
+
 		<div class="w3-card-2">
 			<h2>DAQ Monitoring</h2>
 			<p> <div class="tooltip"> <b>During</b>
@@ -122,21 +138,6 @@
 			</ul>
 
 		   <p>To view most recent ADC traces in a plot,  <a href="adcpage.html"> click here</a>.</p>
-		</div>
-
-		<div class="w3-card-2">
-			<h2> CGI Current Data </h2>
-			<p> <div class="tooltip"> <b>When no other task is in progress</b>
-				<span class="tooltiptext">These links execute cgi scripts on the Pixie-Net XL and display the result in webpages. DAQ must not be active.</span>
-			</div>, view/refresh
-			<ul>
-				<li> <a href="cgitraces.cgi"> ADC traces </a> 	   </li>
-			   <li> <a href="cgistats.cgi"> Run statistics </a> (full) </li>
-			 </ul>
-
-			 <p> <div class="tooltip"> <b>For a web interface </b>
-				<span class="tooltiptext">This web interface replaces many of the typed terminal commands but requires login to control access to DAQs and settings.</span>
-			</div>, <a href="webops/webopsindex.html"> click here </a> (login required)
 		</div>
 
 	</div>

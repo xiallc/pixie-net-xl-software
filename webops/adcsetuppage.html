@@ -32,8 +32,8 @@
 
 		/* bottom help section */
 		.fixed_bot { position: fixed; bottom: 0; left: 0; width: 180px; padding: 20px }
-		.fixed_bot  p {font-size: 12px; }
-		.fixed_bot  a {font-size: 14px; }
+		.fixed_bot  p {font-size: 11px; }
+		.fixed_bot  a {font-size: 12px; }
 
 		/* Main column */
 		.main { margin-left: 180px; padding: 20px; }
@@ -406,21 +406,18 @@ $(function(){
 	<div class="side">
 		<img src="xialogo.jpg" width="140" height=auto alt="XIA Logo">
 		<p> </p>
-		<a href="webops/webopsindex.html"> Web interface </a>
+		<a href="webopsindex.html"> Web interface </a>
 		<a href="adcsetuppage.html"> ADC setup </a>
 		<a href="cgistats.cgi"> Current run statistics </a>
 		<a href="daqpage.html"> DAQ control </a>
-		<a href="mcapage.html">Most recent MCA spectra</a>
+		<a href="mcapage.html">Most recent <br> MCA spectra</a>
 		<a href="../index.html"> Home  </a>
 
 		<div class="fixed_bot">
 			<h2>Help</h2>
-			<i><p>This page displays the ADC waveforms read directly from the module along with parameters relevant for the inputs. </p>
-				<p><b>Always First click the top 3 buttons to initialize</b> </p>
-				<p>Double click to auto zoom </p>
-				<p>Click and drag to zoom </p>
-				<p>Alt click and drag to pan </p>
-				<p>Use browser button to refresh </p>
+			<i><p>This page displays the ADC waveforms read directly from the module along with parameters relevant to the input signals. </p>
+				<p><b>First click the top 3 buttons to initialize</b> </p>
+				<p>Click "Apply" after changing parameters </p>
 				<p>Roughly 500 nanoseconds between samples </p></i>
 		</div>
 	</div>
@@ -598,18 +595,6 @@ $(function(){
 </script>
 
 
-
-
-
-
-
-
-
-
-<p>Double click to auto zoom </p>
-<p>Click and drag to zoom </p>
-<p>Alt click and drag to pan </p>
-<p>Roughly 500 nanoseconds between samples </p>
 
 
 

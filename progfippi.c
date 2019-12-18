@@ -952,9 +952,9 @@ int main(void) {
       Cg = Cg * fippiconfig.DIG_GAIN[ch];
       C1 = C1 * fippiconfig.DIG_GAIN[ch];
 
-      C0 = C0 * 67108864 * (-1.0);    // upshift (*2^26) to have sufficient digits for integer representation [and make positive for FPGA]
-      Cg = Cg * 67108864;
-      C1 = C1 * 67108864;
+      C0 = C0 * 262144 * (-1.0);    // upshift (*2^18) to have sufficient digits for integer representation [and make positive for FPGA]
+      Cg = Cg * 262144; //67108864;
+      C1 = C1 * 262144;
 
   //     C0 = 17;    
   //    Cg = 18;

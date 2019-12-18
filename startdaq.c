@@ -660,12 +660,12 @@ int main(void) {
                         ph = (double)ph-baseline[ch];  // ph = ph-baseline[ch];
                         if ((ph<0.0)|| (ph>65536.0))	ph =0.0;	// out of range energies -> 0
                         energy = (int)floor(ph);
-                        if(eventcount % 100 == 0) printf("ch %d: Energy ph ARM %05d ",ch, energy);
+                         printf("ch %d: Energy ph ARM %05d ",ch, energy);
                         //if ((hit & (1<< HIT_LOCALHIT))==0)	  	energy =0;	   // not a local hit -> 0
              
 
                         if(useFWE==1)  energy = energyF;   // overwrite local computation with FPGA result
-                       if(eventcount % 100 == 0) printf("Energy ph FPGA %05d \n",energyF);      //if(eventcount % 100 == 0)
+                       printf("Energy ph FPGA %05d \n",energyF);      //if(eventcount % 100 == 0)
 
                         // compute PSA results from raw data
                         // need to subtract baseline in correct scale (1/4) and length (QDC#_LENGTH[ch])
@@ -790,12 +790,12 @@ int main(void) {
                         if(bin>0) wmca[ch][bin] = wmca[ch][bin] + 1;	// increment wmca
                      }
 
-                     //debug - 2nd MCA in next channel
+                     //debug - 2nd MCA in unused block of channels
                      bin = energyF >> Binfactor[ch];
                      if( (bin<MAX_MCA_BINS) && (bin>0) ) {
-                        mca[ch+1][bin] =  mca[ch+1][bin] + 1;	// increment mca
+                        mca[ch+2][bin] =  mca[ch+2][bin] + 1;	// increment mca
                         bin = bin >> WEB_LOGEBIN;
-                        if(bin>0) wmca[ch+1][bin] = wmca[ch+1][bin] + 1;	// increment wmca
+                        if(bin>0) wmca[ch+2][bin] = wmca[ch+2][bin] + 1;	// increment wmca
                      }
                      
                      eventcount++;    
