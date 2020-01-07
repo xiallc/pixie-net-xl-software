@@ -298,7 +298,7 @@ int main(void) {
          // event readout compatible with P16 DSP code
          // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
          if(evstats) {					  // if there are events in any [good] channel
-            printf( "K7 0 read from AK7_SYSSYTATUS (0x85), masked for good channels: 0x%X\n", evstats );
+       //     printf( "K7 0 read from AK7_SYSSYTATUS (0x85), masked for good channels: 0x%X\n", evstats );
 
             for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++)
             {
