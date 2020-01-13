@@ -626,6 +626,7 @@ int main(void) {
       mapped[AMZ_EXDWR]  = reglo;         // write lower 16 bit
    
       reglo = reglo + setbit(fippiconfig.WR_RUNTIME_CTRL,WRC_RUNTIME, SCSR_WRRUNTIMECTRL   );      // check for bit enabling WR runtime control
+      reglo = reglo + setbit(fippiconfig.MODULE_CSRA,MCSRA_P4ERUNSTATS, SCSR_P4ERUNSTATS   );      // check for bit enabling P4e convention for live time etc
       mapped[AMZ_EXAFWR] = AK7_SCSRIN;    // write to  k7's addr to select register for write
       mapped[AMZ_EXDWR]  = reglo;        // write lower 16 bit
    
@@ -776,7 +777,13 @@ int main(void) {
          mval = 2*FL[ch]+FG[ch]+2;
          reghi = reghi + ( mval<<13 );                // Store RBDEL_TF = (FastLength + FastGap + FastLength + 2) in bits [56:45] of Fipreg1
          reghi = reghi + ( fippiconfig.CFD_SCALE[ch] <<25 );        //  Store CFDScale[3:0] in bits [60:57] of Fipreg1
-         
+         reghi = reghi + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_GOOD,            FiPPI_GOOD           );     
+         reghi = reghi + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_PILEUPCTRL,      FiPPI_PILEUPCTRL     );     
+         reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_INVERSEPILEUP,   FiPPI_INVERSEPILEUP  );     
+
+
+
+
          // now write 
          mapped[AMZ_EXAFWR] = AK7_P16REG01+0;                 // write to  k7's addr to select channel's register N    
          mapped[AMZ_EXDWR]  = reglo & 0xFFFF;                 // write lower 16 bit                                    
@@ -799,6 +806,8 @@ int main(void) {
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_GLOBTRIG,    FiPPI_GLOBTRIG   );     
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_CHANTRIG,    FiPPI_CHANTRIG   );    
          if(fippiconfig.RUN_TYPE != 0x301) reglo = reglo + (1<<FiPPI_HDRENA);                             // add header enable bit unless MCA run that uses only E FIFO
+         reglo = reglo + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_RBADDIS,     FiPPI_RBADDIS   );     
+
          mval = 4096 - (int)(fippiconfig.VETO_STRETCH[ch]*FILTER_CLOCK_MHZ);
          reglo = reglo + (mval <<20);       //Store VetoStretch in bits [31:20] of Fipreg2   // in us
          

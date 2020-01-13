@@ -318,58 +318,61 @@
 #define HIT_LOCALHIT          20    //  set if this channel has a hit
 #define HIT_OOR               22    //  set if this channel had the out of range flag set
 
-// P16 CSR bits
-#define CCSRA_FTRIGSEL     0  // fast trigger selection - 1: select external fast trigger; 0: select local fast trigger
-#define CCSRA_EXTTRIGSEL   1  // module validation signal selection - 1: select module gate signal; 0: select global validation signal (RevD & RevF only)
-#define CCSRA_GOOD         2  // good-channel bit - 1: channel data will be read out; 0: channel data will not be read out
-#define CCSRA_CHANTRIGSEL  3  // channel validation signal selection - 1: select channel gate signal; 0: select channel validation signal (RevD & RevF only)
-#define CCSRA_SYNCDATAACQ  4  // block data acquisition if trace or header DPMs are full - 1: enable; 0: disable
-#define CCSRA_POLARITY     5  // input signal polarity control
-#define CCSRA_VETOENA      6  // veto channel trigger - 1: enable; 0: disable
-#define CCSRA_HISTOE       7  // histogram energy in the on-board MCA
-#define CCSRA_TRACEENA     8  // trace capture - 1: enable; 0: disable
-#define CCSRA_QDCENA       9  // QDC summing and associated header data - 1: enable; 0: disable
-#define CCSRA_CFDMODE     10  // CFD for real time, trace capture and QDC capture - 1: enable; 0: disable 
-#define CCSRA_GLOBTRIG    11  // global trigger for validation - 1: enable; 0: disable
-#define CCSRA_ESUMSENA    12  // raw energy sums and baseline in event header - 1: enable; 0: disable
-#define CCSRA_CHANTRIG    13  // channel trigger for validation - 1: enable; 0: disable
-#define CCSRA_ENARELAY    14  // Control input relay: 1: connect, 0: disconnect
-
-
-
+// P16 CSR bits defined in settings file
+#define CCSRA_FTRIGSEL       0  // fast trigger selection - 1: select external fast trigger; 0: select local fast trigger
+#define CCSRA_EXTTRIGSEL     1  // module validation signal selection - 1: select module gate signal; 0: select global validation signal (RevD & RevF only)
+#define CCSRA_GOOD           2  // good-channel bit - 1: channel data will be read out; 0: channel data will not be read out
+#define CCSRA_CHANTRIGSEL    3  // channel validation signal selection - 1: select channel gate signal; 0: select channel validation signal (RevD & RevF only)
+#define CCSRA_SYNCDATAACQ    4  // block data acquisition if trace or header DPMs are full - 1: enable; 0: disable
+#define CCSRA_POLARITY       5  // input signal polarity control
+#define CCSRA_VETOENA        6  // veto channel trigger - 1: enable; 0: disable
+#define CCSRA_HISTOE         7  // histogram energy in the on-board MCA
+#define CCSRA_TRACEENA       8  // trace capture - 1: enable; 0: disable
+#define CCSRA_QDCENA         9  // QDC summing and associated header data - 1: enable; 0: disable
+#define CCSRA_CFDMODE       10  // CFD for real time, trace capture and QDC capture - 1: enable; 0: disable 
+#define CCSRA_GLOBTRIG      11  // global trigger for validation - 1: enable; 0: disable
+#define CCSRA_ESUMSENA      12  // raw energy sums and baseline in event header - 1: enable; 0: disable
+#define CCSRA_CHANTRIG      13  // channel trigger for validation - 1: enable; 0: disable
+#define CCSRA_ENARELAY      14  // Control input relay: 1: connect, 0: disconnect
 #define CCSRA_PILEUPCTRL    15	
-#define CCSRC_INVERSEPILEUP 0
-
-#define CCSRC_ENAENERGYCUT  1  // Enable "no trace for large pulses" feature - 1: enable; 0: disable
-#define CCSRC_GROUPTRIGSEL  2  // Group trigger selection - 1: external group trigger; 0: local fast trigger
-#define CCSRC_CHANVETOSEL   3  // Channel veto selection - 1: channel validation trigger; 0: front panel channel veto
-#define CCSRC_MODVETOSEL    4  // Module veto selection - 1: module validation trigger; 0: front panel module veto
-#define CCSRC_EXTTSENA      5  // External timestamps in event header - 1: enable; 0: disable
+#define CCSRC_INVERSEPILEUP  0
+#define CCSRC_ENAENERGYCUT   1  // Enable "no trace for large pulses" feature - 1: enable; 0: disable
+#define CCSRC_GROUPTRIGSEL   2  // Group trigger selection - 1: external group trigger; 0: local fast trigger
+#define CCSRC_CHANVETOSEL    3  // Channel veto selection - 1: channel validation trigger; 0: front panel channel veto
+#define CCSRC_MODVETOSEL     4  // Module veto selection - 1: module validation trigger; 0: front panel module veto
+#define CCSRC_EXTTSENA       5  // External timestamps in event header - 1: enable; 0: disable
+#define CCSRC_RBADDIS        6  // if 1, disable rangebad logic and accept even pulses going out of range
 
 // other CSR bits
-#define WRC_RUNTIME         0  // if set, Enable WR run time control
+#define WRC_RUNTIME          0  // if set, Enable WR run time control
+#define MCSRA_P4ERUNSTATS    1  // if set, use P4e convention for live time etc
 
 // P16 Fippi register bits
-#define FiPPI_HALT          0   // Halt Fippi (lower 32-bit word)
-#define FiPPI_INVRT         1   // Polarity (lower 32-bit word)
-#define FiPPI_VETOENA       2   // Enable Veto (lower 32-bit word)
-#define FiPPI_EXTTRIGSEL    3   // Select external validation trigger source (lower 32-bit word)
-#define FiPPI_CHANTRIGSEL  21   // Select channel validation trigger source (lower 32-bit word)
-#define FiPPI_SYNCDATAACQ  22   // Enable SYNC data DAQ (lower 32-bit word)
-#define FiPPI_GROUPTRIGSEL 23   // Select group trigger source (lower 32-bit word)
-#define FiPPI_CHANVETOSEL  29   // Select channel veto source (upper 32-bit word)
-#define FiPPI_MODVETOSEL   30   // Select module veto source (upper 32-bit word)
-#define FiPPI_ENARELAY     31   // Enable front end relay (upper 32-bit word)
-#define FiPPI_GROUP			8	// Group trigger
-#define FiPPI_LIVE			9	// Individual live time measurement
-#define SelExtFastTrig		12	// Select external trigger to record event, instead of local fast trigger
-#define FiPPI_TRACEENA     13
-#define FiPPI_QDCENA       14
-#define FiPPI_CFDMODE      15
-#define FiPPI_GLOBTRIG     16
-#define FiPPI_CHANTRIG     17
-#define FiPPI_HDRENA       18  //  header data for most LM runs - 1: enable; 0: disable
+#define FiPPI_HALT           0   // Halt Fippi (lower 32-bit word)
+#define FiPPI_INVRT          1   // Polarity (lower 32-bit word)
+#define FiPPI_VETOENA        2   // Enable Veto (lower 32-bit word)
+#define FiPPI_EXTTRIGSEL     3   // Select external validation trigger source (lower 32-bit word)
+#define FiPPI_CHANTRIGSEL   21   // Select channel validation trigger source (lower 32-bit word)
+#define FiPPI_SYNCDATAACQ   22   // Enable SYNC data DAQ (lower 32-bit word)
+#define FiPPI_GROUPTRIGSEL  23   // Select group trigger source (lower 32-bit word)
+#define FiPPI_CHANVETOSEL   29   // Select channel veto source (upper 32-bit word)
+#define FiPPI_MODVETOSEL    30   // Select module veto source (upper 32-bit word)
+#define FiPPI_ENARELAY      31   // Enable front end relay (upper 32-bit word)
+#define FiPPI_GROUP			 8	   // Group trigger
+#define FiPPI_LIVE			 9	   // Individual live time measurement
+#define SelExtFastTrig		 12	// Select external trigger to record event, instead of local fast trigger
+#define FiPPI_TRACEENA      13
+#define FiPPI_QDCENA        14
+#define FiPPI_CFDMODE       15
+#define FiPPI_GLOBTRIG      16
+#define FiPPI_CHANTRIG      17
+#define FiPPI_HDRENA        18  //  header data for most LM runs - 1: enable; 0: disable
+#define FiPPI_RBADDIS       19   // if 1, disable rangebad logic and accept even pulses going out of range
+#define FiPPI_GOOD          29  // good-channel bit - 1: channel data will be read out; 0: channel data will not be read out
+#define FiPPI_PILEUPCTRL    30	
+#define FiPPI_INVERSEPILEUP 31
 
 // other FW control register bits
 #define SCSR_WRRUNTIMECTRL			1	// Enable WR run time Control
+#define SCSR_P4ERUNSTATS			2	// if set, use P4e convention for live time etc
 

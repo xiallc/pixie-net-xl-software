@@ -603,6 +603,10 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
   ret = parse_single_bool_val( label_to_values, "MCSRA_CWGROUP_00", bit, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -1;
   if(ret==0) config->MODULE_CSRA = SetOrClrBit(0, config->MODULE_CSRA, bit); 
+
+  ret = parse_single_bool_val( label_to_values, "MCSRA_P4ERUNSTATS_01", bit, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -1;
+  if(ret==0) config->MODULE_CSRA = SetOrClrBit(1, config->MODULE_CSRA, bit); 
   
   ret = parse_single_bool_val( label_to_values, "MCSRA_FPVETO_05", bit, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -1;
@@ -879,7 +883,12 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
   if(ret==0) 
     for( int i = 0; i < NCHANNELS; ++i )
       config->CHANNEL_CSRC[i] = SetOrClrBit(5, config->CHANNEL_CSRC[i], bits[i]);   
-    
+ 
+  ret = parse_multiple_bool_val( label_to_values, "CCSRC_RBADDIS_06", bits, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )    return -37;
+  if(ret==0) 
+    for( int i = 0; i < NCHANNELS; ++i )
+      config->CHANNEL_CSRC[i] = SetOrClrBit(6, config->CHANNEL_CSRC[i], bits[i]);  
   
 
       // --------------- other channel parameters -------------------------------------

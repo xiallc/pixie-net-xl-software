@@ -194,10 +194,11 @@ int main(void) {
   printf( "useWsum = %d, useFWE = %d \n", useWsum, useFWE);
 
 
-  if( (RunType==0x100) || (RunType==0x400) || (RunType==0x401) || (RunType==0x301)  ) {      // check run type
-   // 0x100, 0x400, 0x401, 0x301 are ok
+  if( (RunType==0x100) || (RunType==0x400) || (RunType==0x401)  ) {      // check run type
+   // 0x100, 0x400, 0x401, are ok
+   // 0x301 no longer supported because header memory is disabled for pure MCA runs, use mcadaq instead
   } else {
-      printf( "This function only supports runtypes 0x100 (P16), 0x400, 0x401, or 0x301 \n");
+      printf( "This function only supports runtypes 0x100 (P16), 0x400, 0x401 \n");
       return(-1);
   }
 
@@ -537,11 +538,12 @@ int main(void) {
                         // the next 5 words only need to be read if storing data locally 
                    //  }
     
-                 /*   printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
+                   if(eventcount<10) { 
+                     printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
                      printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
-                    printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
+                     printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
                      printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
-                */                     
+                  }                     
                 //     timeL   =  hdr[6]     + (hdr[7]<<16); 
                 //     wsum    =  hdr[6]                   ;
                 //     tsum    =  hdr[0]     + (hdr[1]<<16);
@@ -660,12 +662,12 @@ int main(void) {
                         ph = (double)ph-baseline[ch];  // ph = ph-baseline[ch];
                         if ((ph<0.0)|| (ph>65536.0))	ph =0.0;	// out of range energies -> 0
                         energy = (int)floor(ph);
-                         printf("ch %d: Energy ph ARM %05d ",ch, energy);
+                       //  printf("ch %d: Energy ph ARM %05d ",ch, energy);
                         //if ((hit & (1<< HIT_LOCALHIT))==0)	  	energy =0;	   // not a local hit -> 0
-             
+                 //        if(eventcount<100)   printf( "now incrementing MCA, E(%d) = %d\n", ch, energy); 
 
                         if(useFWE==1)  energy = energyF;   // overwrite local computation with FPGA result
-                       printf("Energy ph FPGA %05d \n",energyF);      //if(eventcount % 100 == 0)
+                     //  printf("Energy ph FPGA %05d \n",energyF);      //if(eventcount % 100 == 0)
 
                         // compute PSA results from raw data
                         // need to subtract baseline in correct scale (1/4) and length (QDC#_LENGTH[ch])
@@ -790,13 +792,16 @@ int main(void) {
                         if(bin>0) wmca[ch][bin] = wmca[ch][bin] + 1;	// increment wmca
                      }
 
+                     /*
                      //debug - 2nd MCA in unused block of channels
                      bin = energyF >> Binfactor[ch];
+                     out7 = -8;     // channel modifier to block of unused ones
                      if( (bin<MAX_MCA_BINS) && (bin>0) ) {
-                        mca[ch+2][bin] =  mca[ch+2][bin] + 1;	// increment mca
+                        mca[ch+out7][bin] =  mca[ch+out7][bin] + 1;	// increment mca
                         bin = bin >> WEB_LOGEBIN;
-                        if(bin>0) wmca[ch+2][bin] = wmca[ch+2][bin] + 1;	// increment wmca
+                        if(bin>0) wmca[ch+out7][bin] = wmca[ch+out7][bin] + 1;	// increment wmca
                      }
+                     */
                      
                      eventcount++;    
                      eventcount_ch[ch]++;
