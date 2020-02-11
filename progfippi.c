@@ -429,14 +429,17 @@ int main(void) {
          printf("Invalid INTEGRATOR = %d, currently not implemented\n",fippiconfig.INTEGRATOR[ch]);
          return -4400-ch;
       } 
-           
-      // no limit on BLCUT
+     
+      if(fippiconfig.BLCUT[ch] <4 || fippiconfig.BLCUT[ch] >1023 )  {
+         printf("Invalid BLCUT = %d, must be between 4 and 1023\n",fippiconfig.BLCUT[ch]);
+         return -4500-ch;
+      }
 
       if(fippiconfig.BASELINE_PERCENT[ch] <1 || fippiconfig.BASELINE_PERCENT[ch] >99 )  {
          printf("Invalid BASELINE_PERCENT = %f, must be between 1 and 99\n",fippiconfig.BASELINE_PERCENT[ch]);
          return -4500-ch;
       }
-
+                                               
       if(fippiconfig.BLAVG[ch] > 65535)     {
          printf("Invalid BLAVG = %d, maximum %d\n",fippiconfig.BLAVG[ch],65535);
          return -4600-ch;
@@ -973,7 +976,13 @@ int main(void) {
 
 
       // now write 
-      reglo = (int)floor(C0);
+      // C0 reg included BLavg
+      if (fippiconfig.BLAVG[ch]==0)
+         mval = 0;
+      else
+         mval = 65536-fippiconfig.BLAVG[ch];
+      reglo = (int)floor(C0) & 0xFFFFFF;
+      reglo = reglo + (mval << 24);
       mapped[AMZ_EXAFWR] = AK7_P16REG_C0+0;               // write to  k7's addr to select channel's register N      
       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;                // write lower 16 bit                                      
       mapped[AMZ_EXAFWR] = AK7_P16REG_C0+1;               // write to  k7's addr to select channel's register N+1    
@@ -985,7 +994,10 @@ int main(void) {
       mapped[AMZ_EXAFWR] = AK7_P16REG_CG+1;               // write to  k7's addr to select channel's register N+1    
       mapped[AMZ_EXDWR]  = reglo >> 16;                   // write next 16 bit                                       
 
-      reglo = (int)floor(C1);
+      // C0 reg includes BLcut
+      mval = fippiconfig.BLCUT[ch]>>2;
+      reglo = (int)floor(C1) & 0xFFFFFF;
+      reglo = reglo + (mval << 24);
       mapped[AMZ_EXAFWR] = AK7_P16REG_C1+0;               // write to  k7's addr to select channel's register N      
       mapped[AMZ_EXDWR]  = reglo & 0xFFFF;                // write lower 16 bit                                      
       mapped[AMZ_EXAFWR] = AK7_P16REG_C1+1;               // write to  k7's addr to select channel's register N+1    

@@ -195,19 +195,19 @@ int main(void) {
    loopcount =  0;
    eventcount = 0;
    for( ch=0; ch < NCHANNELS; ch++) eventcount_ch[ch] = 0;
-   starttime = time(NULL);                         // capture OS start time
+   starttime = time(NULL);                      // capture OS start time
 
 
 
     // Run Start Control
-   mapped[AMZ_DEVICESEL] = CS_MZ;	           // select MZ
-   if(SyncT==1)  mapped[ARTC_CLR] = 0x0001;    // any write will create a pulse to clear timers
+   mapped[AMZ_DEVICESEL] = CS_MZ;	            // select MZ
+   if(SyncT==1)  mapped[ARTC_CLR] = 0x0001;     // any write will create a pulse to clear timers
 
-   if(WR_RTCtrl==1)                       // RunEnable/Live set via WR time comparison  (if startT < WR time < stopT => RunEnable=1) 
+   if(WR_RTCtrl==1)                             // RunEnable/Live set via WR time comparison  (if startT < WR time < stopT => RunEnable=1) 
    {
-      mapped[AMZ_DEVICESEL] = CS_K1;	   // specify which K7 
-      mapped[AMZ_EXAFWR] = AK7_PAGE;      // specify   K7's addr:    PAGE register
-      mapped[AMZ_EXDWR]  = PAGE_SYS;      //  PAGE 0: system, page 0x10n = channel n
+      mapped[AMZ_DEVICESEL] = CS_K1;	         // specify which K7 
+      mapped[AMZ_EXAFWR] = AK7_PAGE;            // specify   K7's addr:    PAGE register
+      mapped[AMZ_EXDWR]  = PAGE_SYS;            //  PAGE 0: system, page 0x10n = channel n
 
       // check if WR locked
       mapped[AMZ_EXAFRD] = AK7_CSROUT;   
@@ -229,14 +229,10 @@ int main(void) {
       WR_tm_tai = tmp0 +  65536*tmp1 + TWOTO32*tmp2;
 
       //find next "round" time point 
-      WR_tm_tai_next = WR_TAI_STEP*(unsigned long long)floor(WR_tm_tai/WR_TAI_STEP)+ WR_TAI_STEP;   // next coarse time step
-     // if( WR_tm_tai_next - WR_tm_tai < WR_TAI_MARGIN)                                          // if too close, 
-     //       WR_tm_tai_next = WR_tm_tai_next + WR_TAI_STEP;                                     // one more step   
-     // probably bogus. a proper scheme to ensure multiple modules start at the same time should be implemented on the DAQ network master 
-    
+      WR_tm_tai_next  =  WR_TAI_STEP*(unsigned long long)floor(WR_tm_tai/WR_TAI_STEP)+ WR_TAI_STEP;   // next coarse time step   
       WR_tm_tai_start =  WR_tm_tai_next;
       WR_tm_tai_stop  =  WR_tm_tai_next + ReqRunTime - 1;
-      ReqRunTime = ReqRunTime + WR_TAI_STEP;    // increase time for local DAQ counter accordingly
+      ReqRunTime      = ReqRunTime + WR_TAI_STEP;    // increase time for local DAQ counter accordingly
 
       printf( "Current WR time %llu\n",WR_tm_tai );
       printf( "Start time %llu\n",WR_tm_tai_start );
@@ -278,8 +274,6 @@ int main(void) {
     // ********************** Run Loop **********************
    do {
 
-         
-      
       // -----------poll for events -----------
       // if data ready. read out, compute E, increment MCA *********
 
@@ -298,74 +292,53 @@ int main(void) {
          // event readout compatible with P16 DSP code
          // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
          if(evstats) {					  // if there are events in any [good] channel
-       //     printf( "K7 0 read from AK7_SYSSYTATUS (0x85), masked for good channels: 0x%X\n", evstats );
+             if(eventcount<500) printf( "K7 0 read from AK7_SYSSYTATUS (0x85), masked for good channels: 0x%X\n", evstats );
 
             for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++)
             {
 
-               ch = ch_k7+k7*NCHANNELS_PER_K7;              // total channel count
+               ch = ch_k7+k7*NCHANNELS_PER_K7;                 // total channel count
                R1 = 1 << ch_k7;
-               if(evstats & R1)	{	                        //  if there is an event in the header memory for this channel
-      
-                    mapped[AMZ_EXAFWR] = AK7_PAGE;         // specify   K7's addr     addr 3 = channel/system
-                    mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;   //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
-                    
+               if(evstats & R1)	{	                           //  if there is an event in the header memory for this channel
+                                                            
+                  mapped[AMZ_EXAFWR] = AK7_PAGE;               // specify   K7's addr     addr 3 = channel/system
+                  mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;         //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
                                       
                   // read for nextevent
-                  mapped[AMZ_EXAFRD] = AK7_NEXTEVENT;             // select the "nextevent" address in channel's page
-                  mval = mapped[AMZ_EXDWR];     // any read ok
+                  mapped[AMZ_EXAFRD] = AK7_NEXTEVENT;          // select the "nextevent" address in channel's page
+                  mval = mapped[AMZ_EXDWR];                    // any read ok
 
-                    if(  eventcount_ch[ch]==0) {
-                     // dummy reads
-                        mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;  // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
-                        mval = mapped[AMZ_EXDRD];         // read 16 bits
-                     }            
-   
-                     // todo: get pileup bit 
+                 if(  eventcount_ch[ch]==0) {
+                  // dummy reads
+                     mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;        // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
+                     mval = mapped[AMZ_EXDRD];                 // read 16 bits
+                  }            
+
+                  // read FPGA E
+                  mapped[AMZ_EXAFRD] = AK7_EFIFO;              // select the "EFIFO" address in channel's page
+                  energyF = mapped[AMZ_EXDWR];                 // read 16 bits
+                  if(SLOWREAD)  energyF = mapped[AMZ_EXDRD];   // read 16 bits
+        
+                  // extract pileup bit
+                  pileup  = energyF & 0x1;                     // last bit of FIFO E is pilup
            
-                     pileup  = 0; //(hdr[3]>>3)&0x1;
-
-                 //    printf( "time Low: 0x%08X = %0f ms \n",timeL,timeL*13.333/1000000 );
-                 //    printf( "ch. %d, cfdout1 %d, cfdout2 %d, cfdsrc %d, cfdfrc %d ",ch,cfdout1,cfdout2,cfdsrc,cfdfrc); 
-   
-       
                  if( (PILEUPCTRL[ch]==0)     || (PILEUPCTRL[ch]==1 && !pileup )    )
                  {    // either don't care  OR pilup test required and  pileup bit not set
-            
-
-
-                        // read FPGA E
-                        mapped[AMZ_EXAFRD] = AK7_EFIFO;              // select the "EFIFO" address in channel's page
-                        energyF = mapped[AMZ_EXDWR];                 // read 16 bits
-                        if(SLOWREAD)  energyF = mapped[AMZ_EXDRD];   // read 16 bits
-
-                        energy = energyF;   // overwrite local computation with FPGA result
-
-
-                     if(eventcount<100)   printf( "now incrementing MCA, E(%d) = %d\n", ch, energy); 
+           
+                     energy = energyF & 0xFFFE;                // overwrite local computation with FPGA result
+                     
                      //  histogramming if E< max mcabin
                      bin = energy >> Binfactor[ch];
+                     if(eventcount<500)   printf( "now incrementing MCA, E(%d) = %d, bin = %d\n", ch, energy,bin); 
                      if( (bin<MAX_MCA_BINS) && (bin>0) ) {
-                        mca[ch][bin] =  mca[ch][bin] + 1;	// increment mca
+                        mca[ch][bin] =  mca[ch][bin] + 1;	   // increment mca
                         bin = bin >> WEB_LOGEBIN;
                         if(bin>0) wmca[ch][bin] = wmca[ch][bin] + 1;	// increment wmca
                      }
-
-                     /*
-                     //debug - 2nd MCA in unused block of channels
-                     bin = energyF >> Binfactor[ch];
-                     out7 = -8;     // channel modifier to block of unused ones
-                     if( (bin<MAX_MCA_BINS) && (bin>0) ) {
-                        mca[ch+out7][bin] =  mca[ch+out7][bin] + 1;	// increment mca
-                        bin = bin >> WEB_LOGEBIN;
-                        if(bin>0) wmca[ch+out7][bin] = wmca[ch+out7][bin] + 1;	// increment wmca
-                     }
-                     */
                      
                      eventcount++;    
                      eventcount_ch[ch]++;
-                  }
-
+                  }  // end pileup check
                }     // end event in this channel
             }        // end for ch
          }           // end event in any channel

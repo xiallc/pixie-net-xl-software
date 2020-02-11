@@ -496,7 +496,7 @@ int main(void) {
          // event readout compatible with P16 DSP code
          // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
          if(evstats) {					  // if there are events in any [good] channel
-     //     printf( "K7 0 read from AK7_SYSSYTATUS (0x85), masked for good channels: 0x%X\n", evstats );
+          if(eventcount<10) printf( "\nK7 0 read from AK7_SYSSYTATUS (0x85), masked for good channels: 0x%X\n", evstats );
             for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++)
             {
 
@@ -541,8 +541,8 @@ int main(void) {
                    if(eventcount<10) { 
                      printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
                      printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
-                     printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
-                     printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
+                     //printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
+                     //printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
                   }                     
                 //     timeL   =  hdr[6]     + (hdr[7]<<16); 
                 //     wsum    =  hdr[6]                   ;
@@ -629,12 +629,14 @@ int main(void) {
                           }  // end trace length   
                         }   // end if trace enabled
 
-                /*     printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
-                     printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
-                     printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
-                     printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
-                     printf( "Read 3 H-L: 0x %X %X %X %X\n",hdr[15], hdr[14], hdr[13], hdr[12] );
-                 */
+                    if(eventcount<10) { 
+                     //printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
+                     printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
+                     printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
+                     printf( "Read 3 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
+                     printf( "Read 4 H-L: 0x %X %X %X %X\n",hdr[15], hdr[14], hdr[13], hdr[12] );
+                     printf( "Read 5 H-L: 0x %X %X %X %X\n",hdr[19], hdr[18], hdr[17], hdr[16] );
+                   }
                         // now assemble list mode data
                         timeL   =  hdr[2]     + (hdr[3]<<16);
                         timeH   =  hdr[4];
@@ -645,7 +647,7 @@ int main(void) {
                         lsum    =  hdr[10]    + (hdr[11]<<16);
                         gsum    =  hdr[12]    + (hdr[13]<<16);
 
-                     //   printf( "tsum %d, lsum %d, gsum %d\n",tsum, lsum, gsum );  
+                        if(eventcount<10) printf( "tsum %d, lsum %d, gsum %d\n",tsum, lsum, gsum );  
                      //   printf( "timeL %d, extTSL %d\n",timeL, exttsL );
 
                          // compute and histogram E
@@ -662,12 +664,12 @@ int main(void) {
                         ph = (double)ph-baseline[ch];  // ph = ph-baseline[ch];
                         if ((ph<0.0)|| (ph>65536.0))	ph =0.0;	// out of range energies -> 0
                         energy = (int)floor(ph);
-                       //  printf("ch %d: Energy ph ARM %05d ",ch, energy);
+                        if(eventcount<10)  printf("ch %d: Energy ph ARM %05d ",ch, energy);
                         //if ((hit & (1<< HIT_LOCALHIT))==0)	  	energy =0;	   // not a local hit -> 0
                  //        if(eventcount<100)   printf( "now incrementing MCA, E(%d) = %d\n", ch, energy); 
 
-                        if(useFWE==1)  energy = energyF;   // overwrite local computation with FPGA result
-                     //  printf("Energy ph FPGA %05d \n",energyF);      //if(eventcount % 100 == 0)
+                        if(useFWE==1)  energy = energyF & 0xFFFE;   // overwrite local computation with FPGA result  (bit 0 is pileup)
+                     if(eventcount<10)  printf("Energy ph FPGA %05d \n",energyF);      //if(eventcount % 100 == 0)
 
                         // compute PSA results from raw data
                         // need to subtract baseline in correct scale (1/4) and length (QDC#_LENGTH[ch])
