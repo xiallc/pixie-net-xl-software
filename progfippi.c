@@ -229,6 +229,10 @@ int main(void) {
       printf("Invalid UDP_OUTPUT = 0x%x: UDP_OUTPUT only supported for runtype 0x100 at this time\n",fippiconfig.UDP_OUTPUT);
       return -900;
     }
+    if( (fippiconfig.UDP_OUTPUT == 1) && (fippiconfig.C_CONTROL ==0) ) {
+      printf("Option UDP_OUTPUT requires use of FPGA-computed Energy (C_CONTROL bit 1 set, e.g C_CONTROL=2)\n",fippiconfig.UDP_OUTPUT);
+      return -900;
+    }
 
     // WR Ethernet interface:
     // Not checking MAC and IP addresses (e.g. DEST_MAC0) for errors, but report for sanity check with hex numbers

@@ -83,6 +83,8 @@ int main(void) {
     int verbose = 1;      // TODO: control with argument to function 
   // 0 print errors and minimal info only
   // 1 print errors and full info
+    int maxmsg = 10;
+
 
     // *************** PS/PL IO initialization *********************
   // open the device for PD register I/O
@@ -292,7 +294,7 @@ int main(void) {
          // event readout compatible with P16 DSP code
          // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
          if(evstats) {					  // if there are events in any [good] channel
-             if(eventcount<500) printf( "K7 0 read from AK7_SYSSYTATUS (0x85), masked for good channels: 0x%X\n", evstats );
+             if(eventcount<maxmsg) printf( "K7 0 read from AK7_SYSSYTATUS (0x85), masked for good channels: 0x%X\n", evstats );
 
             for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++)
             {
@@ -329,7 +331,7 @@ int main(void) {
                      
                      //  histogramming if E< max mcabin
                      bin = energy >> Binfactor[ch];
-                     if(eventcount<500)   printf( "now incrementing MCA, E(%d) = %d, bin = %d\n", ch, energy,bin); 
+                     if(eventcount<maxmsg)   printf( "now incrementing MCA, E(%d) = %d, bin = %d\n", ch, energy,bin); 
                      if( (bin<MAX_MCA_BINS) && (bin>0) ) {
                         mca[ch][bin] =  mca[ch][bin] + 1;	   // increment mca
                         bin = bin >> WEB_LOGEBIN;

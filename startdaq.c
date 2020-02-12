@@ -99,6 +99,7 @@ int main(void) {
     int verbose = 1;      // TODO: control with argument to function 
   // 0 print errors and minimal info only
   // 1 print errors and full info
+  int maxmsg = 10;
 
     int useWsum;
     int useFWE; 
@@ -496,7 +497,7 @@ int main(void) {
          // event readout compatible with P16 DSP code
          // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
          if(evstats) {					  // if there are events in any [good] channel
-          if(eventcount<10) printf( "\nK7 0 read from AK7_SYSSYTATUS (0x85), masked for good channels: 0x%X\n", evstats );
+          if(eventcount<maxmsg) printf( "\nK7 0 read from AK7_SYSSYTATUS (0x85), masked for good channels: 0x%X\n", evstats );
             for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++)
             {
 
@@ -518,8 +519,8 @@ int main(void) {
                         hdr[0] = mapped[AMZ_EXDRD];         // read 16 bits
                      }            
    
-                     // read 1 64bit word from header
-                     // once E and cfd are computed in FPGA, this can be reduced to 3-4 16bit words . 
+                     // read 1 64bit word from header (CFD data requiring division, pileup info etc)
+                     // by now,  E is computed in FPGA and is only calculated here in non-UDP mode 
                    //  for( k=0; k < 3; k++)
                    //  {
                         k=0;
@@ -538,24 +539,14 @@ int main(void) {
                         // the next 5 words only need to be read if storing data locally 
                    //  }
     
-                   if(eventcount<10) { 
-                     printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
-                     printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
-                     //printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
-                     //printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
-                  }                     
-                //     timeL   =  hdr[6]     + (hdr[7]<<16); 
-                //     wsum    =  hdr[6]                   ;
-                //     tsum    =  hdr[0]     + (hdr[1]<<16);
-                //     lsum    =  hdr[2]     + (hdr[3]<<16);
-                //     gsum    =  hdr[4]     + (hdr[5]<<16);
-                     cfdout1 =  hdr[0]     + ((hdr[1]&0xFF) <<16);
-                     cfdout2 = ((hdr[1]&0xFF00)>>8) + (hdr[2]<<16);    
-                     cfdsrc  = (hdr[3]>>1)&0x1;            // cfd source (sample in group for >125 MHz ADCs)
-                     cfdfrc  = (hdr[3]>>2)&0x1;            // cfd forced if 1
-                     pileup  = (hdr[3]>>3)&0x1;
+                      if(eventcount<maxmsg) { 
+                        printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
+                        printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
+                     }                     
 
-                 //    printf( "time Low: 0x%08X = %0f ms \n",timeL,timeL*13.333/1000000 );
+                     // extract pileup bit
+
+                     pileup  = (hdr[3]>>3)&0x1;
                  //    printf( "ch. %d, cfdout1 %d, cfdout2 %d, cfdsrc %d, cfdfrc %d ",ch,cfdout1,cfdout2,cfdsrc,cfdfrc); 
    
        
@@ -564,7 +555,11 @@ int main(void) {
                       //printf( "pileup test passed, start computing E\n");      
         
                      // cfd needs some more computation
-                     cfdout2 = 0x1000000 - cfdout2;   // convert to positive
+                     cfdout1 =  hdr[0]     + ((hdr[1]&0xFF) <<16);
+                     cfdout2 = ((hdr[1]&0xFF00)>>8) + (hdr[2]<<16);    
+                     cfdsrc  = (hdr[3]>>1)&0x1;            // cfd source (sample in group for >125 MHz ADCs)
+                     cfdfrc  = (hdr[3]>>2)&0x1;            // cfd forced if 1
+                     cfdout2 = 0x1000000 - cfdout2;        // convert to positive
                      ph = (double)cfdout1 / ( (double)cfdout1 + (double)cfdout2 );              
                      //printf(", frac %f \n ",ph); 
                      if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)   {
@@ -576,7 +571,16 @@ int main(void) {
                        cfd = (int)floor(ph*32768); 
                        cfd = (cfd&0x7FFF);                  // combine cfd value and bits
                        cfd = cfd + (cfdfrc<<15);
-                     }               
+                     }     
+          
+                    // read FPGA E
+                    mapped[AMZ_EXAFRD] = AK7_EFIFO;              // select the "EFIFO" address in channel's page
+                    energyF = mapped[AMZ_EXDWR];                 // read 16 bits
+                    if(SLOWREAD)  energyF = mapped[AMZ_EXDRD];   // read 16 bits
+                    if(eventcount<maxmsg) { 
+                        printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
+                        printf( "Read FPGA E: %d\n",energyF );
+                    }  
 
 
                      // at this point, key data of event is known. Now can
@@ -599,6 +603,8 @@ int main(void) {
                         mapped[AMZ_EXAFWR] =  AK7_ETH_CTRL;    // specify   K7's addr:    Ethernet output control register
                         mapped[AMZ_EXDWR]  =  (ch_k7<<12) + (TRACEENA[ch]<<8) + (TL[ch]>>5);  // channel, payload type with/without trace, TL blocks
 
+                        if(useFWE==1)  energy = energyF & 0xFFFE;   // overwrite local computation with FPGA result  (bit 0 is pileup)
+
                      } else { // local storage
 
                         // read 5 more 64bit words from header (still in channel page)
@@ -608,12 +614,6 @@ int main(void) {
                            hdr[k] = mapped[AMZ_EXDRD];                  // read 16 bits
                            if(SLOWREAD)  hdr[k] = mapped[AMZ_EXDRD];    // read 16 bits
                          }  // the next 8 64bit words only need to be read if reading QDC data
-
-                        // read FPGA E
-                        mapped[AMZ_EXAFRD] = AK7_EFIFO;              // select the "EFIFO" address in channel's page
-                        energyF = mapped[AMZ_EXDWR];                 // read 16 bits
-                        if(SLOWREAD)  energyF = mapped[AMZ_EXDRD];   // read 16 bits
-
 
                         // waveform read (if accepted)
                         if(TRACEENA[ch]==1)  {   
@@ -629,14 +629,15 @@ int main(void) {
                           }  // end trace length   
                         }   // end if trace enabled
 
-                    if(eventcount<10) { 
-                     //printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
-                     printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
-                     printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
-                     printf( "Read 3 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
-                     printf( "Read 4 H-L: 0x %X %X %X %X\n",hdr[15], hdr[14], hdr[13], hdr[12] );
-                     printf( "Read 5 H-L: 0x %X %X %X %X\n",hdr[19], hdr[18], hdr[17], hdr[16] );
-                   }
+                          if(eventcount<maxmsg) { 
+                           //printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
+                           printf( "Read 1 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
+                           printf( "Read 2 H-L: 0x %X %X %X %X\n",hdr[ 7], hdr[ 6], hdr[ 5], hdr[ 4] );
+                           printf( "Read 3 H-L: 0x %X %X %X %X\n",hdr[11], hdr[10], hdr[ 9], hdr[ 8] );
+                           printf( "Read 4 H-L: 0x %X %X %X %X\n",hdr[15], hdr[14], hdr[13], hdr[12] );
+                           printf( "Read 5 H-L: 0x %X %X %X %X\n",hdr[19], hdr[18], hdr[17], hdr[16] );
+                         }
+
                         // now assemble list mode data
                         timeL   =  hdr[2]     + (hdr[3]<<16);
                         timeH   =  hdr[4];
@@ -647,7 +648,7 @@ int main(void) {
                         lsum    =  hdr[10]    + (hdr[11]<<16);
                         gsum    =  hdr[12]    + (hdr[13]<<16);
 
-                        if(eventcount<10) printf( "tsum %d, lsum %d, gsum %d\n",tsum, lsum, gsum );  
+                        if(eventcount<maxmsg) printf( "tsum %d, lsum %d, gsum %d\n",tsum, lsum, gsum );  
                      //   printf( "timeL %d, extTSL %d\n",timeL, exttsL );
 
                          // compute and histogram E
@@ -664,12 +665,13 @@ int main(void) {
                         ph = (double)ph-baseline[ch];  // ph = ph-baseline[ch];
                         if ((ph<0.0)|| (ph>65536.0))	ph =0.0;	// out of range energies -> 0
                         energy = (int)floor(ph);
-                        if(eventcount<10)  printf("ch %d: Energy ph ARM %05d ",ch, energy);
+                        if(eventcount<maxmsg)  printf("ch %d: Energy ph ARM %05d ",ch, energy);
                         //if ((hit & (1<< HIT_LOCALHIT))==0)	  	energy =0;	   // not a local hit -> 0
                  //        if(eventcount<100)   printf( "now incrementing MCA, E(%d) = %d\n", ch, energy); 
 
                         if(useFWE==1)  energy = energyF & 0xFFFE;   // overwrite local computation with FPGA result  (bit 0 is pileup)
-                     if(eventcount<10)  printf("Energy ph FPGA %05d \n",energyF);      //if(eventcount % 100 == 0)
+                     
+                        if(eventcount<maxmsg)  printf("Energy ph FPGA %05d \n",energyF);      //if(eventcount % 100 == 0)
 
                         // compute PSA results from raw data
                         // need to subtract baseline in correct scale (1/4) and length (QDC#_LENGTH[ch])
@@ -783,7 +785,7 @@ int main(void) {
                               psa_R       );
                         }    // 0x401
 
-                     } //eth/local storage
+                     } //udp/local storage
 
                      //if(eventcount<4)   printf( "now incrementing MCA, E = %d\n", energy); 
                      //  histogramming if E< max mcabin
