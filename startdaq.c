@@ -79,7 +79,7 @@ int main(void) {
   unsigned long long WR_tm_tai, WR_tm_tai_start, WR_tm_tai_stop, WR_tm_tai_next;
   unsigned int hdr[32];
   unsigned int out0, out2, out3, out7, pileup, exttsL, exttsH, hdrids;
-  unsigned int evstats, R1, timeL, timeH, hit;
+  unsigned int evstats, udpok, R1, timeL, timeH, hit;
   unsigned int lsum, tsum, gsum, wsum, energy, energyF, bin; 
   unsigned int mca[NCHANNELS][MAX_MCA_BINS] ={{0}};    // full MCA for end of run
   unsigned int wmca[NCHANNELS][WEB_MCA_BINS] ={{0}};    // smaller MCA during run
@@ -99,7 +99,7 @@ int main(void) {
     int verbose = 1;      // TODO: control with argument to function 
   // 0 print errors and minimal info only
   // 1 print errors and full info
-  int maxmsg = 10;
+  int maxmsg = 0;
 
     int useWsum;
     int useFWE; 
@@ -487,6 +487,17 @@ int main(void) {
          mapped[AMZ_DEVICESEL] =  cs[k7];	         // select FPGA 
          mapped[AMZ_EXAFWR] = AK7_PAGE;            // specify   K7's addr     addr 3 = channel/system
          mapped[AMZ_EXDWR]  = PAGE_SYS;            //                         0x0  = system  page
+
+         // check if UDP transfer is still ongoing
+         if(fippiconfig.UDP_OUTPUT==1)      
+         {
+            mapped[AMZ_EXAFRD] = AK7_CSROUT;     // read CSR
+            tmp0 =  mapped[AMZ_EXDRD];    
+            udpok = (tmp0 & 0x0400)==0 ;       // check flag for UDP in progress, must be zero
+            if(eventcount<maxmsg) printf( "K7 %d: UDP busy\n", k7 );
+          } else {
+            udpok = 1;
+          }
     
          // Read Header DPM status
          mapped[AMZ_EXAFRD] = AK7_SYSSYTATUS;      // write to  k7's addr for read -> reading from 0x85 system status register
@@ -496,7 +507,7 @@ int main(void) {
    
          // event readout compatible with P16 DSP code
          // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
-         if(evstats) {					  // if there are events in any [good] channel
+         if(evstats && udpok) {					  // if there are events in any [good] channel
           if(eventcount<maxmsg) printf( "\nK7 0 read from AK7_SYSSYTATUS (0x85), masked for good channels: 0x%X\n", evstats );
             for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++)
             {
@@ -578,7 +589,6 @@ int main(void) {
                     energyF = mapped[AMZ_EXDWR];                 // read 16 bits
                     if(SLOWREAD)  energyF = mapped[AMZ_EXDRD];   // read 16 bits
                     if(eventcount<maxmsg) { 
-                        printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
                         printf( "Read FPGA E: %d\n",energyF );
                     }  
 
@@ -602,6 +612,10 @@ int main(void) {
                         mapped[AMZ_EXDWR]  =  cfd;
                         mapped[AMZ_EXAFWR] =  AK7_ETH_CTRL;    // specify   K7's addr:    Ethernet output control register
                         mapped[AMZ_EXDWR]  =  (ch_k7<<12) + (TRACEENA[ch]<<8) + (TL[ch]>>5);  // channel, payload type with/without trace, TL blocks
+
+                     if(eventcount<maxmsg) { 
+                        printf( "issued command to UDP send\n");
+                    }  
 
                         if(useFWE==1)  energy = energyF & 0xFFFE;   // overwrite local computation with FPGA result  (bit 0 is pileup)
 
