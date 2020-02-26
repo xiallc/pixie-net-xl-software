@@ -363,9 +363,9 @@ int main(void) {
            //  printf("%s %d %d \n","Total_Time",tmp0,tmp1);    
 
             // print (small) set of RS to file, visible to web
-            read_print_runstats_XL_2x4(1, 0, mapped);
+          //  read_print_runstats_XL_2x4(1, 0, mapped);
       
-
+           /*
             // 2) MCA
             filmca = fopen("MCA.csv","w");
             fprintf(filmca,"bin");
@@ -381,7 +381,7 @@ int main(void) {
                fprintf(filmca,"\n");
             }
             fclose(filmca);    
-
+            */
         }
 
         

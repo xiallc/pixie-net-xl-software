@@ -230,7 +230,7 @@ int main(void) {
       return -900;
     }
     if( (fippiconfig.UDP_OUTPUT == 1) && (fippiconfig.C_CONTROL ==0) ) {
-      printf("Option UDP_OUTPUT requires use of FPGA-computed Energy (C_CONTROL bit 1 set, e.g C_CONTROL=2)\n",fippiconfig.UDP_OUTPUT);
+      printf("Option UDP_OUTPUT requires use of FPGA-computed Energy (C_CONTROL bit 1 set, e.g C_CONTROL=2)\n");
       return -900;
     }
 
@@ -634,6 +634,8 @@ int main(void) {
    
       reglo = reglo + setbit(fippiconfig.WR_RUNTIME_CTRL,WRC_RUNTIME, SCSR_WRRUNTIMECTRL   );      // check for bit enabling WR runtime control
       reglo = reglo + setbit(fippiconfig.MODULE_CSRA,MCSRA_P4ERUNSTATS, SCSR_P4ERUNSTATS   );      // check for bit enabling P4e convention for live time etc
+      reglo = reglo + setbit(fippiconfig.MODULE_CSRA,MCSRA_AUTOUDP, SCSR_AUTOUDP   );              // check for bit enabling LM UDP output without interaction with C code
+
       mapped[AMZ_EXAFWR] = AK7_SCSRIN;    // write to  k7's addr to select register for write
       mapped[AMZ_EXDWR]  = reglo;        // write lower 16 bit
    

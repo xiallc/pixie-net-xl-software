@@ -346,6 +346,7 @@
 // other CSR bits
 #define WRC_RUNTIME          0  // if set, Enable WR run time control
 #define MCSRA_P4ERUNSTATS    1  // if set, use P4e convention for live time etc
+#define MCSRA_AUTOUDP        2  // if set, LM data is sent out via UDP without interaction with C code
 
 // P16 Fippi register bits
 #define FiPPI_HALT           0   // Halt Fippi (lower 32-bit word)
@@ -375,4 +376,4 @@
 // other FW control register bits
 #define SCSR_WRRUNTIMECTRL			1	// Enable WR run time Control
 #define SCSR_P4ERUNSTATS			2	// if set, use P4e convention for live time etc
-
+#define SCSR_AUTOUDP             3  // if set, LM data is sent out via UDP without interaction with C code
