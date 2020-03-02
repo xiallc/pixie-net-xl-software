@@ -1021,25 +1021,26 @@ int main(void) {
 
    // --------------------------- DACs -----------------------------------
    // DACs are all controlled by MZ controller
-
-    mapped[AMZ_DEVICESEL] = CS_MZ;	  // select MZ controller
-
-  // for( k = NCHANNELS_PRESENT-1; k >= 0 ; k ++ )         // DAC registers are in reverse order
-   for( ch = 0; ch < NCHANNELS_PRESENT  ; ch ++ )         // DAC registers are in reverse order
+   if((revsn & PNXL_DB_VARIANT_MASK) != PNXL_DB02_12_250)    // DB02 has no DACs
    {
-      dac = (int)floor( (1 - fippiconfig.VOFFSET[ch]/ V_OFFSET_MAX) * 32768);	
-      if(dac > 65535)  {
-         printf("Invalid VOFFSET = %f, must be between %f and -%f\n",fippiconfig.VOFFSET[ch], V_OFFSET_MAX-0.05, V_OFFSET_MAX-0.05);
-         return -4300-ch;
-      }
-      mapped[AMZ_FIRSTDAC+ch] = dac;
-      if(mapped[AMZ_FIRSTDAC+ch] != dac) printf("Error writing parameters to DAC register\n");
-      usleep(DACWAIT);		// wait for programming
-      mapped[AMZ_FIRSTDAC+ch] = dac;     // repeat, sometimes doesn't take?
-      if(mapped[AMZ_FIRSTDAC+ch] != dac) printf("Error writing parameters to DAC register\n");
-      usleep(DACWAIT);     
- //     printf("DAC %d, value 0x%x (%d), [%f V] \n",k, dac, dac,fippiconfig.VOFFSET[k]);
-   }           // end for channels DAC
+     mapped[AMZ_DEVICESEL] = CS_MZ;	  // select MZ controller
+
+     for( ch = 0; ch < NCHANNELS_PER_K7_DB01*N_K7_FPGAS ; ch ++ )    // only 4 DACs per K7 (DB01), not "NCHANNELS_PER_K7"
+     {      
+         dac = (int)floor( (1 - fippiconfig.VOFFSET[ch]/ V_OFFSET_MAX) * 32768);	
+         if(dac > 65535)  {
+            printf("Invalid VOFFSET = %f, must be between %f and -%f\n",fippiconfig.VOFFSET[ch], V_OFFSET_MAX-0.05, V_OFFSET_MAX-0.05);
+            return -4300-ch;
+         }
+         mapped[AMZ_FIRSTDAC+ch] = dac;
+         if(mapped[AMZ_FIRSTDAC+ch] != dac) printf("Error writing parameters to DAC register\n");
+         usleep(DACWAIT);		// wait for programming
+         mapped[AMZ_FIRSTDAC+ch] = dac;     // repeat, sometimes doesn't take?
+         if(mapped[AMZ_FIRSTDAC+ch] != dac) printf("Error writing parameters to DAC register\n");
+         usleep(DACWAIT);     
+    //   printf("DAC %d, value 0x%x (%d), [%f V] \n",k, dac, dac,fippiconfig.VOFFSET[k]);
+      }     // end for channels DAC
+   }        // end  if not DB02
 
 
   if(1) {

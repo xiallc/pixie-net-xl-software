@@ -377,6 +377,7 @@ int main(void) {
 
    
    mapped[AMZ_DEVICESEL] = CS_MZ;	// select MZ
+   if(AutoUDP) mapped[AMZ_RUNCTRL] = 0x0008;    // MCA FIFO enabled 
    mapped[AMZ_CSRIN] = 0x0001;      // RunEnable=1 > nLive=0 (DAQ on)
    // this is a bit in a MZ register tied to a line to both FPGAs
    // falling edge of nLive clears counters and memory address pointers
@@ -492,7 +493,28 @@ int main(void) {
          if(AutoUDP)
          {
                    // todo: read MCA data from MZ and increment MCA
-   
+                   mapped[AMZ_DEVICESEL] = CS_MZ;	// select MZ
+                   tmp0 = mapped[AMZ_CSROUTL];
+                   if(eventcount<maxmsg) printf( "CSR: 0x%x\n", tmp0 );
+                   if ( (tmp0 & 0x00000100)>0 )  // check MCAdataready bit
+                   {
+                     tmp0 = mapped[AMZ_RDMCA];   // channel and other info
+                     tmp1 = mapped[AMZ_RDMCA];   // energy
+                     if(eventcount<maxmsg) printf( "MCA FIFO: ch %d, E %d (0x%x)\n", tmp0&0xF, tmp1, tmp1 );
+                     
+                     ch = tmp0&0xF;
+                     energy = tmp1 & 0xFFFE;
+                     bin = energy >> Binfactor[ch];
+                     if( (bin<MAX_MCA_BINS) && (bin>0) ) {
+                        mca[ch][bin] =  mca[ch][bin] + 1;	// increment mca
+                        bin = bin >> WEB_LOGEBIN;
+                        if(bin>0) wmca[ch][bin] = wmca[ch][bin] + 1;	// increment wmca
+                     }  
+                   
+                     eventcount++;    
+                     eventcount_ch[ch]++;
+                   }
+
           } else { 
 
             // check if UDP transfer is still ongoing

@@ -223,12 +223,14 @@
 #define AMZ_CSRIN     0x00
 #define AMZ_DEVICESEL 0x03
 #define AMZ_PLLSTART  0x08
+#define AMZ_RUNCTRL   0x0C
 #define AMZ_HWINFO    0x0E
 #define AMZ_FIRSTDAC  0x10
 #define AMZ_EXAFWR    0x18
 #define AMZ_EXAFRD    0x19
 #define AMZ_EXDWR     0x1A
 #define AMZ_EXDRD     0x1B
+#define AMZ_RDMCA     0x1C
 #define AMZ_RS        0x20
 #define AMZ_CSROUTL   0x20
 #define AMZ_CSROUTH   0x21
