@@ -80,7 +80,7 @@ int main(void) {
   unsigned int hdr[32];
   unsigned int out0, out2, out3, out7, pileup, exttsL, exttsH, hdrids;
   unsigned int evstats, udpok, R1, timeL, timeH, hit;
-  unsigned int lsum, tsum, gsum, wsum, energy, energyF, bin; 
+  unsigned int lsum, tsum, gsum, wsum, energy, energyF, bin. over; 
   unsigned int mca[NCHANNELS][MAX_MCA_BINS] ={{0}};    // full MCA for end of run
   unsigned int wmca[NCHANNELS][WEB_MCA_BINS] ={{0}};    // smaller MCA during run
   unsigned int wf[MAX_TL/2];    // two 16bit values per word
@@ -486,40 +486,53 @@ int main(void) {
       
       for(k7=0;k7<N_K7_FPGAS;k7++)
       {
-         mapped[AMZ_DEVICESEL] =  cs[k7];	         // select FPGA 
-         mapped[AMZ_EXAFWR] = AK7_PAGE;            // specify   K7's addr     addr 3 = channel/system
-         mapped[AMZ_EXDWR]  = PAGE_SYS;            //                         0x0  = system  page
 
+         // AutoUDP: K7 streams UDP data to Ethernet automatically and 
+         //          MCA data to a FIFO in MZ
+         //          AutoUDP implies UDP_OUTPUT==1
          if(AutoUDP)
          {
-                   // todo: read MCA data from MZ and increment MCA
-                   mapped[AMZ_DEVICESEL] = CS_MZ;	// select MZ
-                   tmp2 = mapped[AMZ_CSROUTL];
-                   //if(eventcount<maxmsg) printf( "CSR: 0x%x\n", tmp0 );
-                   if ( (tmp2 & 0x00000100)>0 )  // check MCAdataready bit
-                   {
-                 
-                     if(eventcount==0) tmp0 = mapped[AMZ_RDMCA]; // dummy read
-                     tmp0 = mapped[AMZ_RDMCA+1];   // channel and other info
-                     tmp1 = mapped[AMZ_RDMCA];   // energy  and advance FIFO
-                     ch = tmp0 & 0xF;
-                     energy = tmp1 & 0xFFFE;
-                     if(eventcount<maxmsg) printf( "CSR: 0x%x MCA FIFO: ch %d, E %d (0x %x %x)\n", tmp2, ch, energy, tmp0, tmp1 );
-                      if(ch!=13) printf( "CSR: 0x%x MCA FIFO: ch %d, E %d (0x %x %x)\n",tmp2, ch, energy, tmp0, tmp1 );
-                     
+                mapped[AMZ_DEVICESEL] = CS_MZ;	// select MZ
+                tmp2 = mapped[AMZ_CSROUTL];
+                //if(eventcount<maxmsg) printf( "CSR: 0x%x\n", tmp0 );
+                if ( (tmp2 & 0x00000100)>0 )  // check MCAdataready bit
+                {
+              
+                  if(eventcount==0) tmp0 = mapped[AMZ_RDMCA]; // dummy read
+                  tmp0 = mapped[AMZ_RDMCA+1];   // channel and other info
+                  tmp1 = mapped[AMZ_RDMCA];   // energy  and advance FIFO
+                  ch = tmp0 & 0xF;
+                  energy = tmp1 & 0xFFFE;
+                  over     = (tmp0 & 0x10) >> 4;    // negative or overflow
+                  pileup   = (tmp0 & 0x20) >> 5;    // pileup
+                  if(eventcount<maxmsg) printf( "CSR: 0x%x MCA FIFO: ch %d, E %d (0x %x %x)\n", tmp2, ch, energy, tmp0, tmp1 );
+                  if(ch!=13) printf( "CSR: 0x%x MCA FIFO: ch %d, E %d (0x %x %x)\n",tmp2, ch, energy, tmp0, tmp1 );                 
 
+                  if( (PILEUPCTRL[ch]==0)     || (PILEUPCTRL[ch]==1 && !pileup )    )  // this pileup check is probably redundant, also in FPGA 
+                  {
                      bin = energy >> Binfactor[ch];
-                     if( (bin<MAX_MCA_BINS) && (bin>0) ) {
+                     if( (bin<MAX_MCA_BINS) && (over==0) ) {
                         mca[ch][bin] =  mca[ch][bin] + 1;	// increment mca
                         bin = bin >> WEB_LOGEBIN;
                         if(bin>0) wmca[ch][bin] = wmca[ch][bin] + 1;	// increment wmca
-                     }  
-                   
-                     eventcount++;    
-                     eventcount_ch[ch]++;
-                   }
+                     } 
+                  }
+                
+                  eventcount++;    
+                  eventcount_ch[ch]++;
+                }
+
+                // todo: check FIFO for K7-0 in first loop through k7 (FIFO not yet implemented)
 
           } else { 
+            // Non-AutoUDP: ARM needs to poll K7 if data ready
+            // then, if UDP, give command to send out data to Ethernet, adding a CFD value
+            //       if not UDP, read all data and store locally (slow)
+            // energy can be computed by ARM from raw sums or by FPGA 
+
+            mapped[AMZ_DEVICESEL] =  cs[k7];	         // select FPGA 
+            mapped[AMZ_EXAFWR] = AK7_PAGE;            // specify   K7's addr     addr 3 = channel/system
+            mapped[AMZ_EXDWR]  = PAGE_SYS;            //                         0x0  = system  page
 
             // check if UDP transfer is still ongoing
             if(fippiconfig.UDP_OUTPUT==1)      

@@ -62,7 +62,7 @@ int main(void) {
   int k;
   FILE * filmca;
 
-  unsigned int RunType, SyncT, ReqRunTime, PollTime, WR_RTCtrl;
+  unsigned int RunType, SyncT, ReqRunTime, PollTime, WR_RTCtrl, AutoQSPI;
   unsigned int CCSRA[NCHANNELS], PILEUPCTRL[NCHANNELS];
   unsigned int Binfactor[NCHANNELS];
   unsigned int GoodChanMASK[N_K7_FPGAS] = {0} ;
@@ -71,7 +71,7 @@ int main(void) {
   unsigned long long WR_tm_tai, WR_tm_tai_start, WR_tm_tai_stop, WR_tm_tai_next;
   unsigned int pileup;
   unsigned int evstats, R1;
-  unsigned int energy, energyF, bin; 
+  unsigned int energy, energyF, bin, over; 
   unsigned int mca[NCHANNELS][MAX_MCA_BINS] ={{0}};    // full MCA for end of run
   unsigned int wmca[NCHANNELS][WEB_MCA_BINS] ={{0}};    // smaller MCA during run
   unsigned int onlinebin, loopcount, eventcount, eventcount_ch[NCHANNELS];
@@ -162,6 +162,7 @@ int main(void) {
   SyncT        = fippiconfig.SYNC_AT_START;
   ReqRunTime   = fippiconfig.REQ_RUNTIME;
   PollTime     = fippiconfig.POLL_TIME;
+  AutoQSPI      = ((fippiconfig.MODULE_CSRA & 0x00000004) == 4);
 
   if( (RunType==0x301)  ) {      // check run type
    // 0x301 is ok
@@ -281,69 +282,110 @@ int main(void) {
 
       for(k7=0;k7<N_K7_FPGAS;k7++)
       {
-         mapped[AMZ_DEVICESEL] =  cs[k7];	         // select FPGA 
-         mapped[AMZ_EXAFWR] = AK7_PAGE;            // specify   K7's addr     addr 3 = channel/system
-         mapped[AMZ_EXDWR]  = PAGE_SYS;            //                         0x0  = system  page
-    
-         // Read Header DPM status
-         mapped[AMZ_EXAFRD] = AK7_SYSSYTATUS;      // write to  k7's addr for read -> reading from 0x85 system status register
-         evstats = mapped[AMZ_EXDRD];              // bits set for every channel that has data in header memory
-         if(SLOWREAD)  evstats = mapped[AMZ_EXDRD];   
-         evstats = evstats & GoodChanMASK[k7];     // mask non-good channels
-   
-         // event readout compatible with P16 DSP code
-         // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
-         if(evstats) {					  // if there are events in any [good] channel
-             if(eventcount<maxmsg) printf( "K7 0 read from AK7_SYSSYTATUS (0x85), masked for good channels: 0x%X\n", evstats );
-
-            for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++)
+          // AutoQSPI: K7 streams MCA data to a FIFO in MZ
+         if(AutoQSPI)
+         {
+            mapped[AMZ_DEVICESEL] = CS_MZ;	// select MZ
+            tmp2 = mapped[AMZ_CSROUTL];
+            //if(eventcount<maxmsg) printf( "CSR: 0x%x\n", tmp0 );
+            if ( (tmp2 & 0x00000100)>0 )  // check MCAdataready bit   TODO: K7 specific
             {
+            
+            if(eventcount==0) tmp0 = mapped[AMZ_RDMCA]; // dummy read
+            tmp0 = mapped[AMZ_RDMCA+1];   // channel and other info
+            tmp1 = mapped[AMZ_RDMCA];   // energy  and advance FIFO
+            ch       = tmp0 & 0xF;
+            energy   = tmp1 & 0xFFFE;
+            over     = (tmp0 & 0x10) >> 4;    // negative or overflow
+            pileup   = (tmp0 & 0x20) >> 5;    // pileup
+            if(eventcount<maxmsg) printf( "CSR: 0x%x MCA FIFO: ch %d, E %d (0x %x %x)\n", tmp2, ch, energy, tmp0, tmp1 );
+            if(ch!=13) printf( "CSR: 0x%x MCA FIFO: ch %d, E %d (0x %x %x)\n",tmp2, ch, energy, tmp0, tmp1 );
+            
+            if( (PILEUPCTRL[ch]==0)     || (PILEUPCTRL[ch]==1 && !pileup )    )  // this pileup check is probably redundant, also in FPGA 
+            {
+               bin = energy >> Binfactor[ch];
+               if( (bin<MAX_MCA_BINS) && (over==0) ) {
+                  mca[ch][bin] =  mca[ch][bin] + 1;	// increment mca
+                  bin = bin >> WEB_LOGEBIN;
+                  if(bin>0) wmca[ch][bin] = wmca[ch][bin] + 1;	// increment wmca
+               }  
+             }
+            
+            eventcount++;    
+            eventcount_ch[ch]++;
+            }
+            
+            // todo: check FIFO for K7-0 in first loop through k7 (FIFO not yet implemented)
 
-               ch = ch_k7+k7*NCHANNELS_PER_K7;                 // total channel count
-               R1 = 1 << ch_k7;
-               if(evstats & R1)	{	                           //  if there is an event in the header memory for this channel
-                                                            
-                  mapped[AMZ_EXAFWR] = AK7_PAGE;               // specify   K7's addr     addr 3 = channel/system
-                  mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;         //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
-                                      
-                  // read for nextevent
-                  mapped[AMZ_EXAFRD] = AK7_NEXTEVENT;          // select the "nextevent" address in channel's page
-                  mval = mapped[AMZ_EXDWR];                    // any read ok
-
-                 if(  eventcount_ch[ch]==0) {
-                  // dummy reads
-                     mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;        // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
-                     mval = mapped[AMZ_EXDRD];                 // read 16 bits
-                  }            
-
-                  // read FPGA E
-                  mapped[AMZ_EXAFRD] = AK7_EFIFO;              // select the "EFIFO" address in channel's page
-                  energyF = mapped[AMZ_EXDWR];                 // read 16 bits
-                  if(SLOWREAD)  energyF = mapped[AMZ_EXDRD];   // read 16 bits
+         } else {
+            // Non-AutoQSPI: ARM needs to poll K7 if data ready
+            // then read energy and increment MCA
+            // energy is always taken from FPGA (use startdaq for ARM computation (slow))     
         
-                  // extract pileup bit
-                  pileup  = energyF & 0x1;                     // last bit of FIFO E is pilup
+            mapped[AMZ_DEVICESEL] =  cs[k7];	         // select FPGA 
+            mapped[AMZ_EXAFWR] = AK7_PAGE;            // specify   K7's addr     addr 3 = channel/system
+            mapped[AMZ_EXDWR]  = PAGE_SYS;            //                         0x0  = system  page
+       
+            // Read Header DPM status
+            mapped[AMZ_EXAFRD] = AK7_SYSSYTATUS;      // write to  k7's addr for read -> reading from 0x85 system status register
+            evstats = mapped[AMZ_EXDRD];              // bits set for every channel that has data in header memory
+            if(SLOWREAD)  evstats = mapped[AMZ_EXDRD];   
+            evstats = evstats & GoodChanMASK[k7];     // mask non-good channels
+      
+            // event readout compatible with P16 DSP code
+            // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
+            if(evstats) {					  // if there are events in any [good] channel
+                if(eventcount<maxmsg) printf( "K7 0 read from AK7_SYSSYTATUS (0x85), masked for good channels: 0x%X\n", evstats );
+   
+               for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++)
+               {
+   
+                  ch = ch_k7+k7*NCHANNELS_PER_K7;                 // total channel count
+                  R1 = 1 << ch_k7;
+                  if(evstats & R1)	{	                           //  if there is an event in the header memory for this channel
+                                                               
+                     mapped[AMZ_EXAFWR] = AK7_PAGE;               // specify   K7's addr     addr 3 = channel/system
+                     mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;         //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
+                                         
+                     // read for nextevent
+                     mapped[AMZ_EXAFRD] = AK7_NEXTEVENT;          // select the "nextevent" address in channel's page
+                     mval = mapped[AMZ_EXDWR];                    // any read ok
+   
+                    if(  eventcount_ch[ch]==0) {
+                     // dummy reads
+                        mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;        // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
+                        mval = mapped[AMZ_EXDRD];                 // read 16 bits
+                     }            
+   
+                     // read FPGA E
+                     mapped[AMZ_EXAFRD] = AK7_EFIFO;              // select the "EFIFO" address in channel's page
+                     energyF = mapped[AMZ_EXDWR];                 // read 16 bits
+                     if(SLOWREAD)  energyF = mapped[AMZ_EXDRD];   // read 16 bits
            
-                 if( (PILEUPCTRL[ch]==0)     || (PILEUPCTRL[ch]==1 && !pileup )    )
-                 {    // either don't care  OR pilup test required and  pileup bit not set
-           
-                     energy = energyF & 0xFFFE;                // overwrite local computation with FPGA result
-                     
-                     //  histogramming if E< max mcabin
-                     bin = energy >> Binfactor[ch];
-                     if(eventcount<maxmsg)   printf( "now incrementing MCA, E(%d) = %d, bin = %d\n", ch, energy,bin); 
-                     if( (bin<MAX_MCA_BINS) && (bin>0) ) {
-                        mca[ch][bin] =  mca[ch][bin] + 1;	   // increment mca
-                        bin = bin >> WEB_LOGEBIN;
-                        if(bin>0) wmca[ch][bin] = wmca[ch][bin] + 1;	// increment wmca
-                     }
-                     
-                     eventcount++;    
-                     eventcount_ch[ch]++;
-                  }  // end pileup check
-               }     // end event in this channel
-            }        // end for ch
-         }           // end event in any channel
+                     // extract pileup bit
+                     pileup  = energyF & 0x1;                     // last bit of FIFO E is pilup
+              
+                    if( (PILEUPCTRL[ch]==0)     || (PILEUPCTRL[ch]==1 && !pileup )    )
+                    {    // either don't care  OR pilup test required and  pileup bit not set
+              
+                        energy = energyF & 0xFFFE;                // overwrite local computation with FPGA result
+                        
+                        //  histogramming if E< max mcabin
+                        bin = energy >> Binfactor[ch];
+                        if(eventcount<maxmsg)   printf( "now incrementing MCA, E(%d) = %d, bin = %d\n", ch, energy,bin); 
+                        if( (bin<MAX_MCA_BINS) && (bin>0) ) {
+                           mca[ch][bin] =  mca[ch][bin] + 1;	   // increment mca
+                           bin = bin >> WEB_LOGEBIN;
+                           if(bin>0) wmca[ch][bin] = wmca[ch][bin] + 1;	// increment wmca
+                        }
+                        
+                        eventcount++;    
+                        eventcount_ch[ch]++;
+                     }  // end pileup check
+                  }     // end event in this channel
+               }        // end for ch
+            }           // end event in any channel
+         }           // end if AutoQSPI
       }              // end for K7s
 
 
@@ -363,9 +405,9 @@ int main(void) {
            //  printf("%s %d %d \n","Total_Time",tmp0,tmp1);    
 
             // print (small) set of RS to file, visible to web
-          //  read_print_runstats_XL_2x4(1, 0, mapped);
+            read_print_runstats_XL_2x4(1, 0, mapped);
       
-           /*
+           
             // 2) MCA
             filmca = fopen("MCA.csv","w");
             fprintf(filmca,"bin");
@@ -381,7 +423,7 @@ int main(void) {
                fprintf(filmca,"\n");
             }
             fclose(filmca);    
-            */
+            
         }
 
         
