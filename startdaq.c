@@ -99,7 +99,7 @@ int main(void) {
     int verbose = 1;      // TODO: control with argument to function 
   // 0 print errors and minimal info only
   // 1 print errors and full info
-  int maxmsg = 6;
+  int maxmsg = 20;
 
     int useWsum;
     int useFWE; 
@@ -494,16 +494,20 @@ int main(void) {
          {
                    // todo: read MCA data from MZ and increment MCA
                    mapped[AMZ_DEVICESEL] = CS_MZ;	// select MZ
-                   tmp0 = mapped[AMZ_CSROUTL];
-                   if(eventcount<maxmsg) printf( "CSR: 0x%x\n", tmp0 );
-                   if ( (tmp0 & 0x00000100)>0 )  // check MCAdataready bit
+                   tmp2 = mapped[AMZ_CSROUTL];
+                   //if(eventcount<maxmsg) printf( "CSR: 0x%x\n", tmp0 );
+                   if ( (tmp2 & 0x00000100)>0 )  // check MCAdataready bit
                    {
-                     tmp0 = mapped[AMZ_RDMCA];   // channel and other info
-                     tmp1 = mapped[AMZ_RDMCA];   // energy
-                     if(eventcount<maxmsg) printf( "MCA FIFO: ch %d, E %d (0x%x)\n", tmp0&0xF, tmp1, tmp1 );
-                     
-                     ch = tmp0&0xF;
+                 
+                     if(eventcount==0) tmp0 = mapped[AMZ_RDMCA]; // dummy read
+                     tmp0 = mapped[AMZ_RDMCA+1];   // channel and other info
+                     tmp1 = mapped[AMZ_RDMCA];   // energy  and advance FIFO
+                     ch = (tmp0&0xF000)>>12;
                      energy = tmp1 & 0xFFFE;
+                     if(eventcount<maxmsg) printf( "CSR: 0x%x MCA FIFO: ch %d, E %d (0x %x %x)\n", tmp2, ch, energy, tmp0, tmp1 );
+                      if(ch!=5) printf( "CSR: 0x%x MCA FIFO: ch %d, E %d (0x %x %x)\n",tmp2, ch, energy, tmp0, tmp1 );
+                     
+
                      bin = energy >> Binfactor[ch];
                      if( (bin<MAX_MCA_BINS) && (bin>0) ) {
                         mca[ch][bin] =  mca[ch][bin] + 1;	// increment mca
@@ -921,7 +925,7 @@ int main(void) {
          loopcount ++;
          currenttime = time(NULL);
       } while (currenttime <= starttime+ReqRunTime); // run for a fixed time   
-  //   } while (eventcount <= 100); // run for a fixed number of events   
+  //   } while (eventcount <= 2100); // run for a fixed number of events   
 
 
 
