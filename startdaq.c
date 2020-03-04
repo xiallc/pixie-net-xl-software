@@ -502,10 +502,10 @@ int main(void) {
                      if(eventcount==0) tmp0 = mapped[AMZ_RDMCA]; // dummy read
                      tmp0 = mapped[AMZ_RDMCA+1];   // channel and other info
                      tmp1 = mapped[AMZ_RDMCA];   // energy  and advance FIFO
-                     ch = (tmp0&0xF000)>>12;
+                     ch = tmp0 & 0xF;
                      energy = tmp1 & 0xFFFE;
                      if(eventcount<maxmsg) printf( "CSR: 0x%x MCA FIFO: ch %d, E %d (0x %x %x)\n", tmp2, ch, energy, tmp0, tmp1 );
-                      if(ch!=5) printf( "CSR: 0x%x MCA FIFO: ch %d, E %d (0x %x %x)\n",tmp2, ch, energy, tmp0, tmp1 );
+                      if(ch!=13) printf( "CSR: 0x%x MCA FIFO: ch %d, E %d (0x %x %x)\n",tmp2, ch, energy, tmp0, tmp1 );
                      
 
                      bin = energy >> Binfactor[ch];
