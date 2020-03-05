@@ -43,6 +43,7 @@ extern "C"
   
   int read_print_runstats(int mode, int dest, volatile unsigned int *mapped );
   int read_print_runstats_XL_2x4(int mode, int dest, volatile unsigned int *mapped );
+  int read_print_rates_XL_2x4(int dest, volatile unsigned int *mapped );
   void I2Cstart(volatile unsigned int *mapped);
   void I2Cstop(volatile unsigned int *mapped);
   void I2Cslaveack(volatile unsigned int *mapped);

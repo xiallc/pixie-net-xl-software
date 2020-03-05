@@ -5,6 +5,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script type="text/javascript"  src="dygraph-combined.js"></script>
+	 <script src="d3.v3.min.js"></script>
     <title>Pixie-Net MCA</title>
 
     <style type="text/css">
@@ -60,6 +61,11 @@
         }
         .tooltip:hover .tooltiptext { visibility: visible; width: 250px; top: 100%; left: 80%; margin-left: -60px;	}
 
+		  table { border-collapse: collapse; }
+        th { border-bottom: 2px solid #ddd; padding: 8px; font-weight: bold; font-size: 12px;}
+        td { padding: 8px; border-top: 1px solid #ddd; font-size: 12px; }
+
+
     </style>
 </head>
 
@@ -82,11 +88,11 @@
 
         <div class="fixed_bot">
             <h2>Help</h2>
-            <i><p>This page displays the MCA spectra saved to file MCA.csv by startdaq, acquire, etc. </p>
+            <i><p>This page displays the MCA spectra and count rates saved to files RATES.csv and MCA.csv by startdaq, acquire, etc. </p>
             <p>Double click to auto zoom </p>
             <p>Click and drag to zoom </p>
             <p>Alt click and drag to pan </p>
-                <p>Use browser button to refresh </p></i>
+            <p>Use browser button to refresh </p></i>
         </div>
     </div>
 
@@ -143,6 +149,11 @@
             </p>
              </div>
         </div>
+
+		   <div class="w3-card-2">
+			  <div class=box id="datatable">
+			 </div>
+			</div>
     </div>
  </div>
 
@@ -213,6 +224,42 @@
             graphs[idx].updateOptions({ 	  visibility: [val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val] });
         }
     }
+  </script>
+
+	<script> 
+		var rows = [];
+		var formatdate = d3.time.format("%b %d %Y");
+		
+		d3.csv("RATES.csv", function(error, csv) {
+		  csv.forEach(function(row) { 
+		    rows.push(row);
+		  });
+		
+		  var table = d3.select("#datatable").append("table");
+		      thead = table.append("thead");
+		      tbody = table.append("tbody");
+		
+		  thead.append("th").text("CHANNEL");
+		  thead.append("th").text("TIME");
+		  thead.append("th").text("INPUT_COUNT_RATE");
+		  thead.append("th").text("OUTPUT_COUNT_RATE");
+		
+		
+		  var tr = tbody.selectAll("tr")
+		      .data(rows)
+		      .enter().append("tr");
+		
+		  var td = tr.selectAll("td")
+		        .data(function(d) { return [d.CHANNEL, d.TIME, d.INPUT_COUNT_RATE, d.OUTPUT_COUNT_RATE]; })
+		      .enter().append("td")
+		        .text(function(d) { return d; });
+		
+		  var width = 80,
+		      height = d3.select("table")[0][0].clientHeight,
+		      mx = 10,
+		      radius = 2;
+		});
+
 
 </script>
 

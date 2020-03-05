@@ -814,7 +814,7 @@ int read_print_runstats_XL_2x4(int mode, int dest, volatile unsigned int *mapped
   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
   unsigned int k7, ch, ch_k7;      // ch = abs ch. no; ch_k7 = ch. no in k7
   unsigned int revsn, NCHANNELS_PER_K7, NCHANNELS_PRESENT;
-  unsigned int ADC_CLK_MHZ, SYSTEM_CLOCK_MHZ, FILTER_CLOCK_MHZ;
+  unsigned int SYSTEM_CLOCK_MHZ, FILTER_CLOCK_MHZ;
   double coa, sya, CT[NCHANNELS], val;
   char N[22][MAX_PAR_NAME_LENGTH] = {      // names for the cgi array
     "ParameterCo",
@@ -968,23 +968,20 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    {
       NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
       NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
-      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB02;
       SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB02;
       FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
    }
    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
    {
       NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
-      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
-      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01_125;             
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;        
       SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB02;       // DB1 125 operates at same filter, sys freq as DB02 (and all other DB's, probably)
       FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
    } 
    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75)
    {
       NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
-      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
-      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01_75;             
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;          
       SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB01;
       FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
    }
@@ -1272,6 +1269,161 @@ int ADCinit_DB01(volatile unsigned int *mapped ) {
    return (ret);
 }
 
+
+
+int read_print_rates_XL_2x4(int dest, volatile unsigned int *mapped ) {
+// only print times and rates   (mode 1)
+// dest 0: print to file
+// dest 1: print to stdout      -- useful for cgi
+// dest 2: print to both        -- currently fails if called by web client due to file write permissions
+// todo: add GOOD CHANNEL bit pattern to only read good channels
+  int k;
+  FILE * fil;
+  unsigned int co[N_PL_RS_PAR] ={0};
+  unsigned int sy[N_K7_FPGAS][N_PL_RS_PAR]  ={{0}};  
+  unsigned int chn[NCHANNELS][N_PL_RS_PAR]  ={{0}};  
+  unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
+  unsigned int k7, ch, ch_k7;      // ch = abs ch. no; ch_k7 = ch. no in k7
+  unsigned int revsn, NCHANNELS_PER_K7, NCHANNELS_PRESENT, SYSTEM_CLOCK_MHZ,FILTER_CLOCK_MHZ ;
+  double coa, sya, CT[NCHANNELS], val1, val2;
+  char N[4][MAX_PAR_NAME_LENGTH] = {      // names for the cgi array
+    "Channel",
+    "Time",
+    "ICR",
+    "OCR"
+    };
+
+
+
+//}
+
+  // ************** main code begins **************************
+
+   // --------------------------- check HW version -------------------------------
+
+   revsn =  mapped[AMZ_HWINFO]  <<16; //hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
+      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB02;
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
+   }
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;        
+      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB02;       // DB1 125 operates at same filter, sys freq as DB02 (and all other DB's, probably)
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
+   } 
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;          
+      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB01;
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
+   }
+
+
+  // ---------------- open the output file -------------------------------------------
+  if(dest != 1)  {
+          fil = fopen("RATES.csv","w");
+          fprintf(fil,"CHANNEL,TIME,INPUT_COUNT_RATE,OUTPUT_COUNT_RATE,");
+          fprintf(fil,"\n");
+   }
+      
+
+  // ----------------- read _used_ RS values (16bit) ----------------------------
+  // at this point, raw binary values; later conversion into count rates etc
+
+  // read controller data, total time only
+  mapped[AMZ_DEVICESEL] = CS_MZ;
+  for( k = 0; k < 3; k ++ )
+  {
+      co[k] =  mapped[AMZ_RS_TT+k-1];
+  }
+  
+
+  // read from K7 loop
+  for(k7=0;k7<N_K7_FPGAS;k7++)
+ {
+     mapped[AMZ_DEVICESEL] = cs[k7];
+   
+     // read system data
+     mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
+     mapped[AMZ_EXDWR]  = PAGE_SYS;        //                         0x000  = system     -> now addressing system page of K7-0   
+     for( k = 0; k < 3; k ++ )
+     {
+          mapped[AMZ_EXAFRD] = AK7_SYS_RS_RT+k;    // read from system output range for run time only
+          sy[k7][k] = mapped[AMZ_EXDRD];
+          if(SLOWREAD) sy[k7][k] = mapped[AMZ_EXDRD];         
+     }
+   
+     // read channel data
+     for( ch_k7 = 0; ch_k7 < NCHANNELS_PER_K7; ch_k7++ )
+     {
+         ch = ch_k7+k7*NCHANNELS_PER_K7;
+         mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
+         mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
+   
+         for( k = 0; k < 3; k ++ )      // loop over number of time words
+         {
+            mapped[AMZ_EXAFRD] = AK7_CHN_RS_CT+k;    // read from channel output range
+            chn[ch][k+0] = mapped[AMZ_EXDRD];
+            if(SLOWREAD) chn[ch][k+0] = mapped[AMZ_EXDRD];            
+   
+            mapped[AMZ_EXAFRD] = AK7_CHN_RS_NTRIG+k;    // read from channel output range
+            chn[ch][k+4] = mapped[AMZ_EXDRD];
+            if(SLOWREAD) chn[ch][k+4] = mapped[AMZ_EXDRD];            
+   
+            mapped[AMZ_EXAFRD] = AK7_CHN_RS_NOUT+k;    // read from channel output range
+            chn[ch][k+8] = mapped[AMZ_EXDRD];
+            if(SLOWREAD) chn[ch][k+8] = mapped[AMZ_EXDRD]; 
+          
+            //printf("CT value %x   ", chn[ch+k7*NCHANNEL_PER_K7][k+0]);
+            //printf("NTRIG value %x   ", chn[ch+k7*NCHANNEL_PER_K7][k+4]);
+            //printf("NPPI value %x\n", chn[ch+k7*NCHANNEL_PER_K7][k+8]);
+         }     //end for time words
+     }    // end for channels in k7
+  } // end for K7s
+ 
+ 
+   // --------------- compute and print useful output values ----------------------- 
+   // when printing to std out for cgi, N[i] provide the column titles (repeated for every row as in "name":value)
+ 
+// MZ controller
+   coa = ( (double)co[0] + (double)co[1]*65536 + (double)co[2]*TWOTO32 )*1.0e-9;
+   if(dest != 1) fprintf(fil,"Ctrl. TOTAL_TIME,%4.6G, --, --\n",coa); 
+   if(dest != 0) printf("{%s:\"CTRL TOTAL_TIME\",%s:%4.6G,%s:\"--\",%s:\"--\"},    \n",N[0], N[1],coa,N[2], N[3]);
+
+   // K7 System
+   sya = ( (double)sy[0][0] + (double)sy[0][1]*65536 + (double)sy[0][2]*TWOTO32 )/SYSTEM_CLOCK_MHZ*1.0e-6;
+   if(dest != 1) fprintf(fil,"Sys.0 RUN_TIME,%4.6G, --, --\n",sya); 
+   if(dest != 0) printf("{%s:\"Sys.0 RUN_TIME\",%s:%4.6G,%s:\"--\",%s:\"--\"},    \n",N[0], N[1],sya,N[2], N[3]);
+   sya = ( (double)sy[1][0] + (double)sy[1][1]*65536 + (double)sy[1][2]*TWOTO32 )/SYSTEM_CLOCK_MHZ*1.0e-6;
+   if(dest != 1) fprintf(fil,"Sys.1 RUN_TIME,%4.6G, --, --\n",sya); 
+   if(dest != 0) printf("{%s:\"Sys.1 RUN_TIME\",%s:%4.6G,%s:\"--\",%s:\"--\"},    \n",N[0], N[1],sya,N[2], N[3]);
+  
+   // Channels
+   for( ch = 0; ch < NCHANNELS_PRESENT; ch ++ ) {
+      CT[ch] = ( (double)chn[ch][0] + (double)chn[ch][1]*65536 + (double)chn[ch][2]*TWOTO32 )/FILTER_CLOCK_MHZ*1.0e-6;
+      val1 = ( (double)chn[ch][4] + (double)chn[ch][5]*65536 + (double)chn[ch][6]*TWOTO32 );    // fastpeaks, Nin
+      val2 = ( (double)chn[ch][8] + (double)chn[ch][9]*65536 + (double)chn[ch][10]*TWOTO32 );    // Nout
+      if(CT[ch]==0) {
+         val1=0;
+         val2=0;
+      } else { 
+         val1 = val1/CT[ch];
+         val2 = val2/CT[ch];
+      }
+      if(dest != 1) fprintf(fil,"Ch %d COUNT_TIME,%4.6G,%4.6G,%4.6G\n",ch,CT[ch],val1,val2);
+      if(dest != 0) printf("{%s:\"Ch %d COUNT_TIME\",%s:%4.6G,%s:%4.6G,%s:%4.6G},  \n",N[0], ch, N[1],CT[ch],N[2],val1,N[3],val2);
+    }
+   
+ // clean up  
+ if(dest != 1) fclose(fil);
+ return 0;
+}
 
 
 

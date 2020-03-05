@@ -80,7 +80,7 @@ int main(void) {
   unsigned int hdr[32];
   unsigned int out0, out2, out3, out7, pileup, exttsL, exttsH, hdrids;
   unsigned int evstats, udpok, R1, timeL, timeH, hit;
-  unsigned int lsum, tsum, gsum, wsum, energy, energyF, bin. over; 
+  unsigned int lsum, tsum, gsum, wsum, energy, energyF, bin, over; 
   unsigned int mca[NCHANNELS][MAX_MCA_BINS] ={{0}};    // full MCA for end of run
   unsigned int wmca[NCHANNELS][WEB_MCA_BINS] ={{0}};    // smaller MCA during run
   unsigned int wf[MAX_TL/2];    // two 16bit values per word
@@ -910,7 +910,8 @@ int main(void) {
            //  printf("%s %d %d \n","Total_Time",tmp0,tmp1);    
 
             // print (small) set of RS to file, visible to web
-            read_print_runstats_XL_2x4(1, 0, mapped);
+            //read_print_runstats_XL_2x4(1, 0, mapped);
+            read_print_rates_XL_2x4(0,mapped);
       
 
             // 2) MCA
@@ -964,6 +965,7 @@ int main(void) {
 
       printf( "Run completed. Current WR time %llu\n",WR_tm_tai );
       
+       read_print_rates_XL_2x4(1,mapped);
       
       /* end debug */
 

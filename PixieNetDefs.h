@@ -281,6 +281,7 @@
 #define AK7_BLLOCK            0xD4
 #define AK7_BLSTART           0xC8
 #define AK7_SYS_RS            0x80
+#define AK7_SYS_RS_RT         0x88
 #define AK7_CHN_RS_CT         0xC0
 #define AK7_ADC               0xC4
 #define AK7_CHN_RS_NTRIG      0xD0
