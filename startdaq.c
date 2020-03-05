@@ -99,7 +99,7 @@ int main(void) {
     int verbose = 1;      // TODO: control with argument to function 
   // 0 print errors and minimal info only
   // 1 print errors and full info
-  int maxmsg = 20;
+  int maxmsg = 5;
 
     int useWsum;
     int useFWE; 
@@ -965,7 +965,7 @@ int main(void) {
 
       printf( "Run completed. Current WR time %llu\n",WR_tm_tai );
       
-       read_print_rates_XL_2x4(1,mapped);
+     
       
       /* end debug */
 
@@ -991,6 +991,7 @@ int main(void) {
 
    mapped[AMZ_DEVICESEL] = CS_MZ;
    read_print_runstats_XL_2x4(0, 0, mapped);
+   read_print_rates_XL_2x4(0,mapped);
    mapped[AMZ_DEVICESEL] = CS_MZ;
 
  
