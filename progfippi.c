@@ -66,7 +66,7 @@ int main(void) {
 
   // ******************* read ini file and fill struct with values ********************
 
-  int verbose = 0;      // TODO: control with argument to function 
+  int verbose = 1;      // TODO: control with argument to function 
   // 0 print errors and minimal info only
   // 1 print errors and full info
   
@@ -687,8 +687,8 @@ int main(void) {
       mval = mval + (mval>>16);                // add any more carrys
       reglo = ~mval;      
       mapped[AMZ_EXAFWR] =  AK7_ETH_CHECK_SHORT;     // specify   K7's addr:    checksum (SHORT)
-      mapped[AMZ_EXDWR]  =  0xF7B9; //reglo;
-     // printf("WR Ethernet data checksum FPGA %d (SHORT) = 0x%x\n",k7, reglo & 0xFFFF);
+      mapped[AMZ_EXDWR]  =  reglo;
+      printf("WR Ethernet data checksum FPGA %d (SHORT) = 0x%x\n",k7, reglo & 0xFFFF);
 
       // IPv4 checksum computation: LONG (20 word header plus trace)
       // Note: all channels must have same TL!
@@ -707,10 +707,14 @@ int main(void) {
       mval = mval + (mval>>16);          // add any more carrys
       reglo = ~mval;      
       mapped[AMZ_EXAFWR] =  AK7_ETH_CHECK_LONG;     // specify   K7's addr:    checksum (LONG)
-      mapped[AMZ_EXDWR]  =  0xF7B9; //reglo;
-     // printf("WR Ethernet data checksum FPGA %d (LONG)  = 0x%x\n",k7, reglo & 0xFFFF);
+      mapped[AMZ_EXDWR]  =  reglo;
+      printf("WR Ethernet data checksum FPGA %d (LONG)  = 0x%x\n",k7, reglo & 0xFFFF);
 
- 
+      // set the Ethernet control register with the trace length (for AutoUDP)
+  //    mval =  ((fippiconfig.CHANNEL_CSRA[0] & (1<<CCSRA_TRACEENA)) >0); // check TraceEna bit
+  //    mapped[AMZ_EXAFWR] =  AK7_ETH_CTRL;    // specify   K7's addr:    Ethernet output control register
+  //    mapped[AMZ_EXDWR]  =  ( (mval<<8) + (TL[0]>>5) );  // specify payload type with/without trace, TL blocks
+
    
       // CHANNEL REGISTERS IN K7
       for( ch_k7 = 0; ch_k7 < NCHANNELS_PER_K7 ; ch_k7 ++ )
