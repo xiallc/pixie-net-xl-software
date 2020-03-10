@@ -385,7 +385,7 @@ int main(void) {
       } 
       FG[ch] = (int)floorf(fippiconfig.TRIGGER_FLATTOP[ch] * FILTER_CLOCK_MHZ);
       FG[ch] = FG[ch] >> FFR;
-      if(FG[ch] < MIN_FL) {
+      if(FG[ch] < MIN_FG) {
          printf("Invalid TRIGGER_FLATTOP = %f, minimum %f us\n",fippiconfig.TRIGGER_FLATTOP[ch],(double)(MIN_FG<<FFR/FILTER_CLOCK_MHZ));
          return -3600-ch;
       } 
@@ -747,14 +747,16 @@ int main(void) {
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_SYNCDATAACQ,   FiPPI_SYNCDATAACQ   );     
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_GROUPTRIGSEL,  FiPPI_GROUPTRIGSEL   );    
          mval = 129-FL[ch];
+          printf("FL: %d, 129-FL: %d,  ",FL[ch], mval);
          reglo = reglo +( mval<<25) ;               // 128 - (FastLength - 1) in bits [31:25] 
          SAVER0[ch] = reglo;
           
          reghi = 0;
          reghi = 129 - FL[ch] - FG[ch];                          // 128 - (FastLength + FastGap - 1)
+          printf("FL+FG: %d, 129-SL-SG: %d \n",FL[ch]+FG[ch], reghi);
          reghi = reghi & 0x7F;                                 // Keep only bits [6:0]
          reghi = reghi + (TH[ch]<<7);                             // Threshold in [22:7]   
-         reghi = reghi + (64 - (fippiconfig.CFD_DELAY[ch] <<23) );        //  CFDDelay in [28:23]       // in samples!
+         reghi = reghi + ( (64 - fippiconfig.CFD_DELAY[ch] <<23) );        //  CFDDelay in [28:23]       // in samples!
          reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_CHANVETOSEL,   FiPPI_CHANVETOSEL);     
          reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_MODVETOSEL,    FiPPI_MODVETOSEL );     
          reghi = reghi + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_ENARELAY,      FiPPI_ENARELAY   );     
