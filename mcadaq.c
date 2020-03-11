@@ -62,7 +62,7 @@ int main(void) {
   int k;
   FILE * filmca;
 
-  unsigned int RunType, SyncT, ReqRunTime, PollTime, WR_RTCtrl, AutoQSPI;
+  unsigned int RunType, SyncT, ReqRunTime, PollTime, WR_RTCtrl;
   unsigned int CCSRA[NCHANNELS], PILEUPCTRL[NCHANNELS];
   unsigned int Binfactor[NCHANNELS];
   unsigned int GoodChanMASK[N_K7_FPGAS] = {0} ;
@@ -162,7 +162,6 @@ int main(void) {
   SyncT        = fippiconfig.SYNC_AT_START;
   ReqRunTime   = fippiconfig.REQ_RUNTIME;
   PollTime     = fippiconfig.POLL_TIME;
-  AutoQSPI      = ((fippiconfig.MODULE_CSRA & 0x00000004) == 4);
 
   if( (RunType==0x301)  ) {      // check run type
    // 0x301 is ok
@@ -282,8 +281,8 @@ int main(void) {
 
       for(k7=0;k7<N_K7_FPGAS;k7++)
       {
-          // AutoQSPI: K7 streams MCA data to a FIFO in MZ
-         if(AutoQSPI)
+          // DATA_FLOW == 5: K7 streams MCA data to a FIFO in MZ
+         if(fippiconfig.DATA_FLOW == 5)
          {
             mapped[AMZ_DEVICESEL] = CS_MZ;	// select MZ
             tmp2 = mapped[AMZ_CSROUTL];
@@ -318,7 +317,7 @@ int main(void) {
             // todo: check FIFO for K7-0 in first loop through k7 (FIFO not yet implemented)
 
          } else {
-            // Non-AutoQSPI: ARM needs to poll K7 if data ready
+            // DATA_FLOW == 2: ARM needs to poll K7 if data ready
             // then read energy and increment MCA
             // energy is always taken from FPGA (use startdaq for ARM computation (slow))     
         
@@ -332,8 +331,7 @@ int main(void) {
             if(SLOWREAD)  evstats = mapped[AMZ_EXDRD];   
             evstats = evstats & GoodChanMASK[k7];     // mask non-good channels
       
-            // event readout compatible with P16 DSP code
-            // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
+            // event readout compatible with P16 DSP code slow and inefficient
             if(evstats) {					  // if there are events in any [good] channel
                 if(eventcount<maxmsg) printf( "K7 0 read from AK7_SYSSYTATUS (0x85), masked for good channels: 0x%X\n", evstats );
    
@@ -385,7 +383,7 @@ int main(void) {
                   }     // end event in this channel
                }        // end for ch
             }           // end event in any channel
-         }           // end if AutoQSPI
+         }           // end if DATA_FLOW == 2 or 5
       }              // end for K7s
 
 
@@ -401,23 +399,19 @@ int main(void) {
             mapped[AMZ_DEVICESEL] = CS_MZ;
             tmp0 = mapped[AMZ_RS_TT+0];   // address offset by 1?
             tmp1 = mapped[AMZ_RS_TT+1];
-             if(verbose) printf("%s %4.5G \n","Total_Time",((double)tmp0*65536+(double)tmp1*TWOTO32)*1e-9);    
-           //  printf("%s %d %d \n","Total_Time",tmp0,tmp1);    
+             if(verbose) printf("%s %4.5G \n","Total_Time",((double)tmp0*65536+(double)tmp1*TWOTO32)*1e-9);     
 
             // print (small) set of RS to file, visible to web
-            read_print_runstats_XL_2x4(1, 0, mapped);
-      
+            //read_print_runstats_XL_2x4(1, 0, mapped);
+             read_print_rates_XL_2x4(0,mapped);
            
             // 2) MCA
             filmca = fopen("MCA.csv","w");
             fprintf(filmca,"bin");
             for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(filmca,",MCAch%02d",ch);
             fprintf(filmca,"\n");
-            //fprintf(filmca,"bin,MCAch0,MCAch1,MCAch2,MCAch3,MCAch4,MCAch5,MCAch6,MCAch7\n");
             for( k=0; k <WEB_MCA_BINS; k++)       // report the 4K spectra during the run (faster web update)
             {
-            //   fprintf(filmca,"%d,%u,%u,%u,%u\n ", k*onlinebin,wmca[0][k],wmca[1][k],wmca[2][k],wmca[3][k]);
-
                fprintf(filmca,"%d",k*onlinebin);                  // bin number
                for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(filmca,",%d",wmca[ch][k]);    // print channel data
                fprintf(filmca,"\n");
@@ -472,10 +466,8 @@ int main(void) {
    fprintf(filmca,"bin");
    for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(filmca,",MCAch%d",ch);
    fprintf(filmca,"\n");
-   //fprintf(filmca,"bin,MCAch0,MCAch1,MCAch2,MCAch3,MCAch4,MCAch5,MCAch6,MCAch7\n");
    for( k=0; k <MAX_MCA_BINS; k++)
    {
-    //  fprintf(filmca,"%d,%u,%u,%u,%u\n ", k,mca[0][k],mca[1][k],mca[2][k],mca[3][k] );
        fprintf(filmca,"%d",k);                  // bin number
        for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(filmca,",%d",mca[ch][k]);    // print channel data
        fprintf(filmca,"\n");
@@ -484,6 +476,7 @@ int main(void) {
 
    mapped[AMZ_DEVICESEL] = CS_MZ;
    read_print_runstats_XL_2x4(0, 0, mapped);
+   read_print_rates_XL_2x4(0,mapped);
    mapped[AMZ_DEVICESEL] = CS_MZ;
 
  

@@ -220,17 +220,21 @@ int main(void) {
       return -900;
     }
 
-    //  UDP_OUTPUT:
-    if(fippiconfig.UDP_OUTPUT > 1) {
-      printf("Invalid UDP_OUTPUT = 0x%x\n",fippiconfig.UDP_OUTPUT);
+    //  DATA_FLOW:
+    if(fippiconfig.DATA_FLOW > 5) {
+      printf("Invalid DATA_FLOW = 0x%x\n",fippiconfig.DATA_FLOW);
       return -900;
     }
-    if( (fippiconfig.UDP_OUTPUT == 1) && (fippiconfig.RUN_TYPE != 0x100) ) {
-      printf("Invalid UDP_OUTPUT = 0x%x: UDP_OUTPUT only supported for runtype 0x100 at this time\n",fippiconfig.UDP_OUTPUT);
+    if( (fippiconfig.DATA_FLOW == 5) && (fippiconfig.RUN_TYPE != 0x301) ) {
+      printf("Invalid DATA_FLOW = %d; can only be used with runtype 0x301 (no LM data out)\n",fippiconfig.DATA_FLOW);
       return -900;
     }
-    if( (fippiconfig.UDP_OUTPUT == 1) && (fippiconfig.C_CONTROL ==0) ) {
-      printf("Option UDP_OUTPUT requires use of FPGA-computed Energy (C_CONTROL bit 1 set, e.g C_CONTROL=2)\n");
+    if( (fippiconfig.DATA_FLOW <= 1) && (fippiconfig.RUN_TYPE == 0x301) ) {
+      printf("Invalid DATA_FLOW = %d; can not be used with runtype 0x301\n",fippiconfig.DATA_FLOW);
+      return -900;
+    }
+    if( (fippiconfig.DATA_FLOW == 3)|| (fippiconfig.DATA_FLOW == 4) && (fippiconfig.RUN_TYPE != 0x100) ) {
+      printf("Invalid DATA_FLOW = %d; WR UDP output currently only supported for runtype 0x100\n",fippiconfig.DATA_FLOW);
       return -900;
     }
 
@@ -634,8 +638,9 @@ int main(void) {
    
       reglo = reglo + setbit(fippiconfig.WR_RUNTIME_CTRL,WRC_RUNTIME, SCSR_WRRUNTIMECTRL   );      // check for bit enabling WR runtime control
       reglo = reglo + setbit(fippiconfig.MODULE_CSRA,MCSRA_P4ERUNSTATS, SCSR_P4ERUNSTATS   );      // check for bit enabling P4e convention for live time etc
-      reglo = reglo + setbit(fippiconfig.MODULE_CSRA,MCSRA_AUTOUDP, SCSR_AUTOUDP   );              // check for bit enabling LM UDP output without interaction with C code
-      reglo = reglo + setbit(fippiconfig.MODULE_CSRA,MCSRA_AUTOQSPI, SCSR_AUTOQSPI   );              // check for bit enabling LM UDP output without interaction with C code
+      if(fippiconfig.DATA_FLOW==4) reglo = reglo + (1<<SCSR_AUTOUDP);                              // enabling LM UDP output without interaction with C code
+      if(fippiconfig.DATA_FLOW==5) reglo = reglo + (1<<SCSR_AUTOQSPI);                             // enabling MCA output (only) to FIFO without interaction with C code
+      if(fippiconfig.DATA_FLOW!=5) reglo = reglo + (1<<SCSR_HDRENA);                               // disable header memory in pure MCA runs where ARM only reads E from FIFO
 
       mapped[AMZ_EXAFWR] = AK7_SCSRIN;    // write to  k7's addr to select register for write
       mapped[AMZ_EXDWR]  = reglo;        // write lower 16 bit
@@ -821,7 +826,6 @@ int main(void) {
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_CFDMODE,     FiPPI_CFDMODE   );   
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_GLOBTRIG,    FiPPI_GLOBTRIG   );     
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_CHANTRIG,    FiPPI_CHANTRIG   );    
-         if(fippiconfig.RUN_TYPE != 0x301) reglo = reglo + (1<<FiPPI_HDRENA);                             // add header enable bit unless MCA run that uses only E FIFO
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_RBADDIS,     FiPPI_RBADDIS   );     
 
          mval = 4096 - (int)(fippiconfig.VETO_STRETCH[ch]*FILTER_CLOCK_MHZ);

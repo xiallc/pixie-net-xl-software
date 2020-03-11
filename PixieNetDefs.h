@@ -349,9 +349,6 @@
 // other CSR bits
 #define WRC_RUNTIME          0  // if set, Enable WR run time control
 #define MCSRA_P4ERUNSTATS    1  // if set, use P4e convention for live time etc
-#define MCSRA_AUTOUDP        2  // if set, LM data is sent out via UDP without interaction with C code
-#define MCSRA_AUTOQSPI       3  // if set, E is sent out via QSPI without interaction with C code
-
 
 // P16 Fippi register bits
 #define FiPPI_HALT           0   // Halt Fippi (lower 32-bit word)
@@ -372,7 +369,6 @@
 #define FiPPI_CFDMODE       15
 #define FiPPI_GLOBTRIG      16
 #define FiPPI_CHANTRIG      17
-#define FiPPI_HDRENA        18  //  header data for most LM runs - 1: enable; 0: disable
 #define FiPPI_RBADDIS       19   // if 1, disable rangebad logic and accept even pulses going out of range
 #define FiPPI_GOOD          29  // good-channel bit - 1: channel data will be read out; 0: channel data will not be read out
 #define FiPPI_PILEUPCTRL    30	
@@ -383,4 +379,5 @@
 #define SCSR_P4ERUNSTATS			2	// if set, use P4e convention for live time etc
 #define SCSR_AUTOUDP             3  // if set, LM data is sent out via UDP without interaction with C code
 #define SCSR_AUTOQSPI            4  // if set, E is sent out via QSPI without interaction with C code
+#define SCSR_HDRENA              5  // if set, store LM output data in header memory (else only E in E fifo)
 

@@ -128,7 +128,13 @@ typedef struct PixieNetFippiConfig {
   unsigned long long SRC_IP0;        // source IP for data from first K7   (should match WR IP from PROM)
   unsigned long long SRC_IP1;        // source IP for data from second K7 
 
-  unsigned int UDP_OUTPUT;           // if 1, send LM data out via UDP on WR link
+  unsigned int DATA_FLOW;           // options for readout 
+      // if 0, ARM does everything
+      // if 1, ARM uses FPGA's baseline average
+      // if 2, ARM uses FPGA's baseline average and energy
+      // if 3, ARM uses FPGA's baseline average and energy and directs data out via WR (adding CFD result)
+      // if 4, FPGA sends out data via WR and ARM only increments the MCA with E values read from MZ  
+      // if 5, ARM only increments the MCA with E values read from MZ (no LM data out)
 
 
   /* SYS_U## : reserved parameters  */

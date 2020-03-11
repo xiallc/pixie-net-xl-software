@@ -64,7 +64,7 @@ int main(void) {
   FILE * fil;
 
   char filename[64];
-  unsigned int RunType, SyncT, ReqRunTime, PollTime, WR_RTCtrl, AutoUDP;
+  unsigned int RunType, SyncT, ReqRunTime, PollTime, WR_RTCtrl;
   unsigned int SL[NCHANNELS], CCSRA[NCHANNELS], PILEUPCTRL[NCHANNELS];
   //unsigned int SG[NCHANNELS];
   float Tau[NCHANNELS], Dgain[NCHANNELS];
@@ -101,8 +101,6 @@ int main(void) {
   // 1 print errors and full info
   int maxmsg = 5;
 
-    int useWsum;
-    int useFWE; 
 
     // *************** PS/PL IO initialization *********************
   // open the device for PD register I/O
@@ -189,12 +187,6 @@ int main(void) {
   hdrids       = (CHAN_HEAD_LENGTH_100<<12) & 0xF000;
   hdrids       = hdrids + (fippiconfig.CRATE_ID<<8);
   hdrids       = hdrids + (fippiconfig.SLOT_ID<<4);
-  AutoUDP      = ((fippiconfig.MODULE_CSRA & 0x00000004) == 4);
-
-  useWsum = ((fippiconfig.C_CONTROL & 0x00000001) == 1);   // if 0, use weighted sum for E, BL computation, else classic 3 sums and multiply
-  useFWE  = ((fippiconfig.C_CONTROL & 0x00000002) == 2);   // if 1, use full E computed by FPGA, incl BLcut/avg, else locally compute BLavg  and cmbine with E sums. 
-  printf( "useWsum = %d, useFWE = %d \n", useWsum, useFWE);
-
 
   if( (RunType==0x100) || (RunType==0x400) || (RunType==0x401)  ) {      // check run type
    // 0x100, 0x400, 0x401, are ok
@@ -377,7 +369,7 @@ int main(void) {
 
    
    mapped[AMZ_DEVICESEL] = CS_MZ;	// select MZ
-   if(AutoUDP) mapped[AMZ_RUNCTRL] = 0x0008;    // MCA FIFO enabled 
+   if( (fippiconfig.DATA_FLOW == 4) || (fippiconfig.DATA_FLOW == 5))  mapped[AMZ_RUNCTRL] = 0x0008;    // MCA FIFO enabled 
    mapped[AMZ_CSRIN] = 0x0001;      // RunEnable=1 > nLive=0 (DAQ on)
    // this is a bit in a MZ register tied to a line to both FPGAs
    // falling edge of nLive clears counters and memory address pointers
@@ -390,7 +382,7 @@ int main(void) {
     
       //----------- Periodically read BL and update average -----------
       // this will be moved into the FPGA soon
-      if(useFWE==0) {
+      if(fippiconfig.DATA_FLOW<2) {   // full BL read (DATA_FLOW==0) or combined BL read  (DATA_FLOW==1)
          if(loopcount % BLREADPERIOD == 0) {  //|| (loopcount ==0) ) {     // sometimes 0 mod N not zero and first few events have wrong E? watch
             for(k7=0;k7<N_K7_FPGAS;k7++)
             {
@@ -409,7 +401,7 @@ int main(void) {
                      mapped[AMZ_EXAFRD] = AK7_BLLOCK;    // read from 0xD4 to lock BL registers (no data)
                      tmp0 = mapped[AMZ_EXDRD];
          
-                      if(useWsum==0) {       // full BL read
+                      if(fippiconfig.DATA_FLOW==0) {       // full BL read
                         mapped[AMZ_EXAFRD] = AK7_BLSTART+0;        // lsum low 16 bit
                         tmp0 =  mapped[AMZ_EXDRD];
                         if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
@@ -435,7 +427,7 @@ int main(void) {
                         gsum = tmp0 + (tmp1<<16); 
    
                         ph = C1[ch]*lsum+Cg[ch]*gsum+C0[ch]*tsum;
-                     } else {   // combined BL read
+                     } else {   // combined BL read, DATA_FLOW==1
                         mapped[AMZ_EXAFRD] = AK7_BLSTART+4;        // wsum low 16 bit
                         tmp0 =  mapped[AMZ_EXDRD];
                         if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
@@ -453,10 +445,6 @@ int main(void) {
          
                      if (tsum>0 && ((tsum&0x80000000)==0) )		// tum=0 or high bit set indicates bad baseline
                      {
-                     //  ph = C1[ch]*lsum+Cg[ch]*gsum+C0[ch]*tsum;
-                     //  if (ch==10) printf("BL wsum ARM %f FPGA %d\n ",ph, wsum);
-                     //  ph = (double)wsum;
-                       //if (ch==0) printf("ph %f, BLcut %d, BLavg %d, baseline %f\n",ph,BLcut[ch],BLavg[ch],baseline[ch] );
                        if( (BLcut[ch]==0) || (abs(ph-baseline[ch])<BLcut[ch]) || (BLbad[ch] >=MAX_BADBL) )       // only accept "good" baselines < BLcut, or if too many bad in a row (to start over)
                        {
                            if( (BLavg[ch]==0) || (BLbad[ch] >=MAX_BADBL) )
@@ -478,7 +466,7 @@ int main(void) {
                }          // end for channels
             }             // end for K7s
          }             // end periodicity check
-       } // end use FW E comp 
+       } // end don't use FW E comp (DATA_FLOW<2) 
          
       
       // -----------poll for events -----------
@@ -487,10 +475,9 @@ int main(void) {
       for(k7=0;k7<N_K7_FPGAS;k7++)
       {
 
-         // AutoUDP: K7 streams UDP data to Ethernet automatically and 
-         //          MCA data to a FIFO in MZ
-         //          AutoUDP implies UDP_OUTPUT==1
-         if(AutoUDP)
+         // DATA_FLOW == 4 : K7 streams UDP data to Ethernet automatically and MCA data to a FIFO in MZ
+
+         if(fippiconfig.DATA_FLOW == 4)
          {
                 mapped[AMZ_DEVICESEL] = CS_MZ;	// select MZ
                 tmp2 = mapped[AMZ_CSROUTL];
@@ -506,7 +493,7 @@ int main(void) {
                   over     = (tmp0 & 0x10) >> 4;    // negative or overflow
                   pileup   = (tmp0 & 0x20) >> 5;    // pileup
                   if(eventcount<maxmsg) printf( "CSR: 0x%x MCA FIFO: ch %d, E %d (0x %x %x)\n", tmp2, ch, energy, tmp0, tmp1 );
-                  if(ch!=13) printf( "CSR: 0x%x MCA FIFO: ch %d, E %d (0x %x %x)\n",tmp2, ch, energy, tmp0, tmp1 );                 
+                  //if(ch!=13) printf( "CSR: 0x%x MCA FIFO: ch %d, E %d (0x %x %x)\n",tmp2, ch, energy, tmp0, tmp1 );                 
 
                   if( (PILEUPCTRL[ch]==0)     || (PILEUPCTRL[ch]==1 && !pileup )    )  // this pileup check is probably redundant, also in FPGA 
                   {
@@ -526,8 +513,8 @@ int main(void) {
 
           } else { 
             // Non-AutoUDP: ARM needs to poll K7 if data ready
-            // then, if UDP, give command to send out data to Ethernet, adding a CFD value
-            //       if not UDP, read all data and store locally (slow)
+            // then, if UDP (DATA_FLOW=3), give command to send out data to Ethernet, adding a CFD value
+            //       if not UDP (DATA_FLOW<3), read all data and store locally (slow)
             // energy can be computed by ARM from raw sums or by FPGA 
 
             mapped[AMZ_DEVICESEL] =  cs[k7];	         // select FPGA 
@@ -535,7 +522,7 @@ int main(void) {
             mapped[AMZ_EXDWR]  = PAGE_SYS;            //                         0x0  = system  page
 
             // check if UDP transfer is still ongoing
-            if(fippiconfig.UDP_OUTPUT==1)      
+            if(fippiconfig.DATA_FLOW == 3)      
             {
                mapped[AMZ_EXAFRD] = AK7_CSROUT;     // read CSR
                tmp0 =  mapped[AMZ_EXDRD];    
@@ -579,8 +566,6 @@ int main(void) {
       
                         // read 1 64bit word from header (CFD data requiring division, pileup info etc)
                         // by now,  E is computed in FPGA and is only calculated here in non-UDP mode 
-                      //  for( k=0; k < 3; k++)
-                      //  {
                            k=0;
                            mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;   // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
                            hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
@@ -595,7 +580,6 @@ int main(void) {
                            hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
                             if(SLOWREAD)   hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
                            // the next 5 words only need to be read if storing data locally 
-                      //  }
        
                          if(eventcount<maxmsg) { 
                            printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
@@ -635,9 +619,7 @@ int main(void) {
                        mapped[AMZ_EXAFRD] = AK7_EFIFO;              // select the "EFIFO" address in channel's page
                        energyF = mapped[AMZ_EXDWR];                 // read 16 bits
                        if(SLOWREAD)  energyF = mapped[AMZ_EXDRD];   // read 16 bits
-                       if(eventcount<maxmsg) { 
-                           printf( "Read FPGA E: %d\n",energyF );
-                       }  
+                       if(eventcount<maxmsg) printf( "Read FPGA E: %d\n",energyF ); 
    
    
                         // at this point, key data of event is known. Now can
@@ -646,27 +628,21 @@ int main(void) {
                         //           OR
                         // save to local storage    
    
-                        if(fippiconfig.UDP_OUTPUT==1)             // Ethernet storage 
+                        if(fippiconfig.DATA_FLOW == 3)             // Ethernet storage 
                         {
                            mapped[AMZ_EXAFWR] = AK7_PAGE;         // specify   K7's addr:    PAGE register
                            mapped[AMZ_EXDWR]  = PAGE_SYS;         //  PAGE 0: system, page 0x10n = channel n
                         
-                    //       if(useFWE==0) {    // only overwrite FPGA's energy if local computation is preferred
-                    //          mapped[AMZ_EXAFWR] =  AK7_ETH_ENERGY;  // specify   K7's addr:    energy for Eth data packet
-                    //          mapped[AMZ_EXDWR]  =  energy;
-                    //       }
                            mapped[AMZ_EXAFWR] =  AK7_ETH_CFD;     // specify   K7's addr:    cfd for Eth data packet
                            mapped[AMZ_EXDWR]  =  cfd;
                            mapped[AMZ_EXAFWR] =  AK7_ETH_CTRL;    // specify   K7's addr:    Ethernet output control register
                            mapped[AMZ_EXDWR]  =  (ch_k7<<12) + (TRACEENA[ch]<<8) + (TL[ch]>>5);  // channel, payload type with/without trace, TL blocks
    
-                        if(eventcount<maxmsg) { 
-                           printf( "issued command to UDP send\n");
-                       }  
+                           if(eventcount<maxmsg) printf( "issued command to UDP send\n");
    
-                           if(useFWE==1)  energy = energyF & 0xFFFE;   // overwrite local computation with FPGA result  (bit 0 is pileup)
+                           energy = energyF & 0xFFFE;   // overwrite local E computation with FPGA result  (bit 0 is pileup)  for MCA binning below
    
-                        } else { // local storage
+                        } else { // local storage DATA_FLOW == 0,1,2
    
                            // read 5 more 64bit words from header (still in channel page)
                            for( k=0; k < 20; k++)
@@ -727,10 +703,8 @@ int main(void) {
                            if ((ph<0.0)|| (ph>65536.0))	ph =0.0;	// out of range energies -> 0
                            energy = (int)floor(ph);
                            if(eventcount<maxmsg)  printf("ch %d: Energy ph ARM %05d ",ch, energy);
-                           //if ((hit & (1<< HIT_LOCALHIT))==0)	  	energy =0;	   // not a local hit -> 0
-                    //        if(eventcount<100)   printf( "now incrementing MCA, E(%d) = %d\n", ch, energy); 
    
-                           if(useFWE==1)  energy = energyF & 0xFFFE;   // overwrite local computation with FPGA result  (bit 0 is pileup)
+                           if(fippiconfig.DATA_FLOW == 2)  energy = energyF & 0xFFFE;   // overwrite local computation with FPGA result  (bit 0 is pileup)
                         
                            if(eventcount<maxmsg)  printf("Energy ph FPGA %05d \n",energyF);      //if(eventcount % 100 == 0)
    
@@ -846,9 +820,8 @@ int main(void) {
                                  psa_R       );
                            }    // 0x401
    
-                        } //udp/local storage
+                        } // end DATA_FLOW < 3
    
-                        //if(eventcount<4)   printf( "now incrementing MCA, E = %d\n", energy); 
                         //  histogramming if E< max mcabin
                         bin = energy >> Binfactor[ch];
                         if( (bin<MAX_MCA_BINS) && (bin>0) ) {
@@ -907,8 +880,6 @@ int main(void) {
             tmp0 = mapped[AMZ_RS_TT+0];   // address offset by 1?
             tmp1 = mapped[AMZ_RS_TT+1];
              if(verbose) printf("%s %4.5G \n","Total_Time",((double)tmp0*65536+(double)tmp1*TWOTO32)*1e-9);    
-           //  printf("%s %d %d \n","Total_Time",tmp0,tmp1);    
-
             // print (small) set of RS to file, visible to web
             //read_print_runstats_XL_2x4(1, 0, mapped);
             read_print_rates_XL_2x4(0,mapped);
@@ -919,11 +890,8 @@ int main(void) {
             fprintf(filmca,"bin");
             for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(filmca,",MCAch%02d",ch);
             fprintf(filmca,"\n");
-            //fprintf(filmca,"bin,MCAch0,MCAch1,MCAch2,MCAch3,MCAch4,MCAch5,MCAch6,MCAch7\n");
             for( k=0; k <WEB_MCA_BINS; k++)       // report the 4K spectra during the run (faster web update)
             {
-            //   fprintf(filmca,"%d,%u,%u,%u,%u\n ", k*onlinebin,wmca[0][k],wmca[1][k],wmca[2][k],wmca[3][k]);
-
                fprintf(filmca,"%d",k*onlinebin);                  // bin number
                for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(filmca,",%d",wmca[ch][k]);    // print channel data
                fprintf(filmca,"\n");
