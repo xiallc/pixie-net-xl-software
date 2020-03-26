@@ -241,6 +241,7 @@
 #define AK7_SCSRIN            0x00
 #define AK7_ADCCTRL           0x02
 #define AK7_PAGE              0x03
+#define AK7_HOSTCLR           0x04
 #define AK7_ADCSPI            0x05
 #define AK7_ADCBITSLIP        0x06
 #define AK7_WR_TM_TAI_START   0x07
@@ -252,7 +253,7 @@
 #define AK7_ETH_CHECK_LONG    0x15     // IPv4 checksum, precomputed for long package
 #define AK7_ETH_ENERGY        0x16     // energy of current event to send out
 #define AK7_ETH_CFD           0x17     // cfd of current event to send out
-#define AK7_ETH_CTRL          0x18     // channel number, trace length, type of data payload 
+#define AK7_ETH_CTRL          0x18     // channel number, trace length, type of data payload, also starts transfer if run in progress (nLive) 
 
 
 #define AK7_P16REG00          0x40

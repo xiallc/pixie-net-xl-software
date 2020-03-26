@@ -130,7 +130,7 @@ typedef struct PixieNetFippiConfig {
 
   unsigned int DATA_FLOW;           // options for readout 
       // if 0, ARM does everything
-      // if 1, ARM uses FPGA's baseline average
+      // if 1, ARM uses FPGA's weighted sum result
       // if 2, ARM uses FPGA's baseline average and energy
       // if 3, ARM uses FPGA's baseline average and energy and directs data out via WR (adding CFD result)
       // if 4, FPGA sends out data via WR and ARM only increments the MCA with E values read from MZ  

@@ -300,8 +300,22 @@ int main(void) {
     }
 
     // Run Start Control
+   for(k7=0;k7<N_K7_FPGAS;k7++)
+   {     
+      mapped[AMZ_DEVICESEL] =  cs[k7];	   // select FPGA 
+      mapped[AMZ_EXAFWR] = AK7_PAGE;      // specify   K7's addr:    PAGE register
+      mapped[AMZ_EXDWR]  = PAGE_SYS;      //  PAGE 0: system, page 0x10n = channel n
+      
+      mapped[AMZ_EXAFWR] =  AK7_HOSTCLR;  // specify   K7's addr:    write to clear SDRAM, DEEPFIFO 
+      mapped[AMZ_EXDWR]  =  0;            // any write ok
+      usleep(10);                         // memory reset may need some time
+   }
+
    mapped[AMZ_DEVICESEL] = CS_MZ;	           // select MZ
    if(SyncT==1)  mapped[ARTC_CLR] = 0x0001;    // any write will create a pulse to clear timers
+
+
+
 
    if(WR_RTCtrl==1)                       // RunEnable/Live set via WR time comparison  (if startT < WR time < stopT => RunEnable=1) 
    {
@@ -526,8 +540,9 @@ int main(void) {
             {
                mapped[AMZ_EXAFRD] = AK7_CSROUT;     // read CSR
                tmp0 =  mapped[AMZ_EXDRD];    
-               udpok = (tmp0 & 0x0400)==0 ;       // check flag for UDP in progress, must be zero
-               if(eventcount<maxmsg) printf( "K7 %d: UDP busy\n", k7 );
+               if(SLOWREAD)  tmp0 = mapped[AMZ_EXDRD]; 
+               udpok = ((tmp0 & 0x0400)==0) ;       // check flag for DF in progress, must be zero
+               if(eventcount<maxmsg && !udpok) printf( "K7 %d: DF busy: CSR = 0x%x, test=0x%x \n", k7, tmp0,(tmp0 & 0x0400) );
              } else {
                udpok = 1;
              }

@@ -64,11 +64,12 @@ int main( int argc, char *argv[] ) {
 //  unsigned int addr = 0;
   unsigned int mval = 0;
   unsigned int k;
-  unsigned int upper, lower;
-  unsigned int chsel, regno;
+//  unsigned int upper, lower;
+//  unsigned int chsel, regno;
 
- unsigned int adc[4][14];
- int ch;
+// unsigned int adc[4][14];
+//  int ch;
+FILE * fil;
 
 
   // *************** PS/PL IO initialization *********************
@@ -109,6 +110,34 @@ int main( int argc, char *argv[] ) {
 
    // ************************ set up controller registers for external R/W *********************************
 
+   // ======================= SDRAm test =======================
+
+   mapped[AMZ_DEVICESEL] =  CS_K1;	         // select FPGA 
+   mapped[AMZ_EXAFWR] = AK7_PAGE;            // specify   K7's addr     addr 3 = channel/system
+   mapped[AMZ_EXDWR]  = PAGE_SYS;            //                         0x0  = system  page
+
+   mapped[AMZ_EXAFWR] =  AK7_ETH_CTRL;    // specify   K7's addr:    Ethernet output control register
+   mapped[AMZ_EXDWR]  =  123;  // channel, payload type with/without trace, TL blocks (not important here, just trigger the write-to-FIFO process)
+
+   usleep(10000);        // wait
+
+   // dummy read
+   //  mapped[AMZ_EXAFRD] = 0x82;     // write to  k7's addr for read
+   //   mval = mapped[AMZ_EXDRD];      // read 16 bits
+
+     fil = fopen("ADC.csv","w");
+  fprintf(fil,"sample, value\n");
+
+   for(k=0;k<65536;k++) {
+      mapped[AMZ_EXAFRD] = 0x82;     // write to  k7's addr for read
+      mval = mapped[AMZ_EXDRD];      // read 16 bits
+      if(SLOWREAD)  mval = mapped[AMZ_EXDRD];
+      if(k<20) printf( "fifo out is 0x%x \n", mval);
+      fprintf(fil,"%d,%d\n",k,mval); 
+   }  
+
+   fclose(fil);
+   
 
   // ======================= ADC SPI programming =======================
 
@@ -123,7 +152,7 @@ int main( int argc, char *argv[] ) {
    mapped[AMZ_EXDWR] = mval;                                 //  write to ADC SPI
          usleep(5);
  */
-
+ /*
  // read frame 
    mapped[AOUTBLOCK] = CS_K0;	  // select FPGA 0 
 
@@ -227,7 +256,7 @@ int main( int argc, char *argv[] ) {
 
 
 
-
+      */
 
                                       
   /*

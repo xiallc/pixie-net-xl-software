@@ -66,7 +66,7 @@ int main(void) {
 
   // ******************* read ini file and fill struct with values ********************
 
-  int verbose = 1;      // TODO: control with argument to function 
+  int verbose = 0;      // TODO: control with argument to function 
   // 0 print errors and minimal info only
   // 1 print errors and full info
   
@@ -233,7 +233,7 @@ int main(void) {
       printf("Invalid DATA_FLOW = %d; can not be used with runtype 0x301\n",fippiconfig.DATA_FLOW);
       return -900;
     }
-    if( (fippiconfig.DATA_FLOW == 3)|| (fippiconfig.DATA_FLOW == 4) && (fippiconfig.RUN_TYPE != 0x100) ) {
+    if( ((fippiconfig.DATA_FLOW == 3) || (fippiconfig.DATA_FLOW == 4)) && (fippiconfig.RUN_TYPE != 0x100) ) {
       printf("Invalid DATA_FLOW = %d; WR UDP output currently only supported for runtype 0x100\n",fippiconfig.DATA_FLOW);
       return -900;
     }
@@ -693,7 +693,7 @@ int main(void) {
       reglo = ~mval;      
       mapped[AMZ_EXAFWR] =  AK7_ETH_CHECK_SHORT;     // specify   K7's addr:    checksum (SHORT)
       mapped[AMZ_EXDWR]  =  reglo;
-      printf("WR Ethernet data checksum FPGA %d (SHORT) = 0x%x\n",k7, reglo & 0xFFFF);
+      //printf("WR Ethernet data checksum FPGA %d (SHORT) = 0x%x\n",k7, reglo & 0xFFFF);
 
       // IPv4 checksum computation: LONG (20 word header plus trace)
       // Note: all channels must have same TL!
@@ -713,13 +713,14 @@ int main(void) {
       reglo = ~mval;      
       mapped[AMZ_EXAFWR] =  AK7_ETH_CHECK_LONG;     // specify   K7's addr:    checksum (LONG)
       mapped[AMZ_EXDWR]  =  reglo;
-      printf("WR Ethernet data checksum FPGA %d (LONG)  = 0x%x\n",k7, reglo & 0xFFFF);
+      //printf("WR Ethernet data checksum FPGA %d (LONG)  = 0x%x\n",k7, reglo & 0xFFFF);
 
       // set the Ethernet control register with the trace length (for AutoUDP)
       mval =  ((fippiconfig.CHANNEL_CSRA[0] & (1<<CCSRA_TRACEENA)) >0); // check TraceEna bit
       mapped[AMZ_EXAFWR] =  AK7_ETH_CTRL;    // specify   K7's addr:    Ethernet output control register
       mapped[AMZ_EXDWR]  =  ( (mval<<8) + (TL[0]>>5) );  // specify payload type with/without trace, TL blocks
-
+      mapped[AMZ_EXAFWR] =  AK7_HOSTCLR;    // specify   K7's addr:    write to clear SDRAM, DEEPFIFO 
+      mapped[AMZ_EXDWR]  =  mval;  // any write ok
    
       // CHANNEL REGISTERS IN K7
       for( ch_k7 = 0; ch_k7 < NCHANNELS_PER_K7 ; ch_k7 ++ )
@@ -752,13 +753,13 @@ int main(void) {
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_SYNCDATAACQ,   FiPPI_SYNCDATAACQ   );     
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_GROUPTRIGSEL,  FiPPI_GROUPTRIGSEL   );    
          mval = 129-FL[ch];
-          printf("FL: %d, 129-FL: %d,  ",FL[ch], mval);
+         // printf("FL: %d, 129-FL: %d,  ",FL[ch], mval);
          reglo = reglo +( mval<<25) ;               // 128 - (FastLength - 1) in bits [31:25] 
          SAVER0[ch] = reglo;
           
          reghi = 0;
          reghi = 129 - FL[ch] - FG[ch];                          // 128 - (FastLength + FastGap - 1)
-          printf("FL+FG: %d, 129-SL-SG: %d \n",FL[ch]+FG[ch], reghi);
+         // printf("FL+FG: %d, 129-SL-SG: %d \n",FL[ch]+FG[ch], reghi);
          reghi = reghi & 0x7F;                                 // Keep only bits [6:0]
          reghi = reghi + (TH[ch]<<7);                             // Threshold in [22:7]   
          reghi = reghi + ( (64 - fippiconfig.CFD_DELAY[ch] <<23) );        //  CFDDelay in [28:23]       // in samples!
