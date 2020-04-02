@@ -613,6 +613,7 @@ int main(void) {
   
   // first, set CSR run control options   
   mapped[AMZ_CSRIN] = 0x0000; // all off)
+  mapped[AMZ_RUNCTRL] = 0x0000;    // MCA FIFO disabled
 
   mval =  fippiconfig.AUX_CTRL  & 0x00FF;  // upper bits reserved (yellow LED)
   mval = mval + 0x0100;     // set bit 8: yellow LED on

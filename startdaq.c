@@ -383,7 +383,11 @@ int main(void) {
 
    
    mapped[AMZ_DEVICESEL] = CS_MZ;	// select MZ
-   if( (fippiconfig.DATA_FLOW == 4) || (fippiconfig.DATA_FLOW == 5))  mapped[AMZ_RUNCTRL] = 0x0008;    // MCA FIFO enabled 
+   if( (fippiconfig.DATA_FLOW == 4) || (fippiconfig.DATA_FLOW == 5))  
+      mapped[AMZ_RUNCTRL] = 0x0008;    // MCA FIFO enabled 
+   else
+      mapped[AMZ_RUNCTRL] = 0x0000;    // MCA FIFO disabled
+ 
    mapped[AMZ_CSRIN] = 0x0001;      // RunEnable=1 > nLive=0 (DAQ on)
    // this is a bit in a MZ register tied to a line to both FPGAs
    // falling edge of nLive clears counters and memory address pointers
@@ -397,7 +401,7 @@ int main(void) {
       //----------- Periodically read BL and update average -----------
       // this will be moved into the FPGA soon
       if(fippiconfig.DATA_FLOW<2) {   // full BL read (DATA_FLOW==0) or combined BL read  (DATA_FLOW==1)
-         if(loopcount % BLREADPERIOD == 0) {  //|| (loopcount ==0) ) {     // sometimes 0 mod N not zero and first few events have wrong E? watch
+         if((loopcount % BLREADPERIOD == 0) || (loopcount ==0) ) {     // sometimes 0 mod N not zero and first few events have wrong E? watch
             for(k7=0;k7<N_K7_FPGAS;k7++)
             {
                mapped[AMZ_DEVICESEL] =  cs[k7];	            // select FPGA 
@@ -440,12 +444,32 @@ int main(void) {
                         if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
                         gsum = tmp0 + (tmp1<<16); 
    
-                        ph = C1[ch]*lsum+Cg[ch]*gsum+C0[ch]*tsum;
-                     } else {   // combined BL read, DATA_FLOW==1
-                        mapped[AMZ_EXAFRD] = AK7_BLSTART+4;        // wsum low 16 bit
+                        ph = C1[ch]*lsum+Cg[ch]*gsum+C0[ch]*tsum; 
+                        if (tsum>0 && ((tsum&0x80000000)==0) )		// tum=0 or high bit set indicates bad baseline
+                        {
+                          if( (BLcut[ch]==0) || (abs(ph-baseline[ch])<BLcut[ch]) || (BLbad[ch] >=MAX_BADBL) )       // only accept "good" baselines < BLcut, or if too many bad in a row (to start over)
+                          {
+                              if( (BLavg[ch]==0) || (BLbad[ch] >=MAX_BADBL) )
+                              {
+                                  baseline[ch] = ph;
+                                  BLbad[ch] = 0;
+                              } else {
+                                  // BL average: // avg = old avg + (new meas - old avg)/2^BLavg
+                                  baseline[ch] = baseline[ch] + (ph-baseline[ch])/(1<<BLavg[ch]);
+                                  BLbad[ch] = 0;
+                                  
+      
+                              } // end BL avg
+                           } else {
+                              BLbad[ch] = BLbad[ch]+1;
+                          }     // end BLcut check                                     
+                        }       // end tsum >0 check
+                     } else {   // BL average read, DATA_FLOW==1
+
+                        mapped[AMZ_EXAFRD] = AK7_BLSTART+4;        // BL average low 16 bit
                         tmp0 =  mapped[AMZ_EXDRD];
                         if(SLOWREAD)  tmp0 =  mapped[AMZ_EXDRD];
-                        mapped[AMZ_EXAFRD] = AK7_BLSTART+5;        // wsum high 16 bit
+                        mapped[AMZ_EXAFRD] = AK7_BLSTART+5;        // BL average high 16 bit
                         tmp1 =  mapped[AMZ_EXDRD];
                         if(SLOWREAD) tmp1 =  mapped[AMZ_EXDRD];
                         wsum = tmp0 + (tmp1<<16);      
@@ -454,28 +478,9 @@ int main(void) {
                         tmp1 =  mapped[AMZ_EXDRD];
    
                         ph = (double)wsum;
-                        tsum = wsum;                  // for bad BL test below
-                     }
-         
-                     if (tsum>0 && ((tsum&0x80000000)==0) )		// tum=0 or high bit set indicates bad baseline
-                     {
-                       if( (BLcut[ch]==0) || (abs(ph-baseline[ch])<BLcut[ch]) || (BLbad[ch] >=MAX_BADBL) )       // only accept "good" baselines < BLcut, or if too many bad in a row (to start over)
-                       {
-                           if( (BLavg[ch]==0) || (BLbad[ch] >=MAX_BADBL) )
-                           {
-                               baseline[ch] = ph;
-                               BLbad[ch] = 0;
-                           } else {
-                               // BL average: // avg = old avg + (new meas - old avg)/2^BLavg
-                               baseline[ch] = baseline[ch] + (ph-baseline[ch])/(1<<BLavg[ch]);
-                               BLbad[ch] = 0;
-                               
-   
-                           } // end BL avg
-                        } else {
-                           BLbad[ch] = BLbad[ch]+1;
-                       }     // end BLcut check                                     
-                     }       // end tsum >0 check
+                        baseline[ch] = ph;
+                        if(eventcount<maxmsg) printf( "BL avg FPGA: 0x%x \n", wsum );
+                     }     // end DATA_FLOW 0/1
                   }        // end if good channel
                }          // end for channels
             }             // end for K7s
@@ -582,13 +587,13 @@ int main(void) {
                         // read 1 64bit word from header (CFD data requiring division, pileup info etc)
                         // by now,  E is computed in FPGA and is only calculated here in non-UDP mode 
                            k=0;
-                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;   // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
+                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;   // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
                            hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
                             if(SLOWREAD)  hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
-                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;   // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
+                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;   // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
                            hdr[4*k+2] = mapped[AMZ_EXDRD];      // read 16 bits
                             if(SLOWREAD)  hdr[4*k+2] = mapped[AMZ_EXDRD];      // read 16 bits
-                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;   // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
+                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;   // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
                            hdr[4*k+1] = mapped[AMZ_EXDRD];      // read 16 bits
                             if(SLOWREAD)  hdr[4*k+1] = mapped[AMZ_EXDRD];      // read 16 bits
                            mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;   // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
@@ -660,24 +665,41 @@ int main(void) {
                         } else { // local storage DATA_FLOW == 0,1,2
    
                            // read 5 more 64bit words from header (still in channel page)
-                           for( k=0; k < 20; k++)
+                           for( k=0; k < 5; k++)
                            {
+                              mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;           // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
+                              hdr[4*k+3] = mapped[AMZ_EXDRD];                  // read 16 bits
+                              if(SLOWREAD)  hdr[4*k+3] = mapped[AMZ_EXDRD];    // read 16 bits
+                              mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;           // write to  k7's addr for read -> reading from AK7_HDRMEM_B channel header fifo, low 16bit
+                              hdr[4*k+2] = mapped[AMZ_EXDRD];                  // read 16 bits
+                              if(SLOWREAD)  hdr[4*k+2] = mapped[AMZ_EXDRD];    // read 16 bits
+                              mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;           // write to  k7's addr for read -> reading from AK7_HDRMEM_C channel header fifo, low 16bit
+                              hdr[4*k+1] = mapped[AMZ_EXDRD];                  // read 16 bits
+                              if(SLOWREAD)  hdr[4*k+1] = mapped[AMZ_EXDRD];    // read 16 bits
                               mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;           // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
-                              hdr[k] = mapped[AMZ_EXDRD];                  // read 16 bits
-                              if(SLOWREAD)  hdr[k] = mapped[AMZ_EXDRD];    // read 16 bits
+                              hdr[4*k+0] = mapped[AMZ_EXDRD];                  // read 16 bits
+                              if(SLOWREAD)  hdr[4*k+0] = mapped[AMZ_EXDRD];    // read 16 bits
                             }  // the next 8 64bit words only need to be read if reading QDC data
    
                            // waveform read (if accepted)
                            if(TRACEENA[ch]==1)  {   
-                             for( k=0; k < (TL[ch]/2); k++)
+                             for( k=0; k < (TL[ch]/4); k++)
                              {
-                                 mapped[AMZ_EXAFRD] = AK7_TRCMEM_B;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
+                                 mapped[AMZ_EXAFRD] = AK7_TRCMEM_A;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
                                  w0 = mapped[AMZ_EXDRD];      // read 16 bits
                                  if(SLOWREAD)  w0 = mapped[AMZ_EXDRD];
                                  mapped[AMZ_EXAFRD] = AK7_TRCMEM_B;     // write to  k7's addr for read -> reading from AK7_TRCMEM_B channel header memory, high 16bit and addr increase
                                  w1 = mapped[AMZ_EXDRD];      // read 16 bits  , increments trace memory address
                                  if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
-                                 wf[k] = w0+(w1<<16);   // re-order 2 sample words from 32bit FIFO      
+                                 wf[2*k+0] = w0+(w1<<16);   // re-order 2 sample words from 32bit FIFO
+      
+                                 mapped[AMZ_EXAFRD] = AK7_TRCMEM_C;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
+                                 w0 = mapped[AMZ_EXDRD];      // read 16 bits
+                                 if(SLOWREAD)  w0 = mapped[AMZ_EXDRD];
+                                 mapped[AMZ_EXAFRD] = AK7_TRCMEM_D;     // write to  k7's addr for read -> reading from AK7_TRCMEM_B channel header memory, high 16bit and addr increase
+                                 w1 = mapped[AMZ_EXDRD];      // read 16 bits  , increments trace memory address
+                                 if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
+                                 wf[2*k+1] = w0+(w1<<16);   // re-order 2 sample words from 32bit FIFO   
                              }  // end trace length   
                            }   // end if trace enabled
    
@@ -701,10 +723,13 @@ int main(void) {
                            gsum    =  hdr[12]    + (hdr[13]<<16);
    
                            if(eventcount<maxmsg) printf( "tsum %d, lsum %d, gsum %d\n",tsum, lsum, gsum );  
+                           if(eventcount<maxmsg) printf( "BL avg: %f\n",baseline[ch] );
+                            if(eventcount<maxmsg) printf( "BL avg FPGA: 0x%x \n", wsum );
                         //   printf( "timeL %d, extTSL %d\n",timeL, exttsL );
    
                             // compute and histogram E
                               ph = C1[ch]*(double)lsum+Cg[ch]*(double)gsum+C0[ch]*(double)tsum;
+                              if(eventcount<maxmsg) printf( "raw ph: %f\n",ph );
    
                            //printf("ph %f, BLavg %f, E %f\n",ph,baseline[ch], ph-baseline[ch]);
                            //printf("lsum    %d, tsum     %d, gsum    %d\n",lsum, tsum, gsum);
@@ -862,7 +887,7 @@ int main(void) {
                      else { // event not acceptable (piled up) 
    
                           // advance header memory by 5 x4 words
-                          for( k=0; k < 20; k++)
+                          for( k=0; k < 5; k++)
                            {
                               mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
                               hdr[k] = mapped[AMZ_EXDRD];      // read 16 bits, no double read required

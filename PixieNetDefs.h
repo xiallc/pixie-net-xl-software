@@ -269,24 +269,34 @@
 #define AK7_P16REG_CG         0x64
 #define AK7_P16REG_C1         0x66
 
+
+#define AK7_SYS_RS            0x80
 #define AK7_CSROUT            0x80
 #define AK7_SYSSYTATUS        0x81
 #define AK7_ADCFRAME          0x86
+#define AK7_SYS_RS_RT         0x88
 #define AK7_WR_TM_TAI         0x8D
 
-#define AK7_NEXTEVENT         0xDA
-#define AK7_SKIPTRACE         0xDB
-#define AK7_HDRMEM_D          0xDC
-#define AK7_EFIFO             0xDD
-#define AK7_TRCMEM_B          0xDE
-#define AK7_BLLOCK            0xD4
-#define AK7_BLSTART           0xC8
-#define AK7_SYS_RS            0x80
-#define AK7_SYS_RS_RT         0x88
 #define AK7_CHN_RS_CT         0xC0
 #define AK7_ADC               0xC4
+#define AK7_BLSTART           0xC8
 #define AK7_CHN_RS_NTRIG      0xD0
-#define AK7_CHN_RS_NOUT       0xD5
+#define AK7_CHN_RS_NOUT       0xD4
+#define AK7_HDRMEM_A          0xD8
+#define AK7_HDRMEM_B          0xD9
+#define AK7_HDRMEM_C          0xDA
+#define AK7_HDRMEM_D          0xDB
+#define AK7_TRCMEM_A          0xDC
+#define AK7_TRCMEM_B          0xDD
+#define AK7_TRCMEM_C          0xDE
+#define AK7_TRCMEM_D          0xDF
+#define AK7_BLLOCK            0xE0
+#define AK7_SKIPTRACE         0xE1
+#define AK7_NEXTEVENT         0xE2
+#define AK7_EFIFO             0xE3
+
+
+
 
  
 #define WR_TAI_STEP    10
