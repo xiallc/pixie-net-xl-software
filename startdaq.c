@@ -578,12 +578,12 @@ int main(void) {
                      mapped[AMZ_EXAFRD] = AK7_NEXTEVENT;             // select the "nextevent" address in channel's page
                      out7 = mapped[AMZ_EXDWR];     // any read ok
    
-                       if(  eventcount_ch[ch]==0) {
+     /*                  if(  eventcount_ch[ch]==0) {
                         // dummy reads
-                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;  // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
+                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;  // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
                            hdr[0] = mapped[AMZ_EXDRD];         // read 16 bits
                         }            
-      
+    */  
                         // read 1 64bit word from header (CFD data requiring division, pileup info etc)
                         // by now,  E is computed in FPGA and is only calculated here in non-UDP mode 
                            k=0;

@@ -720,7 +720,7 @@ int main(void) {
       mval =  ((fippiconfig.CHANNEL_CSRA[0] & (1<<CCSRA_TRACEENA)) >0); // check TraceEna bit
       mapped[AMZ_EXAFWR] =  AK7_ETH_CTRL;    // specify   K7's addr:    Ethernet output control register
       mapped[AMZ_EXDWR]  =  ( (mval<<8) + (TL[0]>>5) );  // specify payload type with/without trace, TL blocks
-      mapped[AMZ_EXAFWR] =  AK7_HOSTCLR;    // specify   K7's addr:    write to clear SDRAM, DEEPFIFO 
+      mapped[AMZ_EXAFWR] =  AK7_HOSTCLR;    // specify   K7's addr:    write to clear SDRAM, DEEPFIFO. must be after TL has been defined in AK7_ETH_CTRL
       mapped[AMZ_EXDWR]  =  mval;  // any write ok
    
       // CHANNEL REGISTERS IN K7
@@ -763,7 +763,7 @@ int main(void) {
          // printf("FL+FG: %d, 129-SL-SG: %d \n",FL[ch]+FG[ch], reghi);
          reghi = reghi & 0x7F;                                 // Keep only bits [6:0]
          reghi = reghi + (TH[ch]<<7);                             // Threshold in [22:7]   
-         reghi = reghi + ( (64 - fippiconfig.CFD_DELAY[ch] <<23) );        //  CFDDelay in [28:23]       // in samples!
+         reghi = reghi + ( (64 - fippiconfig.CFD_DELAY[ch]) <<23 );        //  CFDDelay in [28:23]       // in samples!
          reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_CHANVETOSEL,   FiPPI_CHANVETOSEL);     
          reghi = reghi + setbit(fippiconfig.CHANNEL_CSRC[ch],CCSRC_MODVETOSEL,    FiPPI_MODVETOSEL );     
          reghi = reghi + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_ENARELAY,      FiPPI_ENARELAY   );     
