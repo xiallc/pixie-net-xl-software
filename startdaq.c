@@ -575,8 +575,11 @@ int main(void) {
                        
                                          
                      // read for nextevent
-                     mapped[AMZ_EXAFRD] = AK7_NEXTEVENT;             // select the "nextevent" address in channel's page
-                     out7 = mapped[AMZ_EXDWR];     // any read ok
+                     // but in DF=3, moving data to UDP already advances the E fifo.  
+                     if(fippiconfig.DATA_FLOW < 3) {
+                        mapped[AMZ_EXAFRD] = AK7_NEXTEVENT;             // select the "nextevent" address in channel's page
+                        out7 = mapped[AMZ_EXDWR];     // any read ok
+                     }
    
      /*                  if(  eventcount_ch[ch]==0) {
                         // dummy reads
@@ -886,12 +889,13 @@ int main(void) {
                      }
                      else { // event not acceptable (piled up) 
    
+                        eventcount_ch[ch+1]++; // debug
                           // advance header memory by 5 x4 words
                           for( k=0; k < 5; k++)
                            {
                               mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
                               hdr[k] = mapped[AMZ_EXDRD];      // read 16 bits, no double read required
-                             // the next 8 words only need to be read if reading CFD data
+                             // the next 8 words only need to be read if reading QDC data
                             }
    
                           //  now also advance trace memory address if traces are enabled
@@ -972,6 +976,7 @@ int main(void) {
       WR_tm_tai = tmp0 +  65536*tmp1 + TWOTO32*tmp2;
 
       printf( "Run completed. Current WR time %llu\n",WR_tm_tai );
+      printf( "Events transfered %d, rejected %d\n",eventcount_ch[13],eventcount_ch[14] );
       
      
       
