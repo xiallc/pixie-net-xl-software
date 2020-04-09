@@ -281,7 +281,7 @@
 #define AK7_ADC               0xC4
 #define AK7_BLSTART           0xC8
 #define AK7_CHN_RS_NTRIG      0xD0
-#define AK7_CHN_RS_NOUT       0xD4
+#define AK7_CHN_RS_NOUT       0xD5     // TODO: this is off by one word. should be D4 per FPGA
 #define AK7_HDRMEM_A          0xD8
 #define AK7_HDRMEM_B          0xD9
 #define AK7_HDRMEM_C          0xDA

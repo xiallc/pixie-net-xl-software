@@ -886,10 +886,10 @@ char System_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
 //   "reserved",    // dummy read
    "CSROUT",		//0  (BEGIN HEX)
    "sysstatus", 
-   "dpmstatus", 
-   "dpmstatus", 
-   "dpmstatus", 
-   "dpmstatus", 
+   "MEM_I_CNT", 
+   "MEM_I_CNT", 
+   "MEM_O_CNT", 
+   "MEM_O_CNT", 
    "ADCframe", 
    "reserved", 
    "RunTime", 
@@ -902,8 +902,8 @@ char System_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
    "WR_TM_TAI", 
    "WR_TM_CYC", 
    "WR_TM_CYC",
-   "reserved",      // 18 (BEGIN DECIMAL)
-   "reserved",
+   "dpmstatus",      // 18 (BEGIN DECIMAL)
+   "dpmstatus",
    "T_ADC",          //20 
    "T_WR",
    "reserved",		  // 22 (BEGIN HEX)   

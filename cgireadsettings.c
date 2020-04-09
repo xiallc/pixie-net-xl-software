@@ -88,7 +88,7 @@ int main(void) {
     // report key module parameters in the end
     printf("RUN_TYPE,0x%x,",fippiconfig.RUN_TYPE);
     printf("REQ_RUNTIME,%d,",(int)fippiconfig.REQ_RUNTIME);
-    printf("UDP_OUTPUT,%d,",fippiconfig.UDP_OUTPUT);
+    printf("DATA_FLOW,%d,",fippiconfig.DATA_FLOW);
     printf("WR_RUNTIME_CTRL,%d,",fippiconfig.WR_RUNTIME_CTRL);
     
     
