@@ -716,8 +716,22 @@ int main(void) {
       mapped[AMZ_EXDWR]  =  reglo;
       //printf("WR Ethernet data checksum FPGA %d (LONG)  = 0x%x\n",k7, reglo & 0xFFFF);
 
+      // event header info (for UDP) 
+      mval = 0;
+      mval = mval + (fippiconfig.SLOT_ID<<0);         // slot     // use for K7 0/1
+      mval = mval + (fippiconfig.CRATE_ID<<4);        // crate
+      mval = mval + (P16_HDR_LEN<<8);                 // header length (fixed to 10 32bit words)  
+      mapped[AMZ_EXAFWR] =  AK7_HDR_IDS;              // specify   K7's addr:    HDR_IDS
+      mapped[AMZ_EXDWR]  =  mval;        
+ 
+      mval=4000; //UDP_PAUSE;
+      mapped[AMZ_EXAFWR] =  AK7_UDP_PAUSE;              // specify   K7's addr:    AK7_UDP_PAUSE
+      mapped[AMZ_EXDWR]  =  mval;      
+
+      
+
       // set the Ethernet control register with the trace length (for AutoUDP)
-      mval =  ((fippiconfig.CHANNEL_CSRA[0] & (1<<CCSRA_TRACEENA)) >0); // check TraceEna bit
+      mval =  ((fippiconfig.CHANNEL_CSRA[0] & (1<<CCSRA_TRACEENA)) >0); // check TraceEna bit   
       mapped[AMZ_EXAFWR] =  AK7_ETH_CTRL;    // specify   K7's addr:    Ethernet output control register
       mapped[AMZ_EXDWR]  =  ( (mval<<8) + (TL[0]>>5) );  // specify payload type with/without trace, TL blocks
       mapped[AMZ_EXAFWR] =  AK7_HOSTCLR;    // specify   K7's addr:    write to clear SDRAM, DEEPFIFO. must be after TL has been defined in AK7_ETH_CTRL

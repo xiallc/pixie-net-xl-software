@@ -580,13 +580,7 @@ int main(void) {
                         mapped[AMZ_EXAFRD] = AK7_NEXTEVENT;             // select the "nextevent" address in channel's page
                         out7 = mapped[AMZ_EXDWR];     // any read ok
                      }
-   
-     /*                  if(  eventcount_ch[ch]==0) {
-                        // dummy reads
-                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;  // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
-                           hdr[0] = mapped[AMZ_EXDRD];         // read 16 bits
-                        }            
-    */  
+    
                         // read 1 64bit word from header (CFD data requiring division, pileup info etc)
                         // by now,  E is computed in FPGA and is only calculated here in non-UDP mode 
                            k=0;
@@ -658,8 +652,12 @@ int main(void) {
                         
                            mapped[AMZ_EXAFWR] =  AK7_ETH_CFD;     // specify   K7's addr:    cfd for Eth data packet
                            mapped[AMZ_EXDWR]  =  cfd;
+
+                           // debug: disable DF readout for some time
+                           w0=0;
+                         //  if( eventcount<50000) w0=8;
                            mapped[AMZ_EXAFWR] =  AK7_ETH_CTRL;    // specify   K7's addr:    Ethernet output control register
-                           mapped[AMZ_EXDWR]  =  (ch_k7<<12) + (TRACEENA[ch]<<8) + (TL[ch]>>5);  // channel, payload type with/without trace, TL blocks
+                           mapped[AMZ_EXDWR]  =  (ch_k7<<12) + ((w0+TRACEENA[ch])<<8) + (TL[ch]>>5);  // channel, payload type with/without trace, TL blocks
    
                            if(eventcount<maxmsg) printf( "issued command to UDP send\n");
    

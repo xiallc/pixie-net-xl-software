@@ -42,19 +42,19 @@
 #define PNXL_DB01_14_75       0x00000000   // value for DB01 with 14/75 MHZ ADC
 #define PNXL_DB01_14_125      0x00100000   // value for DB01 with 14/125 MHZ ADC
 #define PNXL_DB02_12_250      0x00200000   // value for DB02 with 12/250 MHZ ADC
-#define ADC_CLK_MHZ_DB01_75        75
-#define ADC_CLK_MHZ_DB01_125       125
-#define SYSTEM_CLOCK_MHZ_DB01   75
-#define FILTER_CLOCK_MHZ_DB01   75
+#define ADC_CLK_MHZ_DB01_75      75
+#define ADC_CLK_MHZ_DB01_125    125
+#define SYSTEM_CLOCK_MHZ_DB01    75
+#define FILTER_CLOCK_MHZ_DB01    75
 #define ADC_CLK_MHZ_DB02        250
 #define SYSTEM_CLOCK_MHZ_DB02   125
 #define FILTER_CLOCK_MHZ_DB02   125
-#define NCHANNELS          32          // number of channels in parameter files (=max)
-#define NCHANNELS_PRESENT_DB02   16          // actual number of channels per module with DB02
-#define NCHANNELS_PRESENT_DB01   8           // actual number of channels per module with DB01
-#define NCHANNELS_PER_K7_DB02    8           // actual number of channels per K7 with DB02
-#define NCHANNELS_PER_K7_DB01    4           // actual number of channels per K7 with DB01
-#define NCHANNEL_MAX400    4           // maximum number of channels recorded in a single 0x400 .bin file
+#define NCHANNELS                32    // number of channels in parameter files (=max)
+#define NCHANNELS_PRESENT_DB02   16    // actual number of channels per module with DB02
+#define NCHANNELS_PRESENT_DB01    8    // actual number of channels per module with DB01
+#define NCHANNELS_PER_K7_DB02     8    // actual number of channels per K7 with DB02
+#define NCHANNELS_PER_K7_DB01     4    // actual number of channels per K7 with DB01
+#define NCHANNEL_MAX400           4    // maximum number of channels recorded in a single 0x400 .bin file
 #define N_K7_FPGAS         2
 #define V_OFFSET_MAX			1.25			// Pixie voltage offset maximum
 #define MAX_MCA_BINS       32768
@@ -67,6 +67,8 @@
 #define TWOTO32            4294967296
 #define ICRSCALE           15         // factor between current ICR read and ICR in cps
 #define N_FPGA_BYTES       6022736
+#define P16_HDR_LEN        10         // fixed header length for P16 run type 0x100
+#define UDP_PAUSE          500        // number of 64ns ticks to wait between queueueueuing UDP packages, max 65535
 
 
 // Limits for settings
@@ -254,7 +256,8 @@
 #define AK7_ETH_ENERGY        0x16     // energy of current event to send out
 #define AK7_ETH_CFD           0x17     // cfd of current event to send out
 #define AK7_ETH_CTRL          0x18     // channel number, trace length, type of data payload, also starts transfer if run in progress (nLive) 
-
+#define AK7_HDR_IDS           0x19     // crate/slot ID and header length 
+#define AK7_UDP_PAUSE         0x1A     // minimum time between UDP output packages to WR (to slow down data out rate)
 
 #define AK7_P16REG00          0x40
 #define AK7_P16REG01          0x44
