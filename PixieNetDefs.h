@@ -39,9 +39,12 @@
 #define PN_BOARD_VERSION_12_250_B 0xA991  
 #define PN_BOARD_VERSION_12_250_B_PTP 0xA981  
 #define PNXL_DB_VARIANT_MASK  0x00F00000   // mask to extract DB variant from EEPROM HW info
+#define PNXL_MB_REV_MASK      0x000F0000   // mask to extract Main board HW revision from EEPROM HW info
 #define PNXL_DB01_14_75       0x00000000   // value for DB01 with 14/75 MHZ ADC
 #define PNXL_DB01_14_125      0x00100000   // value for DB01 with 14/125 MHZ ADC
 #define PNXL_DB02_12_250      0x00200000   // value for DB02 with 12/250 MHZ ADC
+#define PNXL_MB_REVA          0x00000000   // value for Rev A Main board
+#define PNXL_MB_REVB          0x00010000   // value for Rev B Main board
 #define ADC_CLK_MHZ_DB01_75      75
 #define ADC_CLK_MHZ_DB01_125    125
 #define SYSTEM_CLOCK_MHZ_DB01    75
@@ -66,7 +69,8 @@
 #define NTRACE_SAMPLES     8192
 #define TWOTO32            4294967296
 #define ICRSCALE           15         // factor between current ICR read and ICR in cps
-#define N_FPGA_BYTES       6022736
+#define N_FPGA_BYTES_A     6022736
+#define N_FPGA_BYTES_B     13385232
 #define P16_HDR_LEN        10         // fixed header length for P16 run type 0x100
 #define UDP_PAUSE          500        // number of 64ns ticks to wait between queueueueuing UDP packages, max 65535
 
@@ -258,6 +262,8 @@
 #define AK7_ETH_CTRL          0x18     // channel number, trace length, type of data payload, also starts transfer if run in progress (nLive) 
 #define AK7_HDR_IDS           0x19     // crate/slot ID and header length 
 #define AK7_UDP_PAUSE         0x1A     // minimum time between UDP output packages to WR (to slow down data out rate)
+#define AK7_PLLSPIA           0x1B     // address of PLL register
+#define AK7_PLLSPID           0x1C     // data for PLL register (write starts transfer)
 
 #define AK7_P16REG00          0x40
 #define AK7_P16REG01          0x44

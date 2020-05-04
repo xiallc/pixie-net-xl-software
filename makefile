@@ -1,4 +1,4 @@
-TARGET = adcinit bootfpga cgitraces.cgi gettraces progfippi runstats cgistats.cgi startdaq mcadaq findsettings cgireadsettings.cgi cgiwritesettings.cgi
+TARGET = pllinit adcinit bootfpga cgitraces.cgi gettraces progfippi runstats cgistats.cgi startdaq mcadaq findsettings cgireadsettings.cgi cgiwritesettings.cgi
 LIBS = -lm 
 CFLAGS = -std=c99 -Wall
 CXXFLAGS = -Wall -O3 -DNDEBUG   -pthread -std=gnu++98
@@ -19,6 +19,9 @@ all: default
 
 adcinit: adcinit.o PixieNetCommon.o PixieNetDefs.h
 	gcc adcinit.o PixieNetCommon.o $(LIBS) -o adcinit
+
+pllinit: pllinit.o PixieNetCommon.o PixieNetDefs.h
+	gcc pllinit.o PixieNetCommon.o $(LIBS) -o pllinit
 
 bootfpga: bootfpga.o PixieNetCommon.o PixieNetDefs.h
 	gcc bootfpga.o PixieNetCommon.o $(LIBS) -o bootfpga

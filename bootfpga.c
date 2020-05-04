@@ -49,10 +49,11 @@
 
 // gcc -Wall bootfpga.c -o bootfpga
 
-
 #include "PixieNetDefs.h"
 #include "PixieNetCommon.h"
 
+
+unsigned short confdata[N_FPGA_BYTES_B/2];
 int main( void ) {
 
   int fd;
@@ -64,7 +65,7 @@ int main( void ) {
   FILE * fil;
   unsigned int j, revsn;
   unsigned int counter1, nWords;
-  unsigned short confdata[N_FPGA_BYTES/2];
+  unsigned int N_FPGA_BYTES;
 
 
   // *************** PS/PL IO initialization *********************
@@ -91,7 +92,6 @@ int main( void ) {
 
   mapped = (unsigned int *) map_addr;
 
-
  printf("Configuring FPGAs:\n");
 
 
@@ -101,26 +101,66 @@ int main( void ) {
    mapped[AMZ_HWINFO] = revsn >> 16;      // store PROM revsion info in MZ register, so it can be read without slow I2C
    mapped[AMZ_PLLSTART] = 1;              // any write will start programming the LMK PLL for ADC and FPGA processing clock  
 
+   N_FPGA_BYTES =10;
+   if((revsn & PNXL_MB_REV_MASK) == PNXL_MB_REVB)
+   {
+      if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
+      {
+         fil = fopen("PNXLK7B_DB02_12_250.bin","rb");
+         printf(" HW Rev = 0x%04X, SN = %d,  loading PNXLK7B_DB02_12_250.bin\n", revsn>>16, revsn&0xFFFF);
+         N_FPGA_BYTES = N_FPGA_BYTES_B;
+      }
+      if((revsn & PNXL_DB_VARIANT_MASK) == 0xF00000)      // no ADC DB: default to DB02
+      {
+         fil = fopen("PNXLK7B_DB02_12_250.bin","rb");
+         printf(" HW Rev = 0x%04X, SN = %d, NO ADC DB! - loading default PNXLK7B_DB02_12_250.bin\n", revsn>>16, revsn&0xFFFF);
+         N_FPGA_BYTES = N_FPGA_BYTES_B;
+      }
+   } else {
+      if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
+      {
+         fil = fopen("PNXLK7_DB02_12_250.bin","rb");
+         printf(" HW Rev = 0x%04X, SN = %d,  loading PNXLK7_DB02_12_250.bin\n", revsn>>16, revsn&0xFFFF);
+         N_FPGA_BYTES = N_FPGA_BYTES_A;
+      }
+      if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
+      {
+         fil = fopen("PNXLK7_DB01_14_125.bin","rb");  
+         printf(" HW Rev = 0x%04X, SN = %d, loading PNXLK7_DB01_14_125.bin\n", revsn>>16, revsn&0xFFFF);
+         N_FPGA_BYTES = N_FPGA_BYTES_A;
+      }
+      if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75)
+      {
+         fil = fopen("PNXLK7_DB01_14_75.bin","rb");  
+         printf(" HW Rev = 0x%04X, SN = %d, loading PNXLK7_DB01_14_75.bin\n", revsn>>16, revsn&0xFFFF);
+         N_FPGA_BYTES = N_FPGA_BYTES_A;
+      }
+      if((revsn & PNXL_DB_VARIANT_MASK) == 0xF00000)
+      {
+         fil = fopen("PNXLK7_DB02_12_250.bin","rb");
+         printf(" HW Rev = 0x%04X, SN = %d, NO ADC DB! - loading default PNXLK7_DB02_12_250.bin\n", revsn>>16, revsn&0xFFFF);
+         N_FPGA_BYTES = N_FPGA_BYTES_A;
+      }
+   }
+   if(N_FPGA_BYTES==10) {
+      printf("ERROR: invalid HW configuration 0x%x \n", revsn);
+      printf(" Rev test 0x%x =?= 0x%x\n",revsn & PNXL_MB_REV_MASK, PNXL_MB_REVB); 
+      printf(" DB test 0x%x =?= 0x%x\n",revsn & PNXL_DB_VARIANT_MASK, PNXL_DB02_12_250); 
+      flock( fd, LOCK_UN );
+      munmap(map_addr, size);
+      close(fd);
+      return(-1);
+   }
 
-   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
-   {
-      fil = fopen("PNXLK7_DB02_12_250.bin","rb");
-      printf(" HW Rev = 0x%04X, SN = %d,  loading PNXLK7_DB02_12_250.bin\n", revsn>>16, revsn&0xFFFF);
-   }
-   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
-   {
-      fil = fopen("PNXLK7_DB01_14_125.bin","rb");  
-      printf(" HW Rev = 0x%04X, SN = %d, loading PNXLK7_DB01_14_125.bin\n", revsn>>16, revsn&0xFFFF);
-   }
-   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75)
-   {
-      fil = fopen("PNXLK7_DB01_14_75.bin","rb");  
-      printf(" HW Rev = 0x%04X, SN = %d, loading PNXLK7_DB01_14_75.bin\n", revsn>>16, revsn&0xFFFF);
-   }
+
+       
+   
    nWords = fread(confdata, 2, (N_FPGA_BYTES/2), fil);
+
+  // return 0;
    if(((N_FPGA_BYTES/2) - nWords) > 1) {
       // ndat differing from nWords by 1 is OK if N_COMFPGA_BYTES is an odd number 
-      printf("ERROR: reading FPGA configuration incomplete\n");
+      printf("ERROR: reading FPGA configuration incomplete %d of %d\n",nWords,N_FPGA_BYTES/2);
       flock( fd, LOCK_UN );
       munmap(map_addr, size);
       close(fd);
@@ -174,7 +214,7 @@ int main( void ) {
       mval = mapped[AAUXCTRL];	
       mval = mapped[AAUXCTRL];	
       if( j % (N_FPGA_BYTES/10) ==0)  { printf  ("%d",200*j/N_FPGA_BYTES); fflush(stdout); }
-      if( j % 65536 ==0)  { printf  ("_"); fflush(stdout); }
+      if( j % (N_FPGA_BYTES/90) ==0)  { printf  ("_"); fflush(stdout); }
 
    } 
     printf(" done\n");
@@ -203,6 +243,13 @@ int main( void ) {
       // TODO: check return value for success
     }
 
+    // ************************ WR PLL  initialization  *********************************
+    if((revsn & PNXL_MB_REV_MASK) == PNXL_MB_REVB)
+    {
+      printf("Initializing PLLs:\n");  
+      PLLinit(mapped);
+      // TODO: check return value for success
+    }
 
    // ************************ clean up  *********************************
 

@@ -1269,6 +1269,116 @@ int ADCinit_DB01(volatile unsigned int *mapped ) {
    return (ret);
 }
 
+int PLLinit(volatile unsigned int *mapped ) {
+ // programs the PLL registers for WR clock conditioning and returns 0 if successful, -1 if not
+
+   int ret=0;
+   int nbytes = 17;
+   unsigned int mval[nbytes];
+   unsigned int addr[nbytes];
+   
+   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
+   int k7, by; 
+
+   // hardcoded address byte data to write PLL registers of AD9516
+   // input 20 MHz
+   // VCO = input /R * (P*B+A) = 1500 MHz
+   // R=2
+   // A=6
+   // B=18
+   // VCO divided by 3 for clock output channels (using 3,4 LVDS) = 500 MHz
+   // channel output divided by 4 = 125 MHz
+   // after programming, write 0x232[0] to activate
+   // after changing settings, toggle 0 > 1 transition of reg 0x18[0] for calibration 
+   //   (this bit powers up at as zero, so setting it to 1 in the first programming initialized calibration. afterwards, explicitely set to 0, then 1
+
+   addr[0] = 0x0010;                         // R/W*, 00 for write 1 byte, 13bit reg addr
+   mval[0] = 0x5C;                           // CP current 3.6mA, CP mode normal, PLL op mode normal
+ 
+   addr[1] = 0x0011;                         // reg 0x11/12: input ref divider R
+   mval[1] = 0x02;                           // R=2 
+
+   addr[2] = 0x0013;                         // reg 0x13: A counter 
+   mval[2] = 0x06;                           // A=6
+ 
+   addr[3] = 0x0014;                         // reg 0x14/15: B counter 
+   mval[3] = 0x12;                           // B=18
+ 
+   addr[4] = 0x0016;                         // reg 0x16: resets and P
+   mval[4] = 0x04;                           // no reset, P=8 
+  
+   addr[5] = 0x0018;                         // reg 0x18: calibration
+   mval[5] = 0x07;                           // VCO cal now > 1 **
+   
+   addr[6] = 0x001C;                         // reg 0x1C:ref input
+   mval[6] = 0x02;                           // REF 1 power on, REF 1 selected
+   
+   // channel dividers in 0x0199-01A2          // defaults divide by 4: ok
+   addr[7] = 0x0199;                         // 
+   mval[7] = 0x00;                           // 
+   addr[8] = 0x019A;                         // 
+   mval[8] = 0x00;                           // 
+   addr[9] = 0x019B;                         // 
+   mval[9] = 0x00;                           // 
+
+   addr[10] = 0x019E;                         // 
+   mval[10] = 0x00;                           // 
+   addr[11] = 0x019F;                         // 
+   mval[11] = 0x00;                           // 
+   addr[12] = 0x01A0;                         // 
+   mval[12] = 0x00;                           // 
+   addr[13] = 0x01A1;                         //      bypass channel 4
+   mval[13] = 0x00;                           // 
+
+   addr[14] = 0x01E0;                         // reg 0x1E0:VCO divider
+   mval[14] = 0x01;                           // VCO divider = 3
+
+   addr[15] = 0x01E1;                         // reg 0x1E1:VCO divider source
+   mval[15] = 0x02;                           // VCO divider source = VCO
+ 
+   addr[16] = 0x0232;                         // reg 0x232: update register
+   mval[16] = 0x01;                           // set to 1 to update registers
+
+
+   
+   for(k7=0;k7<N_K7_FPGAS;k7++)
+   {
+      
+         // FPGA I/O select
+         mapped[AMZ_DEVICESEL] = cs[k7];	      // select FPGA  
+         mapped[AMZ_EXAFWR] = AK7_PAGE;         // write to  k7's addr        addr 3 = channel/system, select    
+         mapped[AMZ_EXDWR] = PAGE_SYS;          //  0x000  = system page       
+         
+         // write registers
+         for(by=0;by<nbytes;by++)
+         //for(by=0;by<nbytes;by++)
+         {
+         // 
+            mapped[AMZ_EXAFWR] = AK7_PLLSPIA;      // write to  k7's addr     addr 27 = PLL SPI addr
+            mapped[AMZ_EXDWR] = addr[by];          //  write to ADC SPI
+            mapped[AMZ_EXAFWR] = AK7_PLLSPID;      // write to  k7's addr     addr 28= PLL SPI data and start transfer
+            mapped[AMZ_EXDWR] = mval[by];          //  write to ADC SPI
+            usleep(5);
+
+         }         
+
+
+         printf( " K7 %d: PLL programmed \n", k7);
+
+      /*
+         // keep ret unchanged, default above 0 = success
+      } else {
+         printf( " K7 %d: ADC not initialized or missing, try again by calling adcinit? \n", k7);
+         ret = -1;
+      }    */
+   
+   } // end for K7s
+   
+   
+   mapped[AMZ_DEVICESEL] = CS_MZ;	  // deselect FPGA 0  
+   return (ret);
+}
+
 
 
 int read_print_rates_XL_2x4(int dest, volatile unsigned int *mapped ) {

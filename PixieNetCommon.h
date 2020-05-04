@@ -56,6 +56,7 @@ extern "C"
   float board_temperature( volatile unsigned int *mapped, unsigned int I2Csel  );
   float zynq_temperature();
   int ADCinit_DB01(volatile unsigned int *mapped );
+  int PLLinit(volatile unsigned int *mapped );
 
 #ifdef __cplusplus
 }

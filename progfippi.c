@@ -160,6 +160,15 @@ int main(void) {
       SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB01;
       FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
    }
+   if((revsn & PNXL_DB_VARIANT_MASK) == 0xF00000)      // no ADC DB: default to DB02
+   {
+      printf("HW Rev = 0x%04X, SN = %d, NO ADC DB! - assuming default DB02_12_250\n", revsn>>16, revsn&0xFFFF);
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB02;
+      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB02;
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
+   }
 
    // check if FPGA booted
    mval = mapped[AMZ_CSROUTL];
