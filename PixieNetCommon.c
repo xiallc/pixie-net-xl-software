@@ -1292,6 +1292,80 @@ int PLLinit(volatile unsigned int *mapped ) {
    // after changing settings, toggle 0 > 1 transition of reg 0x18[0] for calibration 
    //   (this bit powers up at as zero, so setting it to 1 in the first programming initialized calibration. afterwards, explicitely set to 0, then 1
 
+   /*
+   // 1. configure I/O
+   addr[0] = 0x0000;                         // reg 0x000:config
+   mval[0] = 0x99;                           // SDO is output, long instructions
+ 
+   addr[1] = 0x0232;                         // reg 0x232: update register
+   mval[1] = 0x01;                           // set to 1 to update registers
+
+   
+   for(k7=0;k7<N_K7_FPGAS;k7++)
+   {
+      
+         // FPGA I/O select
+         mapped[AMZ_DEVICESEL] = cs[k7];	      // select FPGA  
+         mapped[AMZ_EXAFWR] = AK7_PAGE;         // write to  k7's addr        addr 3 = channel/system, select    
+         mapped[AMZ_EXDWR] = PAGE_SYS;          //  0x000  = system page       
+         
+         // write registers
+         for(by=0;by<2;by++)
+         {
+         // 
+            mapped[AMZ_EXAFWR] = AK7_PLLSPIA;      // write to  k7's addr     addr 27 = PLL SPI addr
+            mapped[AMZ_EXDWR] = addr[by];          //  write to ADC SPI
+            mapped[AMZ_EXAFWR] = AK7_PLLSPID;      // write to  k7's addr     addr 28= PLL SPI data and start transfer
+            mapped[AMZ_EXDWR] = mval[by];          //  write to ADC SPI
+            usleep(10);
+         }         
+         printf( " K7 %d: PLL Reg 0 programmed \n", k7);
+
+   
+   } // end for K7s
+   */
+
+    //2. read back key info
+   addr[0] = 0x8003;                         // read reg 0x003:g
+   mval[0] = 0x00;                           // SDO is output, long instructions
+   addr[1] = 0x8004;                         // read reg 0x003:g
+   mval[1] = 0x00;                           // SDO is output, long instructions
+   addr[2] = 0x8005;                         // read reg 0x003:g
+   mval[2] = 0x00;                           // SDO is output, long instructions
+   addr[3] = 0x8006;                         // read reg 0x003:g
+   mval[3] = 0x00;                           // SDO is output, long instructions
+
+
+
+   for(k7=0;k7<N_K7_FPGAS;k7++)
+   {
+      
+         // FPGA I/O select
+         mapped[AMZ_DEVICESEL] = cs[k7];	      // select FPGA  
+         mapped[AMZ_EXAFWR] = AK7_PAGE;         // write to  k7's addr        addr 3 = channel/system, select    
+         mapped[AMZ_EXDWR] = PAGE_SYS;          //  0x000  = system page       
+         
+         // write registers
+         for(by=0;by<4;by++)
+         {
+         // 
+            mapped[AMZ_EXAFWR] = AK7_PLLSPIA;      // write to  k7's addr     addr 27 = PLL SPI addr
+            mapped[AMZ_EXDWR] = addr[by];          //  write to ADC SPI
+            mapped[AMZ_EXAFWR] = AK7_PLLSPID;      // write to  k7's addr     addr 28= PLL SPI data and start transfer
+            mapped[AMZ_EXDWR] = mval[by];          //  write to ADC SPI
+            usleep(10);
+            mapped[AMZ_EXAFRD] = 0x96;          // read PLL output reg
+            mval[by] =  mapped[AMZ_EXDRD];
+            printf( " K7 %d: PLL Reg 0x%x = 0x%x \n", k7,addr[by],mval[by]);
+         }         
+          printf( "  \n");
+
+   
+   } // end for K7s
+
+
+
+
    addr[0] = 0x0010;                         // R/W*, 00 for write 1 byte, 13bit reg addr
    mval[0] = 0x5C;                           // CP current 3.6mA, CP mode normal, PLL op mode normal
  
@@ -1314,21 +1388,21 @@ int PLLinit(volatile unsigned int *mapped ) {
    mval[6] = 0x02;                           // REF 1 power on, REF 1 selected
    
    // channel dividers in 0x0199-01A2          // defaults divide by 4: ok
-   addr[7] = 0x0199;                         // 
-   mval[7] = 0x00;                           // 
-   addr[8] = 0x019A;                         // 
-   mval[8] = 0x00;                           // 
-   addr[9] = 0x019B;                         // 
+   addr[7] = 0x0199;                         //    channel div 3.1       
+   mval[7] = 0x00;                           //                          
+   addr[8] = 0x019A;                         //    channel phase 3.1     
+   mval[8] = 0x00;                           //                          
+   addr[9] = 0x019B;                         //    channel div 3.2       
    mval[9] = 0x00;                           // 
 
-   addr[10] = 0x019E;                         // 
+   addr[10] = 0x019E;                         //    channel div 4.1
    mval[10] = 0x00;                           // 
-   addr[11] = 0x019F;                         // 
+   addr[11] = 0x019F;                         //    channel phase 4.1
    mval[11] = 0x00;                           // 
-   addr[12] = 0x01A0;                         // 
+   addr[12] = 0x01A0;                         //    channel div 4.2
    mval[12] = 0x00;                           // 
    addr[13] = 0x01A1;                         //      bypass channel 4
-   mval[13] = 0x00;                           // 
+   mval[13] = 0x00;                           //      no bypass, use dividers
 
    addr[14] = 0x01E0;                         // reg 0x1E0:VCO divider
    mval[14] = 0x01;                           // VCO divider = 3
@@ -1351,26 +1425,16 @@ int PLLinit(volatile unsigned int *mapped ) {
          
          // write registers
          for(by=0;by<nbytes;by++)
-         //for(by=0;by<nbytes;by++)
          {
          // 
             mapped[AMZ_EXAFWR] = AK7_PLLSPIA;      // write to  k7's addr     addr 27 = PLL SPI addr
             mapped[AMZ_EXDWR] = addr[by];          //  write to ADC SPI
             mapped[AMZ_EXAFWR] = AK7_PLLSPID;      // write to  k7's addr     addr 28= PLL SPI data and start transfer
             mapped[AMZ_EXDWR] = mval[by];          //  write to ADC SPI
-            usleep(5);
-
+            usleep(10);
          }         
-
-
          printf( " K7 %d: PLL programmed \n", k7);
 
-      /*
-         // keep ret unchanged, default above 0 = success
-      } else {
-         printf( " K7 %d: ADC not initialized or missing, try again by calling adcinit? \n", k7);
-         ret = -1;
-      }    */
    
    } // end for K7s
    
