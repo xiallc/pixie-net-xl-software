@@ -1273,7 +1273,7 @@ int PLLinit(volatile unsigned int *mapped ) {
  // programs the PLL registers for WR clock conditioning and returns 0 if successful, -1 if not
 
    int ret=0;
-   int nbytes = 17;
+   int nbytes = 20;
    unsigned int mval[nbytes];
    unsigned int addr[nbytes];
    
@@ -1325,7 +1325,7 @@ int PLLinit(volatile unsigned int *mapped ) {
    } // end for K7s
    */
 
-    //2. read back key info
+    //2. read back key info  -- seems required to properly write data to PLL??
    addr[0] = 0x8003;                         // read reg 0x003:g
    mval[0] = 0x00;                           // SDO is output, long instructions
    addr[1] = 0x8004;                         // read reg 0x003:g
@@ -1363,7 +1363,7 @@ int PLLinit(volatile unsigned int *mapped ) {
    
    } // end for K7s
 
-
+  
 
 
    addr[0] = 0x0010;                         // R/W*, 00 for write 1 byte, 13bit reg addr
@@ -1387,31 +1387,39 @@ int PLLinit(volatile unsigned int *mapped ) {
    addr[6] = 0x001C;                         // reg 0x1C:ref input
    mval[6] = 0x02;                           // REF 1 power on, REF 1 selected
    
-   // channel dividers in 0x0199-01A2          // defaults divide by 4: ok
-   addr[7] = 0x0199;                         //    channel div 3.1       
-   mval[7] = 0x00;                           //                          
-   addr[8] = 0x019A;                         //    channel phase 3.1     
-   mval[8] = 0x00;                           //                          
-   addr[9] = 0x019B;                         //    channel div 3.2       
-   mval[9] = 0x00;                           // 
+   // channel output options 0x0140-143         
+   addr[7] = 0x0140;                         //    channel 6 (test)       
+   mval[7] = 0x42;                           //    LVDS, on, 3.5mA                       
+   addr[8] = 0x0142;                         //    channel 8 (GTX)  
+   mval[8] = 0x42;                           //    LVDS, on, 3.5mA                            
+   addr[9] = 0x0143;                         //    channel 9 (MAIN/ADC/LMK)    
+   mval[9] = 0x42;                           //    LVDS, on, 3.5mA [default is off]     
 
-   addr[10] = 0x019E;                         //    channel div 4.1
-   mval[10] = 0x00;                           // 
-   addr[11] = 0x019F;                         //    channel phase 4.1
-   mval[11] = 0x00;                           // 
-   addr[12] = 0x01A0;                         //    channel div 4.2
+   // channel dividers in 0x0199-01A2        // defaults are NOT divide by 4 but 24 (DS disagrees in summary and detail page)
+   addr[10] = 0x0199;                         //    channel div 3.1       
+   mval[10] = 0x00;                           //                          
+   addr[11] = 0x019A;                         //    channel phase 3.1     
+   mval[11] = 0x00;                           //                          
+   addr[12] = 0x019B;                         //    channel div 3.2       
    mval[12] = 0x00;                           // 
-   addr[13] = 0x01A1;                         //      bypass channel 4
-   mval[13] = 0x00;                           //      no bypass, use dividers
 
-   addr[14] = 0x01E0;                         // reg 0x1E0:VCO divider
-   mval[14] = 0x01;                           // VCO divider = 3
+   addr[13] = 0x019E;                         //    channel div 4.1
+   mval[13] = 0x00;                           // 
+   addr[14] = 0x019F;                         //    channel phase 4.1
+   mval[14] = 0x00;                           // 
+   addr[15] = 0x01A0;                         //    channel div 4.2
+   mval[15] = 0x00;                           // 
+   addr[16] = 0x01A1;                         //      bypass channel 4
+   mval[16] = 0x00;                           //      no bypass, use dividers
 
-   addr[15] = 0x01E1;                         // reg 0x1E1:VCO divider source
-   mval[15] = 0x02;                           // VCO divider source = VCO
+   addr[17] = 0x01E0;                         // reg 0x1E0:VCO divider
+   mval[17] = 0x01;                           // VCO divider = 3
+
+   addr[18] = 0x01E1;                         // reg 0x1E1:VCO divider source
+   mval[18] = 0x02;                           // VCO divider source = VCO
  
-   addr[16] = 0x0232;                         // reg 0x232: update register
-   mval[16] = 0x01;                           // set to 1 to update registers
+   addr[19] = 0x0232;                         // reg 0x232: update register
+   mval[19] = 0x01;                           // set to 1 to update registers
 
 
    
