@@ -1336,7 +1336,7 @@ int PLLinit(volatile unsigned int *mapped ) {
    mval[3] = 0x00;                           // SDO is output, long instructions
 
 
-
+ 
    for(k7=0;k7<N_K7_FPGAS;k7++)
    {
       
@@ -1433,6 +1433,7 @@ int PLLinit(volatile unsigned int *mapped ) {
          
          // write registers
          for(by=0;by<nbytes;by++)
+      //     for(by=0;by<1;by++)
          {
          // 
             mapped[AMZ_EXAFWR] = AK7_PLLSPIA;      // write to  k7's addr     addr 27 = PLL SPI addr
