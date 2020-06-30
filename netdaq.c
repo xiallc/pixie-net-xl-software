@@ -78,38 +78,70 @@ int main(int argc, const char **argv) {
     void *map_addr;
     int size = 4096;
     volatile unsigned int *mapped;
-    int k, ch, tmpS;
+    int k;
     FILE * filmca;
     FILE * fil;
 
-    unsigned int Accept, RunType, SyncT, ReqRunTime, PollTime, CW;
+    // PN only
+    int ch, tmpS;
+    unsigned int Accept, CW;
+    double cfdlev;
+    unsigned int startTS, m, c0, c1, c2, c3, tmpI;
+    unsigned int psa0, psa1, cfd0;
+    unsigned int cfdout, cfdlow, cfdhigh, cfdticks, cfdfrac, ts_max;
+    unsigned int binx, biny;
+    unsigned int mca2D[NCHANNELS][MCA2D_BINS*MCA2D_BINS] ={{0}};    // 2D MCA for end of run
+    unsigned int chaddr; 
+
+
+    // PNXL only 
+    char filename[64];
+    unsigned int WR_RTCtrl;
+    unsigned int CCSRA[NCHANNELS], PILEUPCTRL[NCHANNELS];
+    unsigned int TRACEENA[NCHANNELS], Emin[NCHANNELS];
+    unsigned int GoodChanMASK[N_K7_FPGAS] = {0} ;
+    unsigned int tmp0, tmp1, tmp2, cfdout1, cfdout2, cfdsrc, cfdfrc, cfd; //, tmp3;
+    unsigned long long WR_tm_tai, WR_tm_tai_start, WR_tm_tai_stop, WR_tm_tai_next;
+    unsigned int hdr[32];
+    unsigned int out0, out2, out3, out7, pileup, exttsL, exttsH, hdrids, udpok;
+    unsigned int wsum, energyF, over; 
+    unsigned int eventcount_ch[NCHANNELS];
+    unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
+    unsigned int NCHANNELS_PER_K7, NCHANNELS_PRESENT;
+    unsigned int ADC_CLK_MHZ, FILTER_CLOCK_MHZ; //  SYSTEM_CLOCK_MHZ,
+    int k7, ch_k7, ch, chw;  // ch = abs ch. no; ch_k7 = ch. no in k7
+    int verbose = 1;      // TODO: control with argument to function 
+      // 0 print errors and minimal info only
+      // 1 print errors and full info
+    int maxmsg = 5;
+
+
+    // common
+    unsigned int RunType, SyncT, ReqRunTime, PollTime;
     unsigned int SL[NCHANNELS];
     //unsigned int SG[NCHANNELS];
     float Tau[NCHANNELS], Dgain[NCHANNELS];
-    unsigned int BLavg[NCHANNELS], BLcut[NCHANNELS], Binfactor[NCHANNELS], TL[NCHANNELS];
+    unsigned int BLavg[NCHANNELS], BLcut[NCHANNELS], Binfactor[NCHANNELS];
+    unsigned int TL[NCHANNELS];
     double C0[NCHANNELS], C1[NCHANNELS], Cg[NCHANNELS];
     double baseline[NCHANNELS] = {0};
-    double dt, ph, tmpD, bscale;
-    double elm, q;
-    double cfdlev;
+    double dt, ph, elm, q, tmpD, bscale;
     time_t starttime, currenttime;
-    unsigned int startTS, m, c0, c1, c2, c3, w0, w1, tmpI, revsn;
-    unsigned int evstats, R1, hit, timeL, timeH, psa0, psa1, cfd0;
+    unsigned int w0, w1;
+    unsigned int revsn, evstats, R1, hit, timeL, timeH;
     unsigned int psa_base, psa_Q0, psa_Q1, psa_ampl, psa_R;
-    unsigned int cfdout, cfdlow, cfdhigh, cfdticks, cfdfrac, ts_max;
-    unsigned int lsum, tsum, gsum, energy, bin, binx, biny;
+    unsigned int binx, biny;
     unsigned int mca[NCHANNELS][MAX_MCA_BINS] ={{0}};    // full MCA for end of run
     unsigned int wmca[NCHANNELS][WEB_MCA_BINS] ={{0}};    // smaller MCA during run
-    unsigned int mca2D[NCHANNELS][MCA2D_BINS*MCA2D_BINS] ={{0}};    // 2D MCA for end of run
-    unsigned int onlinebin;
     unsigned int wf[MAX_TL/2];    // two 16bit values per word
-    unsigned int chaddr, loopcount, eventcount, NumPrevTraceBlks, TraceBlks;
+    unsigned int onlinebin, loopcount, eventcount, NumPrevTraceBlks, TraceBlks;   
     unsigned short buffer1[FILE_HEAD_LENGTH_400] = {0};
     unsigned char buffer2[CHAN_HEAD_LENGTH_400*2] = {0};
     unsigned int wm = WATERMARK;
     unsigned int BLbad[NCHANNELS];
     onlinebin=MAX_MCA_BINS/WEB_MCA_BINS;
 
+    // SW trig only
     const char *nts_host = "192.168.1.215";
     unsigned int nts_triggered = 0, nts_sent = 0, nts_received = 0;
     int nts_run = 1;
@@ -128,6 +160,63 @@ int main(int argc, const char **argv) {
         printf("Failed to open log\n");
         return -1;
     }
+
+    // *************** PS/PL IO initialization *********************
+    // open the device for PD register I/O
+    fd = open("/dev/uio0", O_RDWR);
+    if (fd < 0) {
+        perror("Failed to open devfile");
+        return -2;
+    }
+
+    //Lock the PL address space so multiple programs cant step on eachother.
+    if( flock( fd, LOCK_EX | LOCK_NB ) )
+    {
+        printf( "Failed to get file lock on /dev/uio0\n" );
+        return -3;
+    }
+
+    map_addr = mmap( NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+    if (map_addr == MAP_FAILED) {
+        perror("Failed to mmap");
+        return -4;
+    }
+
+    mapped = (unsigned int *) map_addr;
+
+   // ************************** check HW version ********************************
+
+   revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB02;
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
+   }
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01_125;             
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
+   } 
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01_75;             
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
+   }
+
+   // check if FPGA booted
+   tmp0 = mapped[AMZ_CSROUTL];
+   if( (tmp0 & 0x4000) ==0) {
+       printf( "FPGA not booted, please run ./bootfpga first\n" );
+       return -5;
+   }
+
 
     // ******************* read ini file and fill struct with values ********************
 
@@ -155,52 +244,51 @@ int main(int argc, const char **argv) {
     PollTime     = fippiconfig.POLL_TIME;
     CW           = (int)floor(fippiconfig.COINCIDENCE_WINDOW*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
 
-    if( (RunType==0x503) || (RunType==0x402) )  {      // grouped list mode run (equiv 0x402)
-        printf( "This function does not support LM runtypes 0x503 or 0x402, use coincdaq or acquire\n");
-        return(-1);
+    WR_RTCtrl    = fippiconfig.WR_RUNTIME_CTRL;
+    hdrids       = (CHAN_HEAD_LENGTH_100<<12) & 0xF000;
+    hdrids       = hdrids + (fippiconfig.CRATE_ID<<8);
+    hdrids       = hdrids + (fippiconfig.SLOT_ID<<4);
+
+
+     if( (RunType==0x100)  ) {      // check run type
+      // 0x100 are ok
+      // 0x301 no longer supported because header memory is disabled for pure MCA runs, use mcadaq instead
+     } else {
+         printf( "This function only supports runtypes 0x100 (P16) \n");
+         return(-1);
+     }
+
+
+     for(k7=0;k7<N_K7_FPGAS;k7++)  {
+        for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++) {
+            ch = ch_k7+k7*NCHANNELS_PER_K7;
+            SL[ch]          = (int)floor(fippiconfig.ENERGY_RISETIME[ch]*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
+      //    SG[ch]          = (int)floor(fippiconfig.ENERGY_FLATTOP[ch]*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
+            Dgain[ch]       = fippiconfig.DIG_GAIN[ch];
+            TL[ch]          = MULT_TL*(int)floor(fippiconfig.TRACE_LENGTH[ch]*ADC_CLK_MHZ/MULT_TL);
+            Binfactor[ch]   = fippiconfig.BINFACTOR[ch];
+            Tau[ch]         = fippiconfig.TAU[ch];
+            BLcut[ch]       = fippiconfig.BLCUT[ch];
+            BLavg[ch]       = 65536 - fippiconfig.BLAVG[ch];
+            if(BLavg[ch]<0)          BLavg[ch] = 0;
+            if(BLavg[ch]==65536)     BLavg[ch] = 0;
+            if(BLavg[ch]>MAX_BLAVG)  BLavg[ch] = MAX_BLAVG;
+            BLbad[ch] = MAX_BADBL;   // initialize to indicate no good BL found yet
+            CCSRA[ch]       =  fippiconfig.CHANNEL_CSRA[ch]; 
+            TRACEENA[ch]    = (( CCSRA[ch] & (1<<CCSRA_TRACEENA)) >0) && (RunType!=0x301) && (RunType!=0x401); 
+            PILEUPCTRL[ch] =  ( CCSRA[ch] & (1<<CCSRA_PILEUPCTRL) ) >0;   // if bit set, only allow "single" non-piledup events
+            Emin[ch]  = fippiconfig.EMIN[ch];  
+            if( (CCSRA[ch] & (1<<CCSRA_GOOD)) >0 )
+               GoodChanMASK[k7] = GoodChanMASK[k7] + (1<<ch_k7) ;   // build good channel mask
+        }
     }
 
-    for( k = 0; k < NCHANNELS; k ++ )
-    {
-        SL[k]          = (int)floor(fippiconfig.ENERGY_RISETIME[k]*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
-        //    SG[k]          = (int)floor(fippiconfig.ENERGY_FLATTOP[k]*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
-        Dgain[k]       = fippiconfig.DIG_GAIN[k];
-        TL[k]          = BLOCKSIZE_400*(int)floor(fippiconfig.TRACE_LENGTH[k]*ADC_CLK_MHZ/BLOCKSIZE_400);       // multiply time in us *  # ticks per us = time in ticks, multiple of 4
-        Binfactor[k]   = fippiconfig.BINFACTOR[k];
-        Tau[k]         = fippiconfig.TAU[k];
-        BLcut[k]       = fippiconfig.BLCUT[k];
-        BLavg[k]       = 65536 - fippiconfig.BLAVG[k];
-        if(BLavg[k]<0)          BLavg[k] = 0;
-        if(BLavg[k]==65536)     BLavg[k] = 0;
-        if(BLavg[k]>MAX_BLAVG)  BLavg[k] = MAX_BLAVG;
-        BLbad[k] = MAX_BADBL;   // initialize to indicate no good BL found yet
+
+    if(fippiconfig.DATA_FLOW!=3) { 
+         printf( "This function only supports option DATA_FLOW = 3 \n");
+         return(-1);
     }
-
-
-
-    // *************** PS/PL IO initialization *********************
-    // open the device for PD register I/O
-    fd = open("/dev/uio0", O_RDWR);
-    if (fd < 0) {
-        perror("Failed to open devfile");
-        return -2;
-    }
-
-    //Lock the PL address space so multiple programs cant step on eachother.
-    if( flock( fd, LOCK_EX | LOCK_NB ) )
-    {
-        printf( "Failed to get file lock on /dev/uio0\n" );
-        return -3;
-    }
-
-    map_addr = mmap( NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-
-    if (map_addr == MAP_FAILED) {
-        perror("Failed to mmap");
-        return -4;
-    }
-
-    mapped = (unsigned int *) map_addr;
+ 
 
     // --------------------------------------------------------
     // - Software triggering setup
@@ -235,310 +323,243 @@ int main(int argc, const char **argv) {
         C1[k] = C1[k] * Dgain[k];
     }
 
-    revsn = hwinfo(mapped);
-
     // ********************** Run Start **********************
 
 
     NumPrevTraceBlks = 0;
     loopcount =  0;
     eventcount = 0;
+    for( ch=0; ch < NCHANNELS; ch++) eventcount_ch[ch] = 0;
     starttime = currenttime = time(NULL);                         // capture OS start time
     pn_log("Run start");
 
-    if( (RunType==0x500) || (RunType==0x501)  || (RunType==0x502) || (RunType==0x400) )  {    // list mode runtypes
-        if(SyncT) mapped[ARTC_CLR] = 1;              // write to reset time counter
-        mapped[AOUTBLOCK] = 2;
-        startTS = mapped[AREALTIME];
-        if(RunType==0x500)   {                       // generic runtype is one value per line
-            fil = fopen("LMdata.txt","w");
-            fprintf(fil, "Module:\t%hu\n",0);
-            fprintf(fil, "Run Type:\t0x%x\n",RunType);
-            fprintf(fil,"Run Start Time Stamp (ticks) :\t%u\n", startTS);	//
-            fprintf(fil,"Run Start Time (s) :\t%lld\n", (long long)starttime);			// this is only precise to a second or so
-        }
-        if(RunType==0x501){                                     // compressed runtype has columns
-            fil = fopen("LMdata.dat","w");
-            fprintf(fil,"Module,Run_Type,Run_Start_ticks,Run_Start_sec,Unused1,Unused2\n");
-            fprintf(fil,"%d,0x%x,%u,%lld,--,--\n",0,RunType,startTS,(long long)(starttime));
-            fprintf(fil,"No,Ch,Hit,Time_H,Time_L,Energy\n");
-        }
-        if(RunType==0x502){                                     // compressed PSA runtype has more columns
-            fil = fopen("LMdata.dt2","w");
-            fprintf(fil,"Module,Run_Type,Run_Start_ticks,Run_Start_sec,Unused1,Unused2\n");
-            fprintf(fil,"%d,0x%x,%u,%lld,--,--\n",0,RunType,startTS,(long long)(starttime));
-            fprintf(fil,"Event_No,Channel_No,Hit_Pattern,Event_Time_H,Event_Time_L,Energy,Amplitude,CFD,Base,Q0,Q1,PSAvalue\n");
-        }
-        if(RunType==0x400){
-            // write a 0x400 header
-            // fwrite is slow so we will write to a buffer, and then to the file.
-            fil = fopen("LMdata.b00","wb");
-            buffer1[0] = BLOCKSIZE_400;
-            buffer1[1] = 0;                                       // module number (get from settings file?)
-            buffer1[2] = RunType;
-            buffer1[3] = CHAN_HEAD_LENGTH_400;
-            buffer1[4] = fippiconfig.COINCIDENCE_PATTERN;
-            buffer1[5] = fippiconfig.COINCIDENCE_WINDOW;
-            buffer1[7] = revsn>>16;               // HW revision from EEPROM
-            buffer1[12] = revsn & 0xFFFF;         // serial number from EEPROM
-            for( ch = 0; ch < NCHANNELS; ch++) {
-                buffer1[6]   +=(int)floor((TL[ch] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400);         // combined event length, in blocks
-                buffer1[8+ch] =(int)floor((TL[ch] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400);			// each channel's event length, in blocks
-            }
-            fwrite( buffer1, 2, FILE_HEAD_LENGTH_400, fil );     // write to file
-        }
-    }
+    if( (RunType==0x100)  )  {    // list mode runtypes  
+       
+      if(RunType==0x100){
+        // write a 0x100 header  -- actually there is no header, just events
+        sprintf(filename, "LMdata%d.bin", fippiconfig.MODULE_ID);
+        fil = fopen(filename,"wb");
+      }  
+        
 
-    mapped[ADSP_CLR] = 1;             // write to reset DAQ buffers
-    mapped[ACOUNTER_CLR] = 1;         // write to reset RS counters
-    mapped[ACSRIN] = 1;               // set RunEnable bit to start run
-    mapped[AOUTBLOCK] = OB_EVREG;     // read from event registers
+    }  // end supported run types
 
+     // Run Start Control
+   for(k7=0;k7<N_K7_FPGAS;k7++)
+   {     
+      mapped[AMZ_DEVICESEL] =  cs[k7];	   // select FPGA 
+      mapped[AMZ_EXAFWR] = AK7_PAGE;      // specify   K7's addr:    PAGE register
+      mapped[AMZ_EXDWR]  = PAGE_SYS;      //  PAGE 0: system, page 0x10n = channel n
+      
+      mapped[AMZ_EXAFWR] =  AK7_HOSTCLR;  // specify   K7's addr:    write to clear SDRAM, DEEPFIFO 
+      mapped[AMZ_EXDWR]  =  0;            // any write ok
+      usleep(10);                         // memory reset may need some time
+   }
+
+   mapped[AMZ_DEVICESEL] = CS_MZ;	           // select MZ
+   if(SyncT==1)  mapped[ARTC_CLR] = 0x0001;    // any write will create a pulse to clear timers
+
+
+
+
+   if(WR_RTCtrl==1)                       // RunEnable/Live set via WR time comparison  (if startT < WR time < stopT => RunEnable=1) 
+   {
+      mapped[AMZ_DEVICESEL] = CS_K1;	   // specify which K7 
+      mapped[AMZ_EXAFWR] = AK7_PAGE;      // specify   K7's addr:    PAGE register
+      mapped[AMZ_EXDWR]  = PAGE_SYS;      //  PAGE 0: system, page 0x10n = channel n
+
+      // check if WR locked
+      mapped[AMZ_EXAFRD] = AK7_CSROUT;   
+      tmp0 =  mapped[AMZ_EXDRD];    
+      if( (tmp0 & 0x0300) ==0) {
+          printf( "WARNING: WR link down or time not valid, please check via minicom\n" );
+      }
+
+      // get current WR time
+      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+0;   
+      tmp0 =  mapped[AMZ_EXDRD];
+      if(SLOWREAD)      tmp0 =  mapped[AMZ_EXDRD];
+      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+1;   
+      tmp1 =  mapped[AMZ_EXDRD];
+      if(SLOWREAD)      tmp1 =  mapped[AMZ_EXDRD];
+      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+2;   
+      tmp2 =  mapped[AMZ_EXDRD];
+      if(SLOWREAD)      tmp2 =  mapped[AMZ_EXDRD];
+      WR_tm_tai = tmp0 +  65536*tmp1 + TWOTO32*tmp2;
+
+      //find next "round" time point 
+      WR_tm_tai_next = WR_TAI_STEP*(unsigned long long)floor(WR_tm_tai/WR_TAI_STEP)+ WR_TAI_STEP;   // next coarse time step
+     // if( WR_tm_tai_next - WR_tm_tai < WR_TAI_MARGIN)                                          // if too close, 
+     //       WR_tm_tai_next = WR_tm_tai_next + WR_TAI_STEP;                                     // one more step   
+     // probably bogus. a proper scheme to ensure multiple modules start at the same time should be implemented on the DAQ network master 
+    
+      WR_tm_tai_start =  WR_tm_tai_next;
+      WR_tm_tai_stop  =  WR_tm_tai_next + ReqRunTime - 1;
+      ReqRunTime = ReqRunTime + WR_TAI_STEP;    // increase time for local DAQ counter accordingly
+
+      printf( "Current WR time %llu\n",WR_tm_tai );
+      printf( "Start time %llu\n",WR_tm_tai_start );
+      printf( "Stop time %llu\n",WR_tm_tai_stop +1);
+
+      // write start/stop to both K7
+      // todo: this requires both K7s to be a WR slave with valid time from master
+      for(k7=0;k7<N_K7_FPGAS;k7++)
+      {     
+         mapped[AMZ_DEVICESEL] =  cs[k7];	   // select FPGA 
+         mapped[AMZ_EXAFWR] = AK7_PAGE;      // specify   K7's addr:    PAGE register
+         mapped[AMZ_EXDWR]  = PAGE_SYS;      //  PAGE 0: system, page 0x10n = channel n
+
+         mapped[AMZ_EXAFWR] =  AK7_WR_TM_TAI_START+0;   // specify   K7's addr:    WR start time register
+         mapped[AMZ_EXDWR]  =  WR_tm_tai_start      & 0x00000000FFFF;
+         mapped[AMZ_EXAFWR] =  AK7_WR_TM_TAI_START+1;   // specify   K7's addr:    WR start time register
+         mapped[AMZ_EXDWR]  =  (WR_tm_tai_start>>16) & 0x00000000FFFF;
+         mapped[AMZ_EXAFWR] =  AK7_WR_TM_TAI_START+2;   // specify   K7's addr:    WR start time register
+         mapped[AMZ_EXDWR]  =  (WR_tm_tai_start>>32) & 0x00000000FFFF;
+   
+         mapped[AMZ_EXAFWR] =  AK7_WR_TM_TAI_STOP+0;   // specify   K7's addr:    WR stop time register
+         mapped[AMZ_EXDWR]  =  WR_tm_tai_stop      & 0x00000000FFFF;
+         mapped[AMZ_EXAFWR] =  AK7_WR_TM_TAI_STOP+1;   // specify   K7's addr:    WR stop time register
+         mapped[AMZ_EXDWR]  =  (WR_tm_tai_stop>>16) & 0x00000000FFFF;
+         mapped[AMZ_EXAFWR] =  AK7_WR_TM_TAI_STOP+2;   // specify   K7's addr:    WR stop time register
+         mapped[AMZ_EXDWR]  =  (WR_tm_tai_stop>>32) & 0x00000000FFFF; 
+      } // end K7s
+   }  
+
+
+   
+   mapped[AMZ_DEVICESEL] = CS_MZ;	// select MZ
+   if( (fippiconfig.DATA_FLOW == 4) || (fippiconfig.DATA_FLOW == 5))  
+      mapped[AMZ_RUNCTRL] = 0x0008;    // MCA FIFO enabled 
+   else
+      mapped[AMZ_RUNCTRL] = 0x0000;    // MCA FIFO disabled
+ 
+   mapped[AMZ_CSRIN] = 0x0001;      // RunEnable=1 > nLive=0 (DAQ on)
+   // this is a bit in a MZ register tied to a line to both FPGAs
+   // falling edge of nLive clears counters and memory address pointers
+   // line ignored for WR_RTCtrl in K7, but still useful for TotalTime in MZ  
+   
 
     // ********************** Run Loop **********************
     do {
         pn_log_loop(loopcount);
 
         //----------- Periodically read BL and update average -----------
-        // this will be moved into the FPGA soon
-        if(loopcount % BLREADPERIOD == 0) {  //|| (loopcount ==0) ) {     // sometimes 0 mod N not zero and first few events have wrong E? watch
-            pn_log("Update baseline");
-            for( ch=0; ch < NCHANNELS; ch++) {
-                Stopwatch sw = sw_start();
-
-                // read raw BL sums
-                chaddr = ch*16+16;
-                lsum  = mapped[chaddr+CA_LSUMB];
-                tsum  = mapped[chaddr+CA_TSUMB];
-                gsum  = mapped[chaddr+CA_GSUMB];
-                if (tsum>0)		// tum=0 indicates bad baseline
-                {
-                    ph = C1[ch]*lsum+Cg[ch]*gsum+C0[ch]*tsum;
-                    //if (ch==0) printf("ph %f, BLcut %d, BLavg %d, baseline %f\n",ph,BLcut[ch],BLavg[ch],baseline[ch] );
-                    if( (BLcut[ch]==0) || (abs(ph-baseline[ch])<BLcut[ch]) || (BLbad[ch] >=MAX_BADBL) )       // only accept "good" baselines < BLcut, or if too many bad in a row (to start over)
-                    {
-                        if( (BLavg[ch]==0) || (BLbad[ch] >=MAX_BADBL) )
-                        {
-                            baseline[ch] = ph;
-                            BLbad[ch] = 0;
-                        } else {
-                            // BL average: // avg = old avg + (new meas - old avg)/2^BLavg
-                            baseline[ch] = baseline[ch] + (ph-baseline[ch])/(1<<BLavg[ch]);
-                            BLbad[ch] = 0;
-                        } // end BL avg
-                    } else {
-                        BLbad[ch] = BLbad[ch]+1;
-                    }     // end BLcut check
-                }       // end tsum >0 check
-
-                sw_check(&sw, "Baseline ch=%u", ch);
-            }          // end for loop
-        }             // end periodicity check
-
+        // not needed in DATA_FLOW>=2
+        // this HAS BEEN moved into the FPGA 
 
         // -----------poll for events -----------
         // if data ready. read out, compute E, increment MCA *********
         Stopwatch sw_stats = sw_start();
-        evstats = mapped[AEVSTATS];
+     //   evstats = mapped[AEVSTATS];
         sw_check(&sw_stats, "AEVSTATS");
+      for(k7=0;k7<N_K7_FPGAS;k7++)
+      {
 
-        //   printf("EVstats 0x%x\n",evstats);
-        if(evstats) {					  // if there are events in any channel
-            for( ch=0; ch < NCHANNELS; ch++)
-            {
-                Stopwatch sw_lm = sw_start();
+            // Non-AutoUDP: ARM needs to poll K7 if data ready
+            // then, if UDP (DATA_FLOW=3), give command to send out data to Ethernet, adding a CFD value
+            //       if not UDP (DATA_FLOW<3), read all data and store locally (slow)
+            // energy can be computed by ARM from raw sums or by FPGA 
 
-                R1 = 1 << ch;
-                if(evstats & R1)	{	 // check if there is an event in the FIFO
-                    // read hit pattern and status info
-                    chaddr = ch*16+16;
-                    hit   = mapped[chaddr+CA_HIT];
-                    //    printf("channel %d, hit 0x%x\n",ch,hit);
-                    pn_log("ch=%d hit=0x%x", ch, hit);
-                    if(hit & Accept) {
-                        // read data not needed for pure MCA runs
-                        timeL = mapped[chaddr+CA_TSL];
-                        timeH = mapped[chaddr+CA_TSH];
-                        psa0  = mapped[chaddr+CA_PSAA];        // Q0raw/4 | B
-                        psa1  = mapped[chaddr+CA_PSAB];        // M       | Q1raw/4
-                        cfd0  = mapped[chaddr+CA_CFDA];        // {ts_max[6:3],cfdticks[3:0],cfdhigh[11:0],cfdlow[11:0]}
-                        //cfd1  = mapped[chaddr+CA_CFDB];
+            mapped[AMZ_DEVICESEL] =  cs[k7];	         // select FPGA 
+            mapped[AMZ_EXAFWR] = AK7_PAGE;            // specify   K7's addr     addr 3 = channel/system
+            mapped[AMZ_EXDWR]  = PAGE_SYS;            //                         0x0  = system  page
 
-                        //printf("channel %d, hit 0x%x, timeL %d\n",ch,hit,timeL);
-                        // read raw energy sums
-                        lsum  = mapped[chaddr+CA_LSUM];        // leading, larger, "S1", past rising edge
-                        tsum  = mapped[chaddr+CA_TSUM];        // trailing, smaller, "S0" before rising edge
-                        gsum  = mapped[chaddr+CA_GSUM];		   // gap sum, "Sg", during rising edge; also advances FIFO and increments Nout etc
+            // check if UDP transfer is still ongoing
+            mapped[AMZ_EXAFRD] = AK7_CSROUT;     // read CSR
+            tmp0 =  mapped[AMZ_EXDRD];    
+            if(SLOWREAD)  tmp0 = mapped[AMZ_EXDRD]; 
+            udpok = ((tmp0 & 0x0400)==0) ;       // check flag for DF in progress, must be zero
+            if(eventcount<maxmsg && !udpok) printf( "K7 %d: DF busy: CSR = 0x%x, test=0x%x \n", k7, tmp0,(tmp0 & 0x0400) );
 
-                        // compute and histogram E
-                        ph = C1[ch]*(double)lsum+Cg[ch]*(double)gsum+C0[ch]*(double)tsum;
-                        //  printf("ph %f, BLavg %f, E %f\n",ph,baseline[ch], ph-baseline[ch]);
-                        ph = ph-baseline[ch];
-                        if ((ph<0.0)|| (ph>65536.0))	ph =0.0;	   // out of range energies -> 0
-                        energy = (int)floor(ph);
-                        if ((hit & (1<< HIT_LOCALHIT))==0)	  	energy =0;	   // not a local hit -> 0
+            // Read Header DPM status
+            mapped[AMZ_EXAFRD] = AK7_SYSSYTATUS;      // write to  k7's addr for read -> reading from 0x85 system status register
+            evstats = mapped[AMZ_EXDRD];              // bits set for every channel that has data in header memory
+            if(SLOWREAD)  evstats = mapped[AMZ_EXDRD];   
+            evstats = evstats & GoodChanMASK[k7];     // mask non-good channels
 
-                        //  histogramming if E< max mcabin
-                        bin = energy >> Binfactor[ch];
-                        if( (bin<MAX_MCA_BINS) && (bin>0) ) {
-                            mca[ch][bin] =  mca[ch][bin] + 1;	// increment mca
-                            bin = bin >> WEB_LOGEBIN;
-                            if(bin>0) wmca[ch][bin] = wmca[ch][bin] + 1;	// increment wmca
+            // event readout compatible with P16 DSP code
+            // very slow and inefficient; can improve or better bypass completely in final WR data out implementation
+            if(evstats && udpok) {					  // if there are events in any [good] channel
+               if(eventcount<maxmsg) printf( "\nK7 0 read from AK7_SYSSYTATUS (0x85), masked for good channels: 0x%X\n", evstats );
+               for( ch_k7=0; ch_k7 < NCHANNELS_PER_K7; ch_k7++)
+               {
 
-                            // TODO: add split spectrum n.g for 0x502
-                        }
-
-                        // cfd and psa need some recomputation, not fully implemented yet
-
-                        // compute PSA results from raw data
-                        // need to subtract baseline in correct scale (1/4) and length (QDC#_LENGTH[ch])
-                        psa_base = psa0 & 0xFFFF;                                   // base only, in same scale as ADC samples
-                        if( fippiconfig.QDC_DIV8[ch])
-                            bscale = 32.0;
-                        else
-                            bscale = 4.0;
-
-                        tmpI = (psa0 & 0xFFFF0000) >> 16;                           // raw Q0, scaled by 1/4, not BL corrected
-                        tmpD = (double)tmpI - (double)psa_base/bscale * fippiconfig.QDC0_LENGTH[ch]; //  subtract QDCL0 x base/bscale from raw value
-                        if( (tmpD>0) && (tmpD<65535))
-                            psa_Q0 = (int)floor(tmpD);
-                        else
-                            psa_Q0 = 0;
-
-                        tmpI = (psa1 & 0xFFFF);                                     // raw Q1, scaled by 1/4, not BL corrected
-                        tmpD = (double)tmpI - (double)psa_base/bscale * fippiconfig.QDC1_LENGTH[ch]; //  subtract QDCL0 x base/bscale from raw value
-                        if( (tmpD>0) && (tmpD<65535))
-                            psa_Q1 = (int)floor(tmpD);
-                        else
-                            psa_Q1 = 0;
-
-                        psa_ampl = ((psa1 & 0xFFFF0000) >> 16) - psa_base;
-
-                        if(psa_Q0!=0)
-                            psa_R = (int)floor(1000.0*(double)psa_Q1/(double)psa_Q0);
-                        else
-                            psa_R = 0;
+                  Stopwatch sw_lm = sw_start();
 
 
-                        // compute CFD fraction
-                        // Normally x = dt * (cfd level - cfd low) / (cfd high - cfd low) = time after lower sample
-                        // However, here CFD is latched before time stamp and we need to compute CFD time BEFORE timestamp.
-                        // So we are interested in the time before higher sample = dt-x = dt*(cfd high - cfd level) / (cfd high - cfd low)
-                        // result is in units of 1/256th ns
+                  ch = ch_k7+k7*NCHANNELS_PER_K7;              // total channel count
+                  R1 = 1 << ch_k7;
+                  if(evstats & R1)	{	                        //  if there is an event in the header memory for this channel
+         
+                       mapped[AMZ_EXAFWR] = AK7_PAGE;         // specify   K7's addr     addr 3 = channel/system
+                       mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;   //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
 
-                        // compute 1-x
-                        cfdlev = (double)psa_ampl/2.0 + (double)psa_base;       // compute 50% level
-                        cfdlow =  (cfd0 & 0x00000FFF);
-                        cfdhigh = (cfd0 & 0x00FFF000) >> 12;      // limited to 12 bits currently!
-                        if((cfdhigh-cfdlow)>0) {
-                            tmpD = ((cfdhigh-cfdlev)/(cfdhigh-cfdlow));  //   in units of clock cycles
+                           // read 1 64bit word from header (CFD data requiring division, pileup info etc)
+                        // by now,  E is computed in FPGA and is only calculated here in non-UDP mode 
+                           k=0;
+                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;   // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
+                           hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
+                            if(SLOWREAD)  hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
+                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_B;   // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
+                           hdr[4*k+2] = mapped[AMZ_EXDRD];      // read 16 bits
+                            if(SLOWREAD)  hdr[4*k+2] = mapped[AMZ_EXDRD];      // read 16 bits
+                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_C;   // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
+                           hdr[4*k+1] = mapped[AMZ_EXDRD];      // read 16 bits
+                            if(SLOWREAD)  hdr[4*k+1] = mapped[AMZ_EXDRD];      // read 16 bits
+                           mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;   // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
+                           hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
+                            if(SLOWREAD)   hdr[4*k+0] = mapped[AMZ_EXDRD];      // read 16 bits
+                           // the next 5 words only need to be read if storing data locally 
+       
+                         if(eventcount<maxmsg) { 
+                           printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
+                           printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
+                        }                     
+   
+                        // extract pileup bit
+   
+                        pileup  = (hdr[3]>>3)&0x1;
+                    //    printf( "ch. %d, cfdout1 %d, cfdout2 %d, cfdsrc %d, cfdfrc %d ",ch,cfdout1,cfdout2,cfdsrc,cfdfrc); 
+      
+          
+                    if( (PILEUPCTRL[ch]==0)     || (PILEUPCTRL[ch]==1 && !pileup )    )
+                    {    // either don't care  OR pilup test required and  pileup bit not set
+                         //printf( "pileup test passed, start computing E\n");      
+           
+                        // cfd needs some more computation
+                        cfdout1 =  hdr[0]     + ((hdr[1]&0xFF) <<16);
+                        cfdout2 = ((hdr[1]&0xFF00)>>8) + (hdr[2]<<16);    
+                        cfdsrc  = (hdr[3]>>1)&0x1;            // cfd source (sample in group for >125 MHz ADCs)
+                        cfdfrc  = (hdr[3]>>2)&0x1;            // cfd forced if 1
+                        cfdout2 = 0x1000000 - cfdout2;        // convert to positive
+                        ph = (double)cfdout1 / ( (double)cfdout1 + (double)cfdout2 );              
+                        //printf(", frac %f \n ",ph); 
+                        if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)   {
+                          cfd = (int)floor(ph*16384); 
+                          cfd = (cfd&0x3FFF);                  // combine cfd value and bits
+                          cfd = cfd + (cfdsrc<<14);         
+                          cfd = cfd + (cfdfrc<<15);
                         } else {
-                            tmpD = 0;
-                        }
-                        cfdfrac = (int)floor(tmpD*4.0*256.0) & 0x3FF;      //fraction 0..1 mapped to 0..1023, i.e. in units of 1/256ns
-
-                        // add offset within 2-sample group and offset to trigger
-                        cfdticks = (cfd0 & 0x0F000000) >> 24;          // cfd ticks has the # of 4ns ticks from cfd level to the block of 2 samples that includes the maximum
-                        ts_max =  (cfd0 & 0xF0000000) >> 28;          // ft ticks has the 4 relevant bits of timestamp at maximum
-                        tmpI = (timeL & 0x7F) >> 3;                    // 4 relevant bits of trigger time stamp, in 8ns steps
-                        tmpS = ts_max - tmpI;
-                        if(tmpS<0) tmpS = tmpS + 16;                   // build difference, tmps = time from trigger to max in 8ns steps
-                        tmpS = 2*tmpS - cfdticks;                      // build difference, tmps = time from trigger to CFD high in 4ns steps
-                        cfdout = (CW - tmpS)*4*256 + cfdfrac;          // time from CW end to CFD point in units of 1/256 ns
-
-                        //  cfdout = cfdfrac + (cfdticks<<10);
-                        //  printf("ts_max %d, cfdticks %d, trig_to_max %d, trig_to_cfd %d \n",ts_max, cfdticks, tmpS2, tmpS);
-
+                          cfd = (int)floor(ph*32768); 
+                          cfd = (cfd&0x7FFF);                  // combine cfd value and bits
+                          cfd = cfd + (cfdfrc<<15);
+                        }     
+             
+                       // read FPGA E
+                       mapped[AMZ_EXAFRD] = AK7_EFIFO;              // select the "EFIFO" address in channel's page
+                       energyF = mapped[AMZ_EXDWR];                 // read 16 bits
+                       if(SLOWREAD)  energyF = mapped[AMZ_EXDRD];   // read 16 bits
+                       if(eventcount<maxmsg) printf( "Read FPGA E: %d\n",energyF ); 
+   
+                        // at this point, key data of event is known. Now can
+                        // send it to DM for further decision making (to be implemented),
+                        // TODO: event data is in header memory. Should move to deepfifo while waiting for 
+                        //       DM decision
+   
                         sw_check(&sw_lm, "List mode ch=%u", ch);
 
                         // now store list mode data
                         nts_event_data = NULL;
-
-                        if(RunType==0x502)   {
-                            // 2D spectrum R vs E
-                            binx = (int)floor(ph/fippiconfig.MCA2D_SCALEX[ch]);
-                            biny = (int)floor((double)psa_R/fippiconfig.MCA2D_SCALEY[ch]);
-                            if( (binx<MCA2D_BINS) && (biny<MCA2D_BINS) && (binx>0) && (biny>0) )
-                            {
-                                mca2D[ch][binx+MCA2D_BINS*biny] =   mca2D[ch][binx+MCA2D_BINS*biny] +1; // increment 2D MCA
-                            }
-                            // not saving waveforms, events in a table
-                            fprintf(fil,"%u,%d,0x%X,%u,%u,%u,%u,%u,%u,%u,%u,%u\n",eventcount,ch,hit,timeH,timeL,energy,psa_ampl,cfdout,psa_base,psa_Q0,psa_Q1,psa_R );
-                        }    // 0x502
-
-                        if(RunType==0x501)   {
-                            // not saving waveforms, events in a table
-                            fprintf(fil,"%u,%d,0x%X,%u,%u,%u\n",eventcount,ch,hit,timeH,timeL,energy);
-                        }    // 0x501
-
-                        if(RunType==0x500)   {
-                            // For NTS, buffer waveforms with trigger metadata pending acceptance.
-                            // Also write files like startdaq.
-                            unsigned int *wfp = malloc(sizeof(unsigned int) * MAX_TL/2); // two 16bit values per word
-
-                            if (wfp) {
-                                // saving 8 headers +  waveforms, one entry per line
-                                fprintf(fil,"%u\n%d\n0x%X\n%u\n%u\n%u\n%u\n%u\n",eventcount,ch,hit,timeH,timeL,energy,psa_R,cfdout);
-                                mapped[AOUTBLOCK] = 3;
-                                wfp[0] = mapped[AWF0+ch];  // dummy read?
-                                for( k=0; k < (TL[ch]/4); k++)
-                                    //for( k=0; k < 10; k++)
-                                {
-                                    wfp[2*k+0] = mapped[AWF0+ch];
-                                    wfp[2*k+1] = mapped[AWF0+ch];
-
-                                    // re-order 2 sample words from 32bit FIFO
-                                    fprintf(fil,"%u\n",(wfp[2*k+0] >> 16) );
-                                    fprintf(fil,"%u\n",(wfp[2*k+0] & 0xFFFF) );
-                                    fprintf(fil,"%u\n",(wfp[2*k+1] >> 16) );
-                                    fprintf(fil,"%u\n",(wfp[2*k+1] & 0xFFFF) );
-                                }
-                                mapped[AOUTBLOCK] = OB_EVREG;
-
-                                nts_event_data = wfp;
-                            }
-                            else {
-                                printf("E: no mem for 0x500 waveform\n");
-                            }
-                        }    // 0x500
-
-                        if(RunType==0x400)   {
-                            TraceBlks = (int)floor(TL[ch]/BLOCKSIZE_400);
-                            memcpy( buffer2 + 0, &(hit), 4 );
-                            memcpy( buffer2 + 4, &(TraceBlks), 2 );
-                            memcpy( buffer2 + 6, &(NumPrevTraceBlks), 2 );
-                            memcpy( buffer2 + 8, &(timeL), 4 );
-                            memcpy( buffer2 + 12, &(timeH), 4 );
-                            memcpy( buffer2 + 16, &(energy), 2 );
-                            memcpy( buffer2 + 18, &(ch), 2 );
-                            memcpy( buffer2 + 20, &(psa_ampl), 2 );
-                            memcpy( buffer2 + 22, &(cfdout), 2 );   // actually cfd time
-                            memcpy( buffer2 + 24, &(psa_base), 2 );
-                            memcpy( buffer2 + 26, &(psa_Q0), 2 );
-                            memcpy( buffer2 + 28, &(psa_Q1), 2 );
-                            memcpy( buffer2 + 30, &(psa_R), 2 );
-                            memcpy( buffer2 + 32, &(cfdticks), 2 );      // debug
-                            memcpy( buffer2 + 34, &(ts_max), 2 );
-                            memcpy( buffer2 + 36, &(psa0), 4 );      // debug
-                            memcpy( buffer2 + 40, &(psa1), 4 );
-                            // no checksum  for now
-                            memcpy( buffer2 + 60, &(wm), 4 );
-                            fwrite( buffer2, 1, CHAN_HEAD_LENGTH_400*2, fil );
-                            NumPrevTraceBlks = TraceBlks;
-
-                            mapped[AOUTBLOCK] = 3;
-                            //  w0 = mapped[AWF0+ch];  // dummy read?
-                            for( k=0; k < (TL[ch]/4); k++)
-                            {
-                                w0 = mapped[AWF0+ch];
-                                w1 = mapped[AWF0+ch];
-                                // re-order 2 sample words from 32bit FIFO
-                                wf[2*k+1] = (w1 >> 16) + ((w1 & 0xFFFF) << 16);
-                                wf[2*k+0] = (w0 >> 16) + ((w0 & 0xFFFF) << 16);
-                            }
-                            mapped[AOUTBLOCK] = OB_EVREG;
-                            fwrite( wf, TL[ch]/2, 4, fil );
-                        }      // 0x400
 
                         // Send triggers to the NTS DM.
                         unsigned long long ts = ((unsigned long long)timeH << 32) + timeL;
@@ -549,14 +570,27 @@ int main(int argc, const char **argv) {
 
                         eventcount++;
                     }
-                    else { // event not acceptable (piled up )
-                        R1 = mapped[chaddr+CA_REJECT];		// read this register to advance event FIFOs without incrementing Nout etc
-                    }
+                    else { // event not acceptable (piled up) 
+   
+                        eventcount_ch[ch+1]++; // debug
+                          // advance header memory by 5 x4 words
+                          for( k=0; k < 5; k++)
+                           {
+                              mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
+                              hdr[k] = mapped[AMZ_EXDRD];      // read 16 bits, no double read required
+                             // the next 8 words only need to be read if reading QDC data
+                            }
+   
+                          //  now also advance trace memory address if traces are enabled
+                          if(TRACEENA[ch]==1)  { 
+                             mapped[AMZ_EXAFRD] = AK7_SKIPTRACE;             // select the "skiptrace" address in channel's page
+                             out7 = mapped[AMZ_EXDWR];     // any read ok
+                          }  // end if trace enabled 
+                     }  // end not acceptable
                 }     // end event in this channel
             }        //end for ch
         }           // end event in any channel
-
-
+      }              // end for K7s
 
         // ----------- Periodically save MCA, PSA, and Run Statistics  -----------
 
@@ -564,71 +598,62 @@ int main(int argc, const char **argv) {
         {
             pn_log("Save statistics");
 
-            // 1) Run Statistics
-            mapped[AOUTBLOCK] = OB_RSREG;
+            // 1) Run Statistics 
 
             // for debug purposes, print to std out so we see what's going on
-            k = 3;    // no loop for now
-            {
-                m  = mapped[ARS0_MOD+k];
-                c0 = mapped[ARS0_CH0+k];
-                c1 = mapped[ARS0_CH1+k];
-                c2 = mapped[ARS0_CH2+k];
-                c3 = mapped[ARS0_CH3+k];
-                printf("%s,%u,%s,%u,%u,%u,%u\n ","RunTime",m,"COUNTTIME",c0,c1,c2,c3);
-            }
-
+            mapped[AMZ_DEVICESEL] = CS_MZ;
+            tmp0 = mapped[AMZ_RS_TT+0];   // address offset by 1?
+            tmp1 = mapped[AMZ_RS_TT+1];
+             if(verbose) printf("%s %4.5G \n","Total_Time",((double)tmp0*65536+(double)tmp1*TWOTO32)*1e-9);    
             // print (small) set of RS to file, visible to web
-            read_print_runstats(1, 0, mapped);
-
-            mapped[AOUTBLOCK] = OB_EVREG;     // read from event registers
+            //read_print_runstats_XL_2x4(1, 0, mapped);
+            read_print_rates_XL_2x4(0,mapped);
+      
 
             // 2) MCA
             filmca = fopen("MCA.csv","w");
-            fprintf(filmca,"bin,MCAch0,MCAch1,MCAch2,MCAch3\n");
+            fprintf(filmca,"bin");
+            for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(filmca,",MCAch%02d",ch);
+            fprintf(filmca,"\n");
             for( k=0; k <WEB_MCA_BINS; k++)       // report the 4K spectra during the run (faster web update)
             {
-                fprintf(filmca,"%d,%u,%u,%u,%u\n ", k*onlinebin,wmca[0][k],wmca[1][k],wmca[2][k],wmca[3][k]);
+               fprintf(filmca,"%d",k*onlinebin);                  // bin number
+               for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(filmca,",%d",wmca[ch][k]);    // print channel data
+               fprintf(filmca,"\n");
             }
-            fclose(filmca);
+            fclose(filmca);    
 
-            // 3) 2D MCA or PSA
-            if(RunType==0x502)   {
-                filmca = fopen("psa2D.csv","w");
-
-                // title row (x index)
-                for( ch=0; ch <NCHANNELS; ch++)
-                {
-                    for( binx=0;binx<MCA2D_BINS;binx++)
-                    {
-                        fprintf(filmca,",%d",binx+MCA2D_BINS*ch);
-                    }
-                }    // channel loop
-                fprintf(filmca,"\n");
-
-                for( biny=0;biny<MCA2D_BINS;biny++)
-                {
-                    fprintf(filmca, "%d",biny);        // beginning of line
-                    for( ch=0; ch <NCHANNELS; ch++)
-                    {
-                        for( binx=0;binx<MCA2D_BINS;binx++)
-                        {
-                            fprintf(filmca,",%d",mca2D[ch][biny+MCA2D_BINS*binx]);
-                        }  // binx loop
-                    }    // channel loop
-                    fprintf(filmca,"\n");            // end of line
-
-                }  // biny loop
-
-                fclose(filmca);
-            }  // runtype 0x502
         }
 
-        // Receive NTS accept/reject decisions
+        // ----------- Receive NTS accept/reject decisions    -----------
         while (nts_sent % NTS_POLL_INTERVAL == 0 && (poll_result = nts_poll(nts)) != 0) {
             pn_log("Poll ret=%d", poll_result);
             if (poll_result > 0 && poll_result != NTS_IGNORE) {
                 nts_received += poll_result;
+
+           // todo: move to nts_store function
+           // todo: add K7 selection
+          /*         if(fippiconfig.DATA_FLOW == 3)             // Ethernet storage 
+               {
+                  mapped[AMZ_EXAFWR] = AK7_PAGE;         // specify   K7's addr:    PAGE register
+                  mapped[AMZ_EXDWR]  = PAGE_SYS;         //  PAGE 0: system, page 0x10n = channel n
+               
+                  mapped[AMZ_EXAFWR] =  AK7_ETH_CFD;     // specify   K7's addr:    cfd for Eth data packet
+                  mapped[AMZ_EXDWR]  =  cfd;
+
+                  // debug: disable DF readout for some time
+                  w0=0;
+                //  if( eventcount<50000) w0=8;
+                  mapped[AMZ_EXAFWR] =  AK7_ETH_CTRL;    // specify   K7's addr:    Ethernet output control register
+                  mapped[AMZ_EXDWR]  =  (ch_k7<<12) + ((w0+TRACEENA[ch])<<8) + (TL[ch]>>5);  // channel, payload type with/without trace, TL blocks
+
+                  if(eventcount<maxmsg) printf( "issued command to UDP send\n");
+
+                  energy = energyF & 0xFFFE;   // overwrite local E computation with FPGA result  (bit 0 is pileup)  for MCA binning below
+
+               }
+  */
+
             }
             else if (poll_result < 0) {
                 nts_run = 0;
@@ -647,73 +672,56 @@ int main(int argc, const char **argv) {
     // ********************** Run Stop **********************
     printf("Stopping the run\n");
 
+
+     /* debug */
+   
+      mapped[AMZ_DEVICESEL] = CS_K1;	   // specify which K7 
+      mapped[AMZ_EXAFWR] = AK7_PAGE;      // specify   K7's addr:    PAGE register
+      mapped[AMZ_EXDWR]  = PAGE_SYS;      //  PAGE 0: system, page 0x10n = channel n
+
+         // get current time
+      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+0;   
+      tmp0 =  mapped[AMZ_EXDRD];
+      if(SLOWREAD)      tmp0 =  mapped[AMZ_EXDRD];
+      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+1;   
+      tmp1 =  mapped[AMZ_EXDRD];
+      if(SLOWREAD)      tmp1 =  mapped[AMZ_EXDRD];
+      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+2;   
+      tmp2 =  mapped[AMZ_EXDRD];
+      if(SLOWREAD)      tmp2 =  mapped[AMZ_EXDRD];
+      WR_tm_tai = tmp0 +  65536*tmp1 + TWOTO32*tmp2;
+
+      printf( "Run completed. Current WR time %llu\n",WR_tm_tai );
+      printf( "Events transfered %d, rejected %d\n",eventcount_ch[13],eventcount_ch[14] );
+      
+     
+      
+      /* end debug */
+
     // clear RunEnable bit to stop run
-    mapped[ACSRIN] = 0;
-    // todo: there may be events left in the buffers. need to stop, then keep reading until nothing left
+   mapped[AMZ_DEVICESEL] = CS_MZ;	 // select MZ
+    mapped[AMZ_CSRIN] = 0x0000; // all off       
+   // todo: there may be events left in the buffers. need to stop, then keep reading until nothing left
 
-    // final save MCA and RS
-    filmca = fopen("MCA.csv","w");
-    fprintf(filmca,"bin,MCAch0,MCAch1,MCAch2,MCAch3\n");
-    for( k=0; k <MAX_MCA_BINS; k++)
-    {
-        fprintf(filmca,"%d,%u,%u,%u,%u\n ", k,mca[0][k],mca[1][k],mca[2][k],mca[3][k] );
-    }
-    fclose(filmca);
+     // final save MCA and RS
+   filmca = fopen("MCA.csv","w");
+   fprintf(filmca,"bin");
+   for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(filmca,",MCAch%d",ch);
+   fprintf(filmca,"\n");
+   //fprintf(filmca,"bin,MCAch0,MCAch1,MCAch2,MCAch3,MCAch4,MCAch5,MCAch6,MCAch7\n");
+   for( k=0; k <MAX_MCA_BINS; k++)
+   {
+    //  fprintf(filmca,"%d,%u,%u,%u,%u\n ", k,mca[0][k],mca[1][k],mca[2][k],mca[3][k] );
+       fprintf(filmca,"%d",k);                  // bin number
+       for(ch=0;ch<NCHANNELS_PRESENT;ch++) fprintf(filmca,",%d",mca[ch][k]);    // print channel data
+       fprintf(filmca,"\n");
+   }
+   fclose(filmca);
 
-    mapped[AOUTBLOCK] = OB_RSREG;
-    read_print_runstats(0, 0, mapped);
-    mapped[AOUTBLOCK] = OB_IOREG;
-
-    // 3) 2D MCA
-    if(RunType==0x502)   {
-        filmca = fopen("psa2D.csv","w");
-
-        // title row (x index)
-        for( ch=0; ch <NCHANNELS; ch++)
-        {
-            for( binx=0;binx<MCA2D_BINS;binx++)
-            {
-                fprintf(filmca,",%d",binx+MCA2D_BINS*ch);
-            }
-        }    // channel loop
-        fprintf(filmca,"\n");
-
-        for( biny=0;biny<MCA2D_BINS;biny++)
-        {
-            fprintf(filmca, "%d",biny);        // beginning of line
-            for( ch=0; ch <NCHANNELS; ch++)
-            {
-                for( binx=0;binx<MCA2D_BINS;binx++)
-                {
-                    fprintf(filmca,",%d",mca2D[ch][biny+MCA2D_BINS*binx]);
-                }  // binx loop
-            }    // channel loop
-            fprintf(filmca,"\n");            // end of line
-
-        }  // biny loop
-
-        fclose(filmca);
-    }  // runtype 0x502
-
-    // clean up
-    if(RunType==0x400)   {    // write EOR: special hit pattern, all zero except WM
-        TraceBlks = 0;
-        hit = EORMARK;
-        memcpy( buffer2 + 0, &(hit), 4 );
-        memcpy( buffer2 + 4, &(TraceBlks), 2 );
-        memcpy( buffer2 + 6, &(NumPrevTraceBlks), 2 );
-        memcpy( buffer2 + 8, &(TraceBlks), 4 );
-        memcpy( buffer2 + 12, &(TraceBlks), 4 );
-        memcpy( buffer2 + 16, &(TraceBlks), 2 );
-        memcpy( buffer2 + 18, &(TraceBlks), 2 );
-        memcpy( buffer2 + 20, &(TraceBlks), 4 );
-        memcpy( buffer2 + 24, &(TraceBlks), 4 );
-        memcpy( buffer2 + 28, &(TraceBlks), 4 );
-        memcpy( buffer2 + 32, &(TraceBlks), 4 );
-        // no checksum  for now
-        memcpy( buffer2 + 60, &(wm), 4 );
-        fwrite( buffer2, 1, CHAN_HEAD_LENGTH_400*2, fil );
-    }
+   mapped[AMZ_DEVICESEL] = CS_MZ;
+   read_print_runstats_XL_2x4(0, 0, mapped);
+   read_print_rates_XL_2x4(0,mapped);
+   mapped[AMZ_DEVICESEL] = CS_MZ;
 
     // Drain NTS accept/reject decisions
     while ((poll_result = nts_poll(nts)) > 0) {
@@ -731,7 +739,7 @@ int main(int argc, const char **argv) {
 
     pn_log_close();
 
-    if( (RunType==0x500) || (RunType==0x501)  || (RunType==0x502) || (RunType==0x400) )  {
+    if( (RunType==0x100) || (RunType==0x400) )  {
         fclose(fil);
     }
     flock( fd, LOCK_UN );

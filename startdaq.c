@@ -90,6 +90,7 @@ int main(void) {
   unsigned int wm = WATERMARK;
   unsigned int BLbad[NCHANNELS];
   onlinebin=MAX_MCA_BINS/WEB_MCA_BINS;
+
   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
   unsigned int revsn, NCHANNELS_PER_K7, NCHANNELS_PRESENT;
   unsigned int ADC_CLK_MHZ, FILTER_CLOCK_MHZ; //  SYSTEM_CLOCK_MHZ,
@@ -297,7 +298,7 @@ int main(void) {
    		fprintf(fil, "Event\tChannel\tTimeStamp\tEnergy\tRT\tApeak\tBsum\tQ0\tQ1\tPSAval\n");
       }
 
-    }
+    }   // end supported run type
 
     // Run Start Control
    for(k7=0;k7<N_K7_FPGAS;k7++)
