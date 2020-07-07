@@ -733,7 +733,7 @@ int main(void) {
       mapped[AMZ_EXAFWR] =  AK7_HDR_IDS;              // specify   K7's addr:    HDR_IDS
       mapped[AMZ_EXDWR]  =  mval;        
  
-      mval=4000; //UDP_PAUSE;
+      mval=10; //UDP_PAUSE;
       mapped[AMZ_EXAFWR] =  AK7_UDP_PAUSE;              // specify   K7's addr:    AK7_UDP_PAUSE
       mapped[AMZ_EXDWR]  =  mval;      
 

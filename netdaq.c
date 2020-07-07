@@ -519,8 +519,8 @@ int main(int argc, const char **argv) {
                         }    
                  
                         // extract the WR timestamp
-                           timeL   =  hdr[2]     + (hdr[1] <<16);
-                           timeH   =  hdr[0];
+                           timeL   =  hdr[1]     + (hdr[2] <<16);
+                           timeH   =  hdr[3];
     
                         // extract pileup bit
    
@@ -549,9 +549,8 @@ int main(int argc, const char **argv) {
 
                         // Send triggers to the NTS DM.
                         nts_event_data = NULL;
-                        //unsigned long long ts = ((unsigned long long)timeH << 32) + (unsigned long long)timeL;
-                        //unsigned long long ts = timeL;
-                        unsigned long long ts =   hdr[2] + 65536*hdr[1] + TWOTO32* hdr[0];
+                        //unsigned long long ts = (unsigned long long)eventcount;
+                        unsigned long long ts =   hdr[1] + 65536*hdr[2] + TWOTO32* hdr[3];
                         nts_triggered++;
                         pn_log("Trigger t=%llu n=%u ch=%u", ts, nts_triggered, ch);
                         nts_trigger(nts, revsn, ch, cs[k7], ts, energyF, currenttime, nts_event_data);
@@ -690,9 +689,17 @@ int main(int argc, const char **argv) {
       if(SLOWREAD)      tmp2 =  mapped[AMZ_EXDRD];
       WR_tm_tai = tmp0 +  65536*tmp1 + TWOTO32*tmp2;
 
+      
       printf( "Run completed. Current WR time %llu\n",WR_tm_tai );
       printf( "Events transfered %d, rejected %d\n",eventcount_ch[13],eventcount_ch[14] );
-      
+      printf( "WR time 0x %X %X %X",tmp2, tmp1, tmp0 );
+      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+3;   
+      tmp1 =  mapped[AMZ_EXDRD];
+      if(SLOWREAD)      tmp1 =  mapped[AMZ_EXDRD];
+      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+4;   
+      tmp2 =  mapped[AMZ_EXDRD];
+      if(SLOWREAD)      tmp2 =  mapped[AMZ_EXDRD];
+       printf( "-- %X %X\n",tmp2, tmp1 );
      
       
       /* end debug */
