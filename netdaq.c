@@ -78,20 +78,20 @@ int main(int argc, const char **argv) {
     void *map_addr;
     int size = 4096;
     volatile unsigned int *mapped;
-    int k;
+    int ch, k;
     FILE * filmca;
     FILE * fil;
 
     // PN only
-    int ch, tmpS;
-    unsigned int Accept, CW;
-    double cfdlev;
-    unsigned int startTS, m, c0, c1, c2, c3, tmpI;
-    unsigned int psa0, psa1, cfd0;
-    unsigned int cfdout, cfdlow, cfdhigh, cfdticks, cfdfrac, ts_max;
-    unsigned int binx, biny;
-    unsigned int mca2D[NCHANNELS][MCA2D_BINS*MCA2D_BINS] ={{0}};    // 2D MCA for end of run
-    unsigned int chaddr; 
+ //   int tmpS;
+ //   unsigned int Accept, CW;
+ //   double cfdlev, ph;
+ //   unsigned int startTS, m, c0, c1, c2, c3, tmpI;
+ //   unsigned int psa0, psa1, cfd0;
+ //   unsigned int cfdout, cfdlow, cfdhigh, cfdticks, cfdfrac, ts_max;
+//    unsigned int binx, biny;
+//    unsigned int mca2D[NCHANNELS][MCA2D_BINS*MCA2D_BINS] ={{0}};    // 2D MCA for end of run
+//    unsigned int chaddr; 
 
 
     // PNXL only 
@@ -100,16 +100,18 @@ int main(int argc, const char **argv) {
     unsigned int CCSRA[NCHANNELS], PILEUPCTRL[NCHANNELS];
     unsigned int TRACEENA[NCHANNELS], Emin[NCHANNELS];
     unsigned int GoodChanMASK[N_K7_FPGAS] = {0} ;
-    unsigned int tmp0, tmp1, tmp2, cfdout1, cfdout2, cfdsrc, cfdfrc, cfd; //, tmp3;
+    unsigned int tmp0, tmp1, tmp2, cfd; //cfdout1, cfdout2, cfdsrc, cfdfrc; //, tmp3;
     unsigned long long WR_tm_tai, WR_tm_tai_start, WR_tm_tai_stop, WR_tm_tai_next;
     unsigned int hdr[32];
-    unsigned int out0, out2, out3, out7, pileup, exttsL, exttsH, hdrids, udpok;
-    unsigned int wsum, energyF, over; 
+ //   unsigned int out0, out2, out3, out7, pileup, exttsL, exttsH;
+    unsigned int out7;
+    unsigned int  hdrids, udpok;
+    unsigned int  energyF; //, wsum, over; 
     unsigned int eventcount_ch[NCHANNELS];
     unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
     unsigned int NCHANNELS_PER_K7, NCHANNELS_PRESENT;
     unsigned int ADC_CLK_MHZ, FILTER_CLOCK_MHZ; //  SYSTEM_CLOCK_MHZ,
-    int k7, ch_k7, ch, chw;  // ch = abs ch. no; ch_k7 = ch. no in k7
+    int k7, ch_k7; //, chw;  // ch = abs ch. no; ch_k7 = ch. no in k7
     int verbose = 1;      // TODO: control with argument to function 
       // 0 print errors and minimal info only
       // 1 print errors and full info
@@ -121,28 +123,29 @@ int main(int argc, const char **argv) {
     unsigned int SL[NCHANNELS];
     //unsigned int SG[NCHANNELS];
     float Tau[NCHANNELS], Dgain[NCHANNELS];
-    unsigned int BLavg[NCHANNELS], BLcut[NCHANNELS], Binfactor[NCHANNELS];
-    unsigned int TL[NCHANNELS];
+ //   unsigned int BLavg[NCHANNELS], BLcut[NCHANNELS];
+    unsigned int TL[NCHANNELS], Binfactor[NCHANNELS];
     double C0[NCHANNELS], C1[NCHANNELS], Cg[NCHANNELS];
-    double baseline[NCHANNELS] = {0};
-    double dt, ph, elm, q, tmpD, bscale;
+  //  double baseline[NCHANNELS] = {0};
+    double dt, elm, q;
+ //   double tmpD, bscale;
     time_t starttime, currenttime;
-    unsigned int w0, w1;
-    unsigned int revsn, evstats, R1, hit, timeL, timeH;
-    unsigned int psa_base, psa_Q0, psa_Q1, psa_ampl, psa_R;
-    unsigned int binx, biny;
+ //   unsigned int w0, w1, hit;
+    unsigned int revsn, evstats, R1, timeL, timeH, pileup;
+ //   unsigned int psa_base, psa_Q0, psa_Q1, psa_ampl, psa_R;
     unsigned int mca[NCHANNELS][MAX_MCA_BINS] ={{0}};    // full MCA for end of run
     unsigned int wmca[NCHANNELS][WEB_MCA_BINS] ={{0}};    // smaller MCA during run
-    unsigned int wf[MAX_TL/2];    // two 16bit values per word
-    unsigned int onlinebin, loopcount, eventcount, NumPrevTraceBlks, TraceBlks;   
-    unsigned short buffer1[FILE_HEAD_LENGTH_400] = {0};
-    unsigned char buffer2[CHAN_HEAD_LENGTH_400*2] = {0};
-    unsigned int wm = WATERMARK;
-    unsigned int BLbad[NCHANNELS];
+ //   unsigned int wf[MAX_TL/2];    // two 16bit values per word
+    unsigned int onlinebin, loopcount, eventcount;
+ //   unsigned int NumPrevTraceBlks, TraceBlks;   
+ //   unsigned short buffer1[FILE_HEAD_LENGTH_400] = {0};
+ //   unsigned char buffer2[CHAN_HEAD_LENGTH_400*2] = {0};
+ //   unsigned int wm = WATERMARK;
+ //   unsigned int BLbad[NCHANNELS];
     onlinebin=MAX_MCA_BINS/WEB_MCA_BINS;
 
     // SW trig only
-    const char *nts_host = "192.168.1.215";
+    const char *nts_host = "192.168.1.79";
     unsigned int nts_triggered = 0, nts_sent = 0, nts_received = 0;
     int nts_run = 1;
     NTS *nts;
@@ -229,7 +232,7 @@ int main(int argc, const char **argv) {
         return rval;
     }
     const char *settings_file = "settings.ini";
-    rval = init_PixieNetFippiConfig_from_file( settings_file, 1, &fippiconfig );   // second override with user settings, do allow missing
+    rval = init_PixieNetFippiConfig_from_file( settings_file, 2, &fippiconfig );   // second override with user settings, do allow missing, don't print missing
     if( rval != 0 )
     {
         printf( "Failed to parse FPGA settings from %s, rval=%d\n", settings_file, rval );
@@ -237,12 +240,12 @@ int main(int argc, const char **argv) {
     }
 
     // assign to local variables, including any rounding/discretization
-    Accept       = fippiconfig.ACCEPT_PATTERN;
+//    Accept       = fippiconfig.ACCEPT_PATTERN;
     RunType      = fippiconfig.RUN_TYPE;
     SyncT        = fippiconfig.SYNC_AT_START;
     ReqRunTime   = fippiconfig.REQ_RUNTIME;
     PollTime     = fippiconfig.POLL_TIME;
-    CW           = (int)floor(fippiconfig.COINCIDENCE_WINDOW*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
+   // CW           = (int)floor(fippiconfig.COINCIDENCE_WINDOW*FILTER_CLOCK_MHZ);       // multiply time in us *  # ticks per us = time in ticks
 
     WR_RTCtrl    = fippiconfig.WR_RUNTIME_CTRL;
     hdrids       = (CHAN_HEAD_LENGTH_100<<12) & 0xF000;
@@ -268,12 +271,12 @@ int main(int argc, const char **argv) {
             TL[ch]          = MULT_TL*(int)floor(fippiconfig.TRACE_LENGTH[ch]*ADC_CLK_MHZ/MULT_TL);
             Binfactor[ch]   = fippiconfig.BINFACTOR[ch];
             Tau[ch]         = fippiconfig.TAU[ch];
-            BLcut[ch]       = fippiconfig.BLCUT[ch];
-            BLavg[ch]       = 65536 - fippiconfig.BLAVG[ch];
-            if(BLavg[ch]<0)          BLavg[ch] = 0;
-            if(BLavg[ch]==65536)     BLavg[ch] = 0;
-            if(BLavg[ch]>MAX_BLAVG)  BLavg[ch] = MAX_BLAVG;
-            BLbad[ch] = MAX_BADBL;   // initialize to indicate no good BL found yet
+     //       BLcut[ch]       = fippiconfig.BLCUT[ch];
+     //       BLavg[ch]       = 65536 - fippiconfig.BLAVG[ch];
+     //       if(BLavg[ch]<0)          BLavg[ch] = 0;
+     //       if(BLavg[ch]==65536)     BLavg[ch] = 0;
+     //       if(BLavg[ch]>MAX_BLAVG)  BLavg[ch] = MAX_BLAVG;
+      //      BLbad[ch] = MAX_BADBL;   // initialize to indicate no good BL found yet
             CCSRA[ch]       =  fippiconfig.CHANNEL_CSRA[ch]; 
             TRACEENA[ch]    = (( CCSRA[ch] & (1<<CCSRA_TRACEENA)) >0) && (RunType!=0x301) && (RunType!=0x401); 
             PILEUPCTRL[ch] =  ( CCSRA[ch] & (1<<CCSRA_PILEUPCTRL) ) >0;   // if bit set, only allow "single" non-piledup events
@@ -284,8 +287,8 @@ int main(int argc, const char **argv) {
     }
 
 
-    if(fippiconfig.DATA_FLOW!=3) { 
-         printf( "This function only supports option DATA_FLOW = 3 \n");
+    if(fippiconfig.DATA_FLOW!=6) { 
+         printf( "This function only supports option DATA_FLOW = 6 \n");
          return(-1);
     }
  
@@ -326,12 +329,13 @@ int main(int argc, const char **argv) {
     // ********************** Run Start **********************
 
 
-    NumPrevTraceBlks = 0;
+  //  NumPrevTraceBlks = 0;
     loopcount =  0;
     eventcount = 0;
     for( ch=0; ch < NCHANNELS; ch++) eventcount_ch[ch] = 0;
     starttime = currenttime = time(NULL);                         // capture OS start time
     pn_log("Run start");
+    printf("log: Run start\n");
 
     if( (RunType==0x100)  )  {    // list mode runtypes  
        
@@ -428,7 +432,7 @@ int main(int argc, const char **argv) {
 
    
    mapped[AMZ_DEVICESEL] = CS_MZ;	// select MZ
-   if( (fippiconfig.DATA_FLOW == 4) || (fippiconfig.DATA_FLOW == 5))  
+   if( (fippiconfig.DATA_FLOW == 4) || (fippiconfig.DATA_FLOW == 5) || (fippiconfig.DATA_FLOW == 6))  
       mapped[AMZ_RUNCTRL] = 0x0008;    // MCA FIFO enabled 
    else
       mapped[AMZ_RUNCTRL] = 0x0000;    // MCA FIFO disabled
@@ -455,11 +459,10 @@ int main(int argc, const char **argv) {
       for(k7=0;k7<N_K7_FPGAS;k7++)
       {
 
-            // Non-AutoUDP: ARM needs to poll K7 if data ready
-            // then, if UDP (DATA_FLOW=3), give command to send out data to Ethernet, adding a CFD value
-            //       if not UDP (DATA_FLOW<3), read all data and store locally (slow)
-            // energy can be computed by ARM from raw sums or by FPGA 
-
+            // Non-AutoUDP: ARM first needs to poll K7 if data ready
+            // then, give command to send out data to FIFO, adding a CFD value 
+            // then, if DM approves, give command to send out data to WR Ethernet (in subroutine nts poll > nts_store_remote)
+ 
             mapped[AMZ_DEVICESEL] =  cs[k7];	         // select FPGA 
             mapped[AMZ_EXAFWR] = AK7_PAGE;            // specify   K7's addr     addr 3 = channel/system
             mapped[AMZ_EXDWR]  = PAGE_SYS;            //                         0x0  = system  page
@@ -485,7 +488,6 @@ int main(int argc, const char **argv) {
                {
 
                   Stopwatch sw_lm = sw_start();
-
 
                   ch = ch_k7+k7*NCHANNELS_PER_K7;              // total channel count
                   R1 = 1 << ch_k7;
@@ -514,8 +516,12 @@ int main(int argc, const char **argv) {
                          if(eventcount<maxmsg) { 
                            printf( "Ch. %d: Event count [ch] %d, total %d\n",ch, eventcount_ch[ch],eventcount );
                            printf( "Read 0 H-L: 0x %X %X %X %X\n",hdr[ 3], hdr[ 2], hdr[ 1], hdr[ 0] );
-                        }                     
-   
+                        }    
+                 
+                        // extract the WR timestamp
+                           timeL   =  hdr[2]     + (hdr[1] <<16);
+                           timeH   =  hdr[0];
+    
                         // extract pileup bit
    
                         pileup  = (hdr[3]>>3)&0x1;
@@ -526,24 +532,8 @@ int main(int argc, const char **argv) {
                     {    // either don't care  OR pilup test required and  pileup bit not set
                          //printf( "pileup test passed, start computing E\n");      
            
-                        // cfd needs some more computation
-                        cfdout1 =  hdr[0]     + ((hdr[1]&0xFF) <<16);
-                        cfdout2 = ((hdr[1]&0xFF00)>>8) + (hdr[2]<<16);    
-                        cfdsrc  = (hdr[3]>>1)&0x1;            // cfd source (sample in group for >125 MHz ADCs)
-                        cfdfrc  = (hdr[3]>>2)&0x1;            // cfd forced if 1
-                        cfdout2 = 0x1000000 - cfdout2;        // convert to positive
-                        ph = (double)cfdout1 / ( (double)cfdout1 + (double)cfdout2 );              
-                        //printf(", frac %f \n ",ph); 
-                        if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)   {
-                          cfd = (int)floor(ph*16384); 
-                          cfd = (cfd&0x3FFF);                  // combine cfd value and bits
-                          cfd = cfd + (cfdsrc<<14);         
-                          cfd = cfd + (cfdfrc<<15);
-                        } else {
-                          cfd = (int)floor(ph*32768); 
-                          cfd = (cfd&0x7FFF);                  // combine cfd value and bits
-                          cfd = cfd + (cfdfrc<<15);
-                        }     
+                        // cfd is not reported in DATA_FLOW==6
+                        cfd =0;
              
                        // read FPGA E
                        mapped[AMZ_EXAFRD] = AK7_EFIFO;              // select the "EFIFO" address in channel's page
@@ -552,22 +542,33 @@ int main(int argc, const char **argv) {
                        if(eventcount<maxmsg) printf( "Read FPGA E: %d\n",energyF ); 
    
                         // at this point, key data of event is known. Now can
-                        // send it to DM for further decision making (to be implemented),
-                        // TODO: event data is in header memory. Should move to deepfifo while waiting for 
-                        //       DM decision
+                        // send it to DM for further decision making
+                        // Also move to SDRAM deepfifo while waiting for DM decision
    
-                        sw_check(&sw_lm, "List mode ch=%u", ch);
-
-                        // now store list mode data
-                        nts_event_data = NULL;
+                        sw_check(&sw_lm, "List mode ch=%u", ch); 
 
                         // Send triggers to the NTS DM.
-                        unsigned long long ts = ((unsigned long long)timeH << 32) + timeL;
+                        nts_event_data = NULL;
+                        //unsigned long long ts = ((unsigned long long)timeH << 32) + (unsigned long long)timeL;
+                        //unsigned long long ts = timeL;
+                        unsigned long long ts =   hdr[2] + 65536*hdr[1] + TWOTO32* hdr[0];
                         nts_triggered++;
                         pn_log("Trigger t=%llu n=%u ch=%u", ts, nts_triggered, ch);
-                        nts_trigger(nts, revsn, ch, ts, currenttime, nts_event_data);
+                        nts_trigger(nts, revsn, ch, cs[k7], ts, energyF, currenttime, nts_event_data);
                         nts_sent++;
 
+                        // advance data to SDRAM FIFO (waiting for DM approval)
+                        mapped[AMZ_EXAFWR] = AK7_PAGE;         // specify   K7's addr:    PAGE register
+                        mapped[AMZ_EXDWR]  = PAGE_SYS;         // PAGE 0:   system, page 0x10n = channel n                    
+                        mapped[AMZ_EXAFWR] = AK7_ETH_CFD;      // specify   K7's addr:    cfd for Eth data packet
+                        mapped[AMZ_EXDWR]  = cfd;
+                             
+                        R1=0;
+                        //  if( eventcount<50000) R1=8;        // debug: disable DF readout for some time by setting high bit in PAYLOAD_TYPE
+                        mapped[AMZ_EXAFWR] =  AK7_ETH_CTRL;    // specify   K7's addr:    Ethernet output control register
+                        mapped[AMZ_EXDWR]  =  (ch_k7<<12) + ((R1+TRACEENA[ch])<<8) + (TL[ch]>>5);  // channel, payload type with/without trace, TL blocks   
+                        if(eventcount<maxmsg) printf( "issued command to UDP send\n");
+                         
                         eventcount++;
                     }
                     else { // event not acceptable (piled up) 
@@ -591,6 +592,23 @@ int main(int argc, const char **argv) {
             }        //end for ch
         }           // end event in any channel
       }              // end for K7s
+
+
+
+/*      // debug
+       // Send triggers to the NTS DM.
+       if( loopcount % (PollTime/10) == 0) {
+            unsigned long long ts = ((unsigned long long)timeH << 32) + eventcount;
+            nts_triggered++;
+            pn_log("Trigger t=%llu n=%u ch=%u", ts, nts_triggered, 0);
+          //   printf("log: Trigger t=%llu n=%u ch=%u\n", ts, nts_triggered, 0);
+            nts_trigger(nts, revsn, 0, cs[0], ts, currenttime, nts_event_data);
+            nts_sent++;
+
+            eventcount++;
+            //usleep(10000);
+        }
+*/
 
         // ----------- Periodically save MCA, PSA, and Run Statistics  -----------
 
@@ -626,36 +644,16 @@ int main(int argc, const char **argv) {
         }
 
         // ----------- Receive NTS accept/reject decisions    -----------
-        while (nts_sent % NTS_POLL_INTERVAL == 0 && (poll_result = nts_poll(nts)) != 0) {
+        //while (nts_sent % NTS_POLL_INTERVAL == 0 && (poll_result = nts_poll(nts)) != 0) {
+        poll_result = nts_poll(nts, mapped);
+        if( poll_result !=0) 
+        {
             pn_log("Poll ret=%d", poll_result);
             if (poll_result > 0 && poll_result != NTS_IGNORE) {
                 nts_received += poll_result;
-
-           // todo: move to nts_store function
-           // todo: add K7 selection
-          /*         if(fippiconfig.DATA_FLOW == 3)             // Ethernet storage 
-               {
-                  mapped[AMZ_EXAFWR] = AK7_PAGE;         // specify   K7's addr:    PAGE register
-                  mapped[AMZ_EXDWR]  = PAGE_SYS;         //  PAGE 0: system, page 0x10n = channel n
-               
-                  mapped[AMZ_EXAFWR] =  AK7_ETH_CFD;     // specify   K7's addr:    cfd for Eth data packet
-                  mapped[AMZ_EXDWR]  =  cfd;
-
-                  // debug: disable DF readout for some time
-                  w0=0;
-                //  if( eventcount<50000) w0=8;
-                  mapped[AMZ_EXAFWR] =  AK7_ETH_CTRL;    // specify   K7's addr:    Ethernet output control register
-                  mapped[AMZ_EXDWR]  =  (ch_k7<<12) + ((w0+TRACEENA[ch])<<8) + (TL[ch]>>5);  // channel, payload type with/without trace, TL blocks
-
-                  if(eventcount<maxmsg) printf( "issued command to UDP send\n");
-
-                  energy = energyF & 0xFFFE;   // overwrite local E computation with FPGA result  (bit 0 is pileup)  for MCA binning below
-
-               }
-  */
-
             }
             else if (poll_result < 0) {
+                pn_log("Poll ret=%d", poll_result);
                 nts_run = 0;
             }
         }
@@ -664,8 +662,9 @@ int main(int argc, const char **argv) {
 
         loopcount ++;
         currenttime = time(NULL);
-    } while (currenttime <= starttime+ReqRunTime && nts_run); // run for a fixed time
-    //     } while (eventcount <= 20); // run for a fixed number of events
+    } while (currenttime <= starttime+ReqRunTime && nts_run); // run for a fixed time and stop on nts error
+    //     } while (eventcount <= 6); // run for a fixed number of events
+    //     } while (nts_received <= 6); // run for a fixed number of events
 
     pn_log_loop(UINT_MAX);
 
@@ -724,7 +723,7 @@ int main(int argc, const char **argv) {
    mapped[AMZ_DEVICESEL] = CS_MZ;
 
     // Drain NTS accept/reject decisions
-    while ((poll_result = nts_poll(nts)) > 0) {
+    while ((poll_result = nts_poll(nts, mapped)) > 0) {
         if (poll_result != NTS_IGNORE) {
             nts_received += poll_result;
         }

@@ -230,7 +230,7 @@ int main(void) {
     }
 
     //  DATA_FLOW:
-    if(fippiconfig.DATA_FLOW > 5) {
+    if(fippiconfig.DATA_FLOW > 6) {
       printf("Invalid DATA_FLOW = 0x%x\n",fippiconfig.DATA_FLOW);
       return -900;
     }
@@ -242,7 +242,7 @@ int main(void) {
       printf("Invalid DATA_FLOW = %d; can not be used with runtype 0x301\n",fippiconfig.DATA_FLOW);
       return -900;
     }
-    if( ((fippiconfig.DATA_FLOW == 3) || (fippiconfig.DATA_FLOW == 4)) && (fippiconfig.RUN_TYPE != 0x100) ) {
+    if( ((fippiconfig.DATA_FLOW == 3) || (fippiconfig.DATA_FLOW == 4) || (fippiconfig.DATA_FLOW == 6) ) && (fippiconfig.RUN_TYPE != 0x100) ) {
       printf("Invalid DATA_FLOW = %d; WR UDP output currently only supported for runtype 0x100\n",fippiconfig.DATA_FLOW);
       return -900;
     }
@@ -651,7 +651,7 @@ int main(void) {
       if(fippiconfig.DATA_FLOW==4) reglo = reglo + (1<<SCSR_AUTOUDP);                              // enabling LM UDP output without interaction with C code
       if(fippiconfig.DATA_FLOW==5) reglo = reglo + (1<<SCSR_AUTOQSPI);                             // enabling MCA output (only) to FIFO without interaction with C code
       if(fippiconfig.DATA_FLOW!=5) reglo = reglo + (1<<SCSR_HDRENA);                               // disable header memory in pure MCA runs where ARM only reads E from FIFO
-
+      if(fippiconfig.DATA_FLOW==6) reglo = reglo + (1<<SCSR_DMCONTROL);                            // require DM approval to move data from SDRAM FIFO to WR (Eth out)
       mapped[AMZ_EXAFWR] = AK7_SCSRIN;    // write to  k7's addr to select register for write
       mapped[AMZ_EXDWR]  = reglo;        // write lower 16 bit
    

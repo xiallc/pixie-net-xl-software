@@ -264,6 +264,7 @@
 #define AK7_UDP_PAUSE         0x1A     // minimum time between UDP output packages to WR (to slow down data out rate)
 #define AK7_PLLSPIA           0x1B     // address of PLL register
 #define AK7_PLLSPID           0x1C     // data for PLL register (write starts transfer)
+#define AK7_DM_CONTROL        0x1D     // write DM's accept/reject decision (write starts transfer to WR) 
 
 #define AK7_P16REG00          0x40
 #define AK7_P16REG01          0x44
@@ -400,4 +401,6 @@
 #define SCSR_AUTOUDP             3  // if set, LM data is sent out via UDP without interaction with C code
 #define SCSR_AUTOQSPI            4  // if set, E is sent out via QSPI without interaction with C code
 #define SCSR_HDRENA              5  // if set, store LM output data in header memory (else only E in E fifo)
+#define SCSR_DMCONTROL           6  // if set, Ethernet output data is held in SDRAM FIFO until DM approves
+
 

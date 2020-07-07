@@ -34,10 +34,12 @@
  *----------------------------------------------------------------------*/
 
 #include <stdlib.h>
+#include <zmq.h>
 
 #include "zhelpers.h"
 #include "nts.h"
 #include "log.h"
+#include "PixieNetDefs.h"
 
 void nts_mark_event(const char *s)
 {
@@ -48,6 +50,7 @@ void nts_mark_event(const char *s)
  * Ring buffer to track triggers sent to the DM.
  */
 
+ // create the buffer
 NTSBuffer *nts_buffer_create()
 {
     NTSBuffer *q = calloc(1, sizeof(NTSBuffer));
@@ -61,6 +64,7 @@ NTSBuffer *nts_buffer_create()
     return q;
 }
 
+// destroy the buffer
 void nts_buffer_destroy(NTSBuffer **p)
 {
     NTSBuffer *q = *p;
@@ -77,7 +81,8 @@ void nts_buffer_destroy(NTSBuffer **p)
     free(*p);
     *p = NULL;
 }
-
+   
+// increment the start index in the buffer
 static void nts_start_incr(NTSBuffer *q)
 {
     // Free waveform memory piecewise as the ring buffer wraps around.
@@ -92,6 +97,7 @@ static void nts_start_incr(NTSBuffer *q)
     }
 }
 
+// add a tigger data set to the buffer
 void nts_buffer_add(NTSBuffer *q, Trigger t)
 {
     // Overwrite triggers
@@ -104,7 +110,7 @@ void nts_buffer_add(NTSBuffer *q, Trigger t)
         nts_start_incr(q);
     }
     else {
-        nts_mark_event("i");
+        nts_mark_event("i");     // insert a new trigger
     }
 
     // First trigger
@@ -248,18 +254,18 @@ NTS *nts_open(const char *dm_host, int dm_port)
  * decision. If data is set, the buffer takes ownership and will free
  * it after the trigger expires out of the buffer.
  */
-void nts_trigger(NTS *nts, unsigned int revsn, int ch, unsigned long long ts,
+void nts_trigger(NTS *nts, unsigned int revsn, int ch, int cs_k7, unsigned long long ts, int energy,
                  time_t currenttime, void *data)
 {
     // ASCII encoding for now
     char msg_buf[1024];
-    sprintf(msg_buf, "TRIGGER %u,%u,%llu", revsn, ch, ts);
+    sprintf(msg_buf, "TRIGGER %u,%u,%llu,%u", revsn, ch, ts, energy);
 
     Stopwatch sw = sw_start();
     s_send(nts->daq_trigger, msg_buf);
     sw_check(&sw, "Trigger send ts=%llu", ts);
 
-    Trigger trigger_item = {ts, currenttime, false, data};
+    Trigger trigger_item = {ts, cs_k7, currenttime, false, data};
 
     sw = sw_start();
     nts_buffer_add(nts->sent, trigger_item);
@@ -283,21 +289,24 @@ void nts_trigger_close(Trigger *t)
  */
 int nts_store(NTS *nts, const char *msg)
 {
+    // extract time window from message
     unsigned long long t1, t2;
     int n = sscanf(msg, "ACCEPT %llu,%llu", &t1, &t2);
     if (n < 2) {
         printf("E: can't match ACCEPT: %s\n", msg);
         return 0;
     }
-
     pn_log("%s", msg);
 
+
+    // take NTSbuffer out of NTS handed down from polling
     NTSBuffer *buf = nts->sent;
     if (buf->start < 0 || buf->start >= buf->size) {
         printf("E: invalid buffer start %d\n", buf->start);
         return 0;
     }
 
+    // check the trigger sets in the buffer if they are now accepted 
     bool any_match = false;
     int stored = 0;
     int i = buf->start;
@@ -305,13 +314,13 @@ int nts_store(NTS *nts, const char *msg)
     do {
         j++;
 
-        Trigger *t = &buf->buf[i];
-        if (t->ts >= t1 && t->ts < t2) {
-            if (t->stored) {
-                nts_mark_event("d"); // duplicate accept
+        Trigger *t = &buf->buf[i];        // take Trigger data out of NTSbuffer 
+        if (t->ts >= t1 && t->ts <= t2) { // check if trigger time stamp within acceptance range
+            if (t->stored) {              // if already stored
+                nts_mark_event("d");      // mark as duplicate accept
             }
-            else {
-                nts_mark_event("s");
+            else {                        // if not stored, store it 
+                nts_mark_event("s");      // TODO: add actual data output here?
                 t->stored = true;
                 stored++;
                 pn_log("Stored t=%llu", t->ts);
@@ -325,10 +334,114 @@ int nts_store(NTS *nts, const char *msg)
         }
 
         i++;
-        if (i == buf->size) {
+        if (i == buf->size) {        // rollover loop index at array end
             i = 0;
         }
-    } while (i != buf->next);
+    } while (i != buf->next);        // loop over range of trigger data (start to next)
+
+    if (j > buf->size)
+        printf("E: too many store search iterations j=%d size=%d\n", j, buf->size);
+
+    if (!any_match)
+        nts_mark_event("u");
+
+    pn_log("nts_store done");
+
+    return stored;
+}
+
+
+/*
+ * Process an accept decision from the DM. Searches the local buffer
+ * for events matching the time range and initiates storing the data  
+ * remotely via the WR interface.
+ */
+int nts_store_remote(NTS *nts, const char *msg, volatile unsigned int *mapped)
+{
+    // extract time window from message
+    unsigned long long t1, t2;
+    int n = sscanf(msg, "ACCEPT %llu,%llu", &t1, &t2);
+    if (n < 2) {
+        printf("E: can't match ACCEPT: %s\n", msg);
+        return 0;
+    }
+    pn_log("%s", msg);
+
+
+    // take NTSbuffer out of NTS handed down from polling
+    NTSBuffer *buf = nts->sent;
+    if (buf->start < 0 || buf->start >= buf->size) {
+        printf("E: invalid buffer start %d\n", buf->start);
+        return 0;
+    }
+
+    // check the trigger sets in the buffer if they are now accepted 
+    bool any_match = false;
+    int stored = 0;
+    int i = buf->start;
+    int j = 0; // Check total iterations
+    do {
+        j++;
+
+        Trigger *t = &buf->buf[i];        // take Trigger data out of NTSbuffer 
+        if (t->ts >= t1 && t->ts <= t2) { // check if trigger time stamp within acceptance range
+            if (t->stored) {              // if already stored
+                nts_mark_event("d");      // mark as duplicate accept
+            }
+            else {                        // if not stored, store it 
+               nts_mark_event("s");      
+               t->stored = true;
+               stored++;
+               pn_log("Stored t=%llu", t->ts);
+
+               int cs_k7 = t->cs_k7;   
+               mapped[AMZ_DEVICESEL] =  cs_k7;	         // select FPGA 
+               mapped[AMZ_EXAFWR] = AK7_PAGE;            // specify   K7's addr     addr 3 = channel/system
+               mapped[AMZ_EXDWR]  = PAGE_SYS;            //                         0x0  = system  page
+               mapped[AMZ_EXAFWR] = AK7_DM_CONTROL;      // specify   K7's addr:    cfd for Eth data packet
+               mapped[AMZ_EXDWR]  = 1;                   // 1 = accept
+
+
+            }
+
+            any_match = true;
+
+            // Advance the start pointer if there are no triggers behind it.
+            if (i == buf->start)
+                nts_start_incr(buf);
+        }
+
+        if (t->ts < t1) {  // reject triggers that occured before the acceptance range
+            if (t->stored) {              // if already stored
+                nts_mark_event("d");      // mark as duplicate 
+            }
+               else {                        // if not stored, reject
+               nts_mark_event("r");      
+               t->stored = true;
+               stored++;
+               pn_log("Rejected t=%llu", t->ts);
+   
+               int cs_k7 = t->cs_k7;   
+               mapped[AMZ_DEVICESEL] =  cs_k7;	         // select FPGA 
+               mapped[AMZ_EXAFWR] = AK7_PAGE;            // specify   K7's addr     addr 3 = channel/system
+               mapped[AMZ_EXDWR]  = PAGE_SYS;            //                         0x0  = system  page
+               mapped[AMZ_EXAFWR] = AK7_DM_CONTROL;      // specify   K7's addr:    cfd for Eth data packet
+               mapped[AMZ_EXDWR]  = 0;                   // 0 = reject
+            }
+
+            any_match = true;
+
+            // Advance the start pointer if there are no triggers behind it.
+            if (i == buf->start)
+                nts_start_incr(buf);
+
+        }
+
+        i++;
+        if (i == buf->size) {        // rollover loop index at array end
+            i = 0;
+        }
+    } while (i != buf->next);        // loop over range of trigger data (start to next)
 
     if (j > buf->size)
         printf("E: too many store search iterations j=%d size=%d\n", j, buf->size);
@@ -349,15 +462,22 @@ int nts_store(NTS *nts, const char *msg)
  *   - 0 if there's nothing to do
  *   - NTS_IGNORE if the message is unrecognized
  *   - positive N if N triggers were accepted and stored
+
+ * Notes 
+ *  An accept message is of the form  "ACCEPT" <t0> <t1>
+ *     where t0 and t1 give the acceptable time range. 
+ *  An end DAQ message is of the form "END"
+ *
  */
-int nts_poll(NTS *nts)
+int nts_poll(NTS *nts, volatile unsigned int *mapped)
 {
     zmq_pollitem_t zpoll[1];
-    zpoll[0].socket = nts->dm_ctrl;
+    zpoll[0].socket = nts->dm_ctrl;    // contains DM message
     zpoll[0].events = ZMQ_POLLIN;
     zpoll[0].fd = 0;
     zpoll[0].revents = 0;
 
+    // check for message from DM and "link" to nts element 
     Stopwatch sw = sw_start();
     int n = zmq_poll(zpoll, sizeof(zpoll) / sizeof(zpoll[0]), 0);
     sw_check(&sw, "poll dm_ctrl");
@@ -365,18 +485,22 @@ int nts_poll(NTS *nts)
     if (n <= 0)
         return n;
 
+    // convert zmq string to C string (the dm message)
     sw = sw_start();
-    char *s = s_recv(nts->dm_ctrl);
+    char *s = s_recv(nts->dm_ctrl);      
+    
     if (!s) {
         printf("DAQ recv null!\n");
         return 0;
     }
     sw_check(&sw, "s_recv dm_ctrl");
 
+    // check for action code, store matching trigger or end DAQ
     int ret;
     if (strncmp(s, "ACCEPT", 6) == 0) {
         sw = sw_start();
-        ret = nts_store(nts, s);
+  //      ret = nts_store(nts, s);                // subroutine to store locally
+        ret = nts_store_remote(nts, s, mapped); // subroutine to store remotely
         sw_check(&sw, "nts_store");
     }
     else if (strncmp(s, "END", 3) == 0) {
@@ -388,6 +512,7 @@ int nts_poll(NTS *nts)
         ret = NTS_IGNORE;
     }
 
+    // clean up
     sw = sw_start();
     free(s);
     sw_check(&sw, "free s_recv msg");

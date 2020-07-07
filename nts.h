@@ -34,10 +34,19 @@
  *----------------------------------------------------------------------*/
 
 #include <stdbool.h>
+#include <time.h>
+#include <zmq.h>
+
+ // an NTSbuffer contains the trigger data (NTS_MAX_WAIT fields) plus size/next/start values
+ //    and is part of an NTS struct
+ // the trigger data includes a timestamp (TS), the time inserted (queue_time), 
+ //    a flag for being stored (stored) and the trigger data (data)
+
 
 struct _Trigger {
     unsigned long long ts;  // trigger timestamp
-    time_t queue_time;      // time inserted
+    int cs_k7;              // id of K7 chip the data came from                         
+    time_t queue_time;      // time inserted     
     bool stored;            // set after a trigger is accepted
     void *data;             // mode-specific data block
 };
@@ -46,25 +55,25 @@ typedef struct _Trigger Trigger;
 #define NTS_MAX_WAIT 200
 struct _NTSBuffer {
     Trigger buf[NTS_MAX_WAIT];
-    int size;
-    int next;
-    int start;
+    int size;        // equal to NTS_MAX_WAIT
+    int next;        // index of last  (newest) trigger data
+    int start;       // index of first (oldest) trigger data
 };
 typedef struct _NTSBuffer NTSBuffer;
 
 struct _NTS {
     NTSBuffer *sent;
     void *zctx;
-    void *dm_ctrl;     // run control and accept/reject SUB
-    void *daq_trigger; // DAQ triggers PUSH
+    void *dm_ctrl;     // run control and accept/reject SUB   (where to read  DM messages from)
+    void *daq_trigger; // DAQ triggers PUSH                   (where to write DM messages to)
 };
 typedef struct _NTS NTS;
 
 NTS *nts_open(const char *dm_host, int dm_port);
 void nts_destroy(NTS **nts);
-void nts_trigger(NTS *nts, unsigned int revsn, int ch, unsigned long long ts,
+void nts_trigger(NTS *nts, unsigned int revsn, int ch, int cs_k7, unsigned long long ts, int energy,
                  time_t currenttime, void *data);
 void nts_trigger_close(Trigger *t);
-int nts_poll(NTS *nts);
+int nts_poll(NTS *nts, volatile unsigned int *mapped);
 
 #define NTS_IGNORE 0xFFFFFFFF
