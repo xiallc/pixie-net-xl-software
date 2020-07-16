@@ -1280,17 +1280,28 @@ int PLLinit(volatile unsigned int *mapped ) {
    unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
    int k7, by; 
 
-   // hardcoded address byte data to write PLL registers of AD9516
+   // hardcoded address byte data to write PLL registers of AD9516-4
    // input 20 MHz
    // VCO = input /R * (P*B+A) = 1500 MHz
    // R=2
    // A=6
    // B=18
+   // P=8 
    // VCO divided by 3 for clock output channels (using 3,4 LVDS) = 500 MHz
    // channel output divided by 4 = 125 MHz
    // after programming, write 0x232[0] to activate
    // after changing settings, toggle 0 > 1 transition of reg 0x18[0] for calibration 
    //   (this bit powers up at as zero, so setting it to 1 in the first programming initialized calibration. afterwards, explicitely set to 0, then 1
+
+   // for 156.25 MHz output must use AD9516-1,  VCO = 2500 MHz
+   // R=2
+   // A=2
+   // B=31
+   // P=8 
+   // VCO divided by 4 for clock output channels (using 3,4 LVDS) = 625 MHz
+   // channel output divided by 4 = 125 MHz
+   // (VCO divided by 5 gives 500 > 125 MHz)
+
 
    /*
    // 1. configure I/O
