@@ -115,7 +115,7 @@ static void nts_start_incr(NTSBuffer *q)
     }
 }
 
-// add a tigger data set to the buffer
+// add a trigger data set to the buffer
 void nts_buffer_add(NTSBuffer *q, Trigger t)
 {
     // Overwrite triggers
@@ -283,11 +283,27 @@ void nts_trigger(NTS *nts, unsigned int revsn, int ch, int cs_k7, unsigned long 
     s_send(nts->daq_trigger, msg_buf);
     sw_check(&sw, "Trigger send ts=%llu", ts);
 
-    Trigger trigger_item = {ts, cs_k7, currenttime, false, data};
+    Trigger trigger_item = {ts, cs_k7, ch, currenttime, false, data};
 
     sw = sw_start();
     nts_buffer_add(nts->sent, trigger_item);
     sw_check(&sw, "nts_buffer_add ts=%llu", ts);
+}
+
+/*
+ * Send trigger metadata to the DM and buffer it locally to await a
+ * decision. If data is set, the buffer takes ownership and will free
+ * it after the trigger expires out of the buffer.
+ */
+void nts_send_status(NTS *nts)
+{
+    // ASCII encoding for now
+    char msg_buf[1024];
+    sprintf(msg_buf, "Status");
+    // todo: can add real information
+
+    s_send(nts->daq_trigger, msg_buf);
+  
 }
 
 /*
@@ -379,8 +395,8 @@ int nts_store_remote(NTS *nts, const char *msg, volatile unsigned int *mapped)
 {
     // extract time window from message
     unsigned long long t1, t2;       
-    unsigned int ch;
-    int n = sscanf(msg, "ACCEPT %llu,%llu,%u", &t1, &t2,&ch);
+    unsigned int ch_dm;
+    int n = sscanf(msg, "ACCEPT %llu,%llu,%u", &t1, &t2, &ch_dm);
     if (n < 3) {
         printf("E: can't match ACCEPT: %s\n", msg);
         return 0;
@@ -398,28 +414,48 @@ int nts_store_remote(NTS *nts, const char *msg, volatile unsigned int *mapped)
     // check the trigger sets in the buffer if they are now accepted 
     bool any_match = false;
     int stored = 0;
+    int ch_daq;
     int i = buf->start;
     int j = 0; // Check total iterations
     do {
         j++;
 
         Trigger *t = &buf->buf[i];        // take Trigger data out of NTSbuffer 
+        ch_daq =   t->ch; 
         if (t->ts >= t1 && t->ts <= t2) { // check if trigger time stamp within acceptance range
             if (t->stored) {              // if already stored
                 nts_mark_event("d");      // mark as duplicate accept
             }
             else {                        // if not stored, store it 
-               nts_mark_event("s");      
-               t->stored = true;
-               stored++;
-               pn_log("Stored t=%llu", t->ts);
 
-               int cs_k7 = t->cs_k7;   
-               mapped[AMZ_DEVICESEL] =  cs_k7;	         // select FPGA 
-               mapped[AMZ_EXAFWR] = AK7_PAGE;            // specify   K7's addr     addr 3 = channel/system
-               mapped[AMZ_EXDWR]  = PAGE_SYS;            //                         0x0  = system  page
-               mapped[AMZ_EXAFWR] = AK7_DM_CONTROL;      // specify   K7's addr:    cfd for Eth data packet
-               mapped[AMZ_EXDWR]  = 1;                   // 1 = accept
+               
+               if(ch_daq==ch_dm)    // optional channel match
+               {
+                  nts_mark_event("s");      
+                  t->stored = true;
+                  stored++;
+                  pn_log("Stored t=%llu", t->ts);
+   
+                  int cs_k7 = t->cs_k7;  
+                   
+                  mapped[AMZ_DEVICESEL] =  cs_k7;	         // select FPGA 
+                  mapped[AMZ_EXAFWR] = AK7_PAGE;            // specify   K7's addr     addr 3 = channel/system
+                  mapped[AMZ_EXDWR]  = PAGE_SYS;            //                         0x0  = system  page
+                  mapped[AMZ_EXAFWR] = AK7_DM_CONTROL;      // specify   K7's addr:    cfd for Eth data packet
+                  mapped[AMZ_EXDWR]  = 1;                   // 1 = accept
+               } else {
+                  nts_mark_event("r");      
+                  t->stored = true;
+                  //stored++;
+                  pn_log("Rejected t=%llu", t->ts);
+      
+                  int cs_k7 = t->cs_k7;   
+                  mapped[AMZ_DEVICESEL] =  cs_k7;	         // select FPGA 
+                  mapped[AMZ_EXAFWR] = AK7_PAGE;            // specify   K7's addr     addr 3 = channel/system
+                  mapped[AMZ_EXDWR]  = PAGE_SYS;            //                         0x0  = system  page
+                  mapped[AMZ_EXAFWR] = AK7_DM_CONTROL;      // specify   K7's addr:    cfd for Eth data packet
+                  mapped[AMZ_EXDWR]  = 0;                   // 0 = reject
+               }
 
 
             }
@@ -438,7 +474,7 @@ int nts_store_remote(NTS *nts, const char *msg, volatile unsigned int *mapped)
                else {                        // if not stored, reject
                nts_mark_event("r");      
                t->stored = true;
-               stored++;
+               //stored++;
                pn_log("Rejected t=%llu", t->ts);
    
                int cs_k7 = t->cs_k7;   

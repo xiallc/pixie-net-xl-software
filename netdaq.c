@@ -451,6 +451,16 @@ int main(int argc, const char **argv) {
         // not needed in DATA_FLOW>=2
         // this HAS BEEN moved into the FPGA 
 
+        // poll MCA FIFO (unnecessary, but FPGA expects MCA FIFO to be active (for now))
+         mapped[AMZ_DEVICESEL] = CS_MZ;	// select MZ
+         tmp2 = mapped[AMZ_CSROUTL];
+         if ( (tmp2 & 0x00000100)>0 )  // check MCAdataready bit
+         {  
+            if(eventcount==0) tmp0 = mapped[AMZ_RDMCA]; // dummy read
+            tmp0 = mapped[AMZ_RDMCA+1];   // channel and other info
+            tmp1 = mapped[AMZ_RDMCA];   // energy  and advance FIFO
+         }
+
         // -----------poll for events -----------
         // if data ready. read out, compute E, increment MCA *********
         Stopwatch sw_stats = sw_start();
@@ -497,7 +507,7 @@ int main(int argc, const char **argv) {
                        mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;   //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
 
                            // read 1 64bit word from header (CFD data requiring division, pileup info etc)
-                        // by now,  E is computed in FPGA and is only calculated here in non-UDP mode 
+                           // by now,  E is computed in FPGA 
                            k=0;
                            mapped[AMZ_EXAFRD] = AK7_HDRMEM_A;   // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
                            hdr[4*k+3] = mapped[AMZ_EXDRD];      // read 16 bits
@@ -524,7 +534,7 @@ int main(int argc, const char **argv) {
     
                         // extract pileup bit
    
-                        pileup  = (hdr[3]>>3)&0x1;
+                        pileup  = (hdr[0]>>3)&0x1;
                     //    printf( "ch. %d, cfdout1 %d, cfdout2 %d, cfdsrc %d, cfdfrc %d ",ch,cfdout1,cfdout2,cfdsrc,cfdfrc); 
       
           
@@ -572,13 +582,13 @@ int main(int argc, const char **argv) {
                     }
                     else { // event not acceptable (piled up) 
    
-                        eventcount_ch[ch+1]++; // debug
+                        //eventcount_ch[ch+1]++; // debug
                           // advance header memory by 5 x4 words
                           for( k=0; k < 5; k++)
                            {
                               mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;     // write to  k7's addr for read -> reading from AK7_HDRMEM_D channel header fifo, low 16bit
                               hdr[k] = mapped[AMZ_EXDRD];      // read 16 bits, no double read required
-                             // the next 8 words only need to be read if reading QDC data
+                             
                             }
    
                           //  now also advance trace memory address if traces are enabled
@@ -657,6 +667,11 @@ int main(int argc, const char **argv) {
             }
         }
 
+        // ----------- periodically send status message so dm does not hang while waiting for trigger    -----------
+        if(loopcount % (PollTime/10) == 0)
+        {
+            nts_send_status(nts);
+        }
         // ----------- loop housekeeping -----------
 
         loopcount ++;
@@ -691,7 +706,7 @@ int main(int argc, const char **argv) {
 
       
       printf( "Run completed. Current WR time %llu\n",WR_tm_tai );
-      printf( "Events transfered %d, rejected %d\n",eventcount_ch[13],eventcount_ch[14] );
+      //printf( "Events transfered %d, rejected %d\n",eventcount_ch[13],eventcount_ch[14] );
       printf( "WR time 0x %X %X %X",tmp2, tmp1, tmp0 );
       mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+3;   
       tmp1 =  mapped[AMZ_EXDRD];
@@ -737,7 +752,7 @@ int main(int argc, const char **argv) {
     }
 
     // Clean up NTS networking.
-    printf("Cleaning up trigger sockets\n");
+    //printf("Cleaning up trigger sockets\n");
     nts_destroy(&nts);
     printf("NTS triggered %u, sent %u, accepted %u\n", nts_triggered, nts_sent, nts_received);
 

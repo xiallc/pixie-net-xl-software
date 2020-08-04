@@ -45,14 +45,15 @@
 
 struct _Trigger {
     unsigned long long ts;  // trigger timestamp
-    int cs_k7;              // id of K7 chip the data came from                         
+    int cs_k7;              // id of K7 chip the data came from    
+    int ch;                 // channel number                 
     time_t queue_time;      // time inserted     
     bool stored;            // set after a trigger is accepted
     void *data;             // mode-specific data block
 };
 typedef struct _Trigger Trigger;
 
-#define NTS_MAX_WAIT 400
+#define NTS_MAX_WAIT 4000
 struct _NTSBuffer {
     Trigger buf[NTS_MAX_WAIT];
     int size;        // equal to NTS_MAX_WAIT
@@ -75,5 +76,6 @@ void nts_trigger(NTS *nts, unsigned int revsn, int ch, int cs_k7, unsigned long 
                  time_t currenttime, void *data);
 void nts_trigger_close(Trigger *t);
 int nts_poll(NTS *nts, volatile unsigned int *mapped);
+void nts_send_status(NTS *nts);
 
 #define NTS_IGNORE 0xFFFFFFFF
