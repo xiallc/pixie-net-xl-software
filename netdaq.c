@@ -699,7 +699,7 @@ int main(int argc, const char **argv) {
       mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+4;   
       tmp2 =  mapped[AMZ_EXDRD];
       if(SLOWREAD)      tmp2 =  mapped[AMZ_EXDRD];
-       printf( "-- %X %X\n",tmp2, tmp1 );
+       printf( " -- %X %X\n",tmp2, tmp1 );
      
       
       /* end debug */

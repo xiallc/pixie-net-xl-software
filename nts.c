@@ -41,6 +41,24 @@
 #include "log.h"
 #include "PixieNetDefs.h"
 
+
+/* monitoring event function. prints a letter to std out for each action :
+  nts_start_incr
+    W - wrap start
+  nts_buffer_add:
+    f - flush a stored trigger 
+    x - overwrite a sent trigger
+    i - insert a new trigger
+    w - Wrap next
+  nts_open
+    . -  Wait for other DAQs to start
+  nts_store, nts_store_remote
+    d - mark as duplicate accept
+    s - if not stored, store it  
+    u - no match
+    r - reject
+   
+*/
 void nts_mark_event(const char *s)
 {
     printf(s);
@@ -79,7 +97,7 @@ void nts_buffer_destroy(NTSBuffer **p)
     }
 
     free(*p);
-    *p = NULL;
+    *p = NULL;    
 }
    
 // increment the start index in the buffer
@@ -291,8 +309,9 @@ int nts_store(NTS *nts, const char *msg)
 {
     // extract time window from message
     unsigned long long t1, t2;
-    int n = sscanf(msg, "ACCEPT %llu,%llu", &t1, &t2);
-    if (n < 2) {
+    unsigned int ch;
+    int n = sscanf(msg, "ACCEPT %llu,%llu,%u", &t1, &t2,&ch);
+    if (n < 3) {
         printf("E: can't match ACCEPT: %s\n", msg);
         return 0;
     }
@@ -359,9 +378,10 @@ int nts_store(NTS *nts, const char *msg)
 int nts_store_remote(NTS *nts, const char *msg, volatile unsigned int *mapped)
 {
     // extract time window from message
-    unsigned long long t1, t2;
-    int n = sscanf(msg, "ACCEPT %llu,%llu", &t1, &t2);
-    if (n < 2) {
+    unsigned long long t1, t2;       
+    unsigned int ch;
+    int n = sscanf(msg, "ACCEPT %llu,%llu,%u", &t1, &t2,&ch);
+    if (n < 3) {
         printf("E: can't match ACCEPT: %s\n", msg);
         return 0;
     }
