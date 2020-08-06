@@ -144,7 +144,7 @@ int main(int argc, const char **argv) {
     onlinebin=MAX_MCA_BINS/WEB_MCA_BINS;
 
     // SW trig only
-    const char *nts_host = "192.168.1.79";
+    const char *nts_host = "192.168.1.84";
     unsigned int nts_triggered = 0, nts_sent = 0, nts_received = 0;
     int nts_run = 1;
     NTS *nts;
@@ -563,7 +563,7 @@ int main(int argc, const char **argv) {
                         //unsigned long long ts = (unsigned long long)eventcount;
                         unsigned long long ts =   hdr[1] + 65536*hdr[2] + TWOTO32* hdr[3];
                         nts_triggered++;
-                        pn_log("Trigger t=%llu n=%u ch=%u", ts, nts_triggered, ch);
+                        pn_log("TRIGGER t=%llu n=%u ch=%u", ts, nts_triggered, ch);
                         nts_trigger(nts, revsn, ch, cs[k7], ts, energyF, currenttime, nts_event_data);
                         nts_sent++;
 

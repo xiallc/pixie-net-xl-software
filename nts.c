@@ -120,15 +120,19 @@ void nts_buffer_add(NTSBuffer *q, Trigger t)
 {
     // Overwrite triggers
     if (q->next == q->start) {
-        if (q->buf[q->start].stored)
+        if (q->buf[q->start].stored) {
             nts_mark_event("f"); // flush a stored trigger
-        else
+            pn_log("  Flush start %d next %d", q->start, q->next);
+        } else  {
             nts_mark_event("x"); // overwrite a sent trigger
+            pn_log("  Overwrite start %d next %d", q->start, q->next);
+        }
 
         nts_start_incr(q);
     }
     else {
         nts_mark_event("i");     // insert a new trigger
+        pn_log("  Insert start %d next %d", q->start, q->next);
     }
 
     // First trigger
@@ -414,9 +418,11 @@ int nts_store_remote(NTS *nts, const char *msg, volatile unsigned int *mapped)
     // check the trigger sets in the buffer if they are now accepted 
     bool any_match = false;
     int stored = 0;
-    int ch_daq;
+    int ch_daq, diff_sn;
     int i = buf->start;
     int j = 0; // Check total iterations
+    pn_log("  Processing start %d next %d i %d", buf->start,buf->next,i );
+
     do {
         j++;
 
@@ -425,16 +431,14 @@ int nts_store_remote(NTS *nts, const char *msg, volatile unsigned int *mapped)
         if (t->ts >= t1 && t->ts <= t2) { // check if trigger time stamp within acceptance range
             if (t->stored) {              // if already stored
                 nts_mark_event("d");      // mark as duplicate accept
-            }
-            else {                        // if not stored, store it 
-
-               
+                pn_log("  Duplicate in range ignored (i=%d) t=%llu", i, t->ts );
+            }   else {                        // if not stored, store it 
                if(ch_daq==ch_dm)    // optional channel match
                {
                   nts_mark_event("s");      
                   t->stored = true;
                   stored++;
-                  pn_log("Stored t=%llu", t->ts);
+                  pn_log("  Stored (i=%d) t=%llu", i, t->ts );
    
                   int cs_k7 = t->cs_k7;  
                    
@@ -447,7 +451,7 @@ int nts_store_remote(NTS *nts, const char *msg, volatile unsigned int *mapped)
                   nts_mark_event("r");      
                   t->stored = true;
                   //stored++;
-                  pn_log("Rejected t=%llu", t->ts);
+                  pn_log("  Rejected for channel match (i=%d) t=%llu", i, t->ts);
       
                   int cs_k7 = t->cs_k7;   
                   mapped[AMZ_DEVICESEL] =  cs_k7;	         // select FPGA 
@@ -455,27 +459,28 @@ int nts_store_remote(NTS *nts, const char *msg, volatile unsigned int *mapped)
                   mapped[AMZ_EXDWR]  = PAGE_SYS;            //                         0x0  = system  page
                   mapped[AMZ_EXAFWR] = AK7_DM_CONTROL;      // specify   K7's addr:    cfd for Eth data packet
                   mapped[AMZ_EXDWR]  = 0;                   // 0 = reject
-               }
-
-
-            }
+               }    // end channel match
+            }  // end already stored
 
             any_match = true;
 
-            // Advance the start pointer if there are no triggers behind it.
-            if (i == buf->start)
+            // Advance the start pointer if there are no triggers behind it AND there are more triggers in the buffer 
+            // (if not trigger left, reprocess rather than causing a fake wraparound)
+            diff_sn = buf->next - buf->start;
+            if (diff_sn<0) diff_sn = diff_sn+NTS_MAX_WAIT;
+            if (i == buf->start && (diff_sn > 1) )
                 nts_start_incr(buf);
-        }
+        }   // end trigger  within acceptance range
 
         if (t->ts < t1) {  // reject triggers that occured before the acceptance range
             if (t->stored) {              // if already stored
                 nts_mark_event("d");      // mark as duplicate 
-            }
-               else {                        // if not stored, reject
+                pn_log("  Duplicate timed out ignored (i=%d) t=%llu", i, t->ts );
+            }  else {                        // if not stored, reject
                nts_mark_event("r");      
                t->stored = true;
                //stored++;
-               pn_log("Rejected t=%llu", t->ts);
+               pn_log("  Rejected for timeout (i=%d) t=%llu [buf start %d, buf next %d]", i, t->ts, buf->start, buf->next);
    
                int cs_k7 = t->cs_k7;   
                mapped[AMZ_DEVICESEL] =  cs_k7;	         // select FPGA 
@@ -483,15 +488,18 @@ int nts_store_remote(NTS *nts, const char *msg, volatile unsigned int *mapped)
                mapped[AMZ_EXDWR]  = PAGE_SYS;            //                         0x0  = system  page
                mapped[AMZ_EXAFWR] = AK7_DM_CONTROL;      // specify   K7's addr:    cfd for Eth data packet
                mapped[AMZ_EXDWR]  = 0;                   // 0 = reject
-            }
+            }  // end already stored
 
             any_match = true;
 
-            // Advance the start pointer if there are no triggers behind it.
-            if (i == buf->start)
+            // Advance the start pointer if there are no triggers behind it AND there are more triggers in the buffer 
+            // (if not trigger left, reprocess rather than causing a fake wraparound)
+            diff_sn = buf->next - buf->start;
+            if (diff_sn<0) diff_sn = diff_sn+NTS_MAX_WAIT;
+            if (i == buf->start && (diff_sn > 1) )
                 nts_start_incr(buf);
 
-        }
+        }  // end reject triggers that occured before the acceptance range
 
         i++;
         if (i == buf->size) {        // rollover loop index at array end
@@ -505,7 +513,7 @@ int nts_store_remote(NTS *nts, const char *msg, volatile unsigned int *mapped)
     if (!any_match)
         nts_mark_event("u");
 
-    pn_log("nts_store done");
+    pn_log("  nts_store done");
 
     return stored;
 }

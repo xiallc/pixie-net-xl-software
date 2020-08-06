@@ -53,7 +53,7 @@ struct _Trigger {
 };
 typedef struct _Trigger Trigger;
 
-#define NTS_MAX_WAIT 4000
+#define NTS_MAX_WAIT 1000
 struct _NTSBuffer {
     Trigger buf[NTS_MAX_WAIT];
     int size;        // equal to NTS_MAX_WAIT
