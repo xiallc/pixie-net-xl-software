@@ -87,7 +87,7 @@ int main(int argc, const char **argv) {
  //   unsigned int Accept, CW;
  //   double cfdlev, ph;
  //   unsigned int startTS, m, c0, c1, c2, c3, tmpI;
- //   unsigned int psa0, psa1, cfd0;
+ //   unsigned int psa0, psa1, cfd0,  timeL, timeH;
  //   unsigned int cfdout, cfdlow, cfdhigh, cfdticks, cfdfrac, ts_max;
 //    unsigned int binx, biny;
 //    unsigned int mca2D[NCHANNELS][MCA2D_BINS*MCA2D_BINS] ={{0}};    // 2D MCA for end of run
@@ -104,7 +104,6 @@ int main(int argc, const char **argv) {
     unsigned long long WR_tm_tai, WR_tm_tai_start, WR_tm_tai_stop, WR_tm_tai_next;
     unsigned int hdr[32];
  //   unsigned int out0, out2, out3, out7, pileup, exttsL, exttsH;
-    unsigned int out7;
     unsigned int  hdrids, udpok;
     unsigned int  energyF; //, wsum, over; 
     unsigned int eventcount_ch[NCHANNELS];
@@ -131,7 +130,7 @@ int main(int argc, const char **argv) {
  //   double tmpD, bscale;
     time_t starttime, currenttime;
  //   unsigned int w0, w1, hit;
-    unsigned int revsn, evstats, R1, timeL, timeH, pileup;
+    unsigned int revsn, evstats, R1, pileup, bin;
  //   unsigned int psa_base, psa_Q0, psa_Q1, psa_ampl, psa_R;
     unsigned int mca[NCHANNELS][MAX_MCA_BINS] ={{0}};    // full MCA for end of run
     unsigned int wmca[NCHANNELS][WEB_MCA_BINS] ={{0}};    // smaller MCA during run
@@ -529,27 +528,29 @@ int main(int argc, const char **argv) {
                         }    
                  
                         // extract the WR timestamp
-                           timeL   =  hdr[1]     + (hdr[2] <<16);
-                           timeH   =  hdr[3];
+                        //   timeL   =  hdr[1]     + (hdr[2] <<16);
+                        //   timeH   =  hdr[3];
     
                         // extract pileup bit
    
                         pileup  = (hdr[0]>>3)&0x1;
                     //    printf( "ch. %d, cfdout1 %d, cfdout2 %d, cfdsrc %d, cfdfrc %d ",ch,cfdout1,cfdout2,cfdsrc,cfdfrc); 
+
+                     // read FPGA E
+                     mapped[AMZ_EXAFRD] = AK7_EFIFO;              // select the "EFIFO" address in channel's page
+                     energyF = mapped[AMZ_EXDWR];                 // read 16 bits
+                     if(SLOWREAD)  energyF = mapped[AMZ_EXDRD];   // read 16 bits
+                     if(eventcount<maxmsg) printf( "Read FPGA E: %d\n",energyF ); 
       
           
-                    if( (PILEUPCTRL[ch]==0)     || (PILEUPCTRL[ch]==1 && !pileup )    )
+                    if( ((PILEUPCTRL[ch]==0)     || (PILEUPCTRL[ch]==1 && !pileup )) && (energyF>Emin[ch])    )
                     {    // either don't care  OR pilup test required and  pileup bit not set
                          //printf( "pileup test passed, start computing E\n");      
            
                         // cfd is not reported in DATA_FLOW==6
                         cfd =0;
              
-                       // read FPGA E
-                       mapped[AMZ_EXAFRD] = AK7_EFIFO;              // select the "EFIFO" address in channel's page
-                       energyF = mapped[AMZ_EXDWR];                 // read 16 bits
-                       if(SLOWREAD)  energyF = mapped[AMZ_EXDRD];   // read 16 bits
-                       if(eventcount<maxmsg) printf( "Read FPGA E: %d\n",energyF ); 
+ 
    
                         // at this point, key data of event is known. Now can
                         // send it to DM for further decision making
@@ -578,7 +579,16 @@ int main(int argc, const char **argv) {
                         mapped[AMZ_EXDWR]  =  (ch_k7<<12) + ((R1+TRACEENA[ch])<<8) + (TL[ch]>>5);  // channel, payload type with/without trace, TL blocks   
                         if(eventcount<maxmsg) printf( "issued command to UDP send\n");
                          
+                        //  histogramming if E< max mcabin
+                        bin = energyF >> Binfactor[ch];
+                        if( (bin<MAX_MCA_BINS) && (bin>0) ) {
+                           mca[ch][bin] =  mca[ch][bin] + 1;	// increment mca
+                           bin = bin >> WEB_LOGEBIN;
+                           if(bin>0) wmca[ch][bin] = wmca[ch][bin] + 1;	// increment wmca
+                        }
+
                         eventcount++;
+                        eventcount_ch[ch]++;
                     }
                     else { // event not acceptable (piled up) 
    
@@ -594,7 +604,7 @@ int main(int argc, const char **argv) {
                           //  now also advance trace memory address if traces are enabled
                           if(TRACEENA[ch]==1)  { 
                              mapped[AMZ_EXAFRD] = AK7_SKIPTRACE;             // select the "skiptrace" address in channel's page
-                             out7 = mapped[AMZ_EXDWR];     // any read ok
+                             tmp0 = mapped[AMZ_EXDWR];     // any read ok
                           }  // end if trace enabled 
                      }  // end not acceptable
                 }     // end event in this channel
