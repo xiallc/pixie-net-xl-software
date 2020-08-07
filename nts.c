@@ -122,17 +122,17 @@ void nts_buffer_add(NTSBuffer *q, Trigger t)
     if (q->next == q->start) {
         if (q->buf[q->start].stored) {
             nts_mark_event("f"); // flush a stored trigger
-            pn_log("  Flush start %d next %d", q->start, q->next);
+           // pn_log("  Flush start %d next %d", q->start, q->next);
         } else  {
             nts_mark_event("x"); // overwrite a sent trigger
-            pn_log("  Overwrite start %d next %d", q->start, q->next);
+          //  pn_log("  Overwrite start %d next %d", q->start, q->next);
         }
 
         nts_start_incr(q);
     }
     else {
         nts_mark_event("i");     // insert a new trigger
-        pn_log("  Insert start %d next %d", q->start, q->next);
+       // pn_log("  Insert start %d next %d", q->start, q->next);
     }
 
     // First trigger
@@ -421,7 +421,7 @@ int nts_store_remote(NTS *nts, const char *msg, volatile unsigned int *mapped)
     int ch_daq, diff_sn;
     int i = buf->start;
     int j = 0; // Check total iterations
-    pn_log("  Processing start %d next %d i %d", buf->start,buf->next,i );
+    //pn_log("  Processing start %d next %d i %d", buf->start,buf->next,i );
 
     do {
         j++;
@@ -431,7 +431,7 @@ int nts_store_remote(NTS *nts, const char *msg, volatile unsigned int *mapped)
         if (t->ts >= t1 && t->ts <= t2) { // check if trigger time stamp within acceptance range
             if (t->stored) {              // if already stored
                 nts_mark_event("d");      // mark as duplicate accept
-                pn_log("  Duplicate in range ignored (i=%d) t=%llu", i, t->ts );
+               // pn_log("  Duplicate in range ignored (i=%d) t=%llu", i, t->ts );
             }   else {                        // if not stored, store it 
                if(ch_daq==ch_dm)    // optional channel match
                {
@@ -475,12 +475,13 @@ int nts_store_remote(NTS *nts, const char *msg, volatile unsigned int *mapped)
         if (t->ts < t1) {  // reject triggers that occured before the acceptance range
             if (t->stored) {              // if already stored
                 nts_mark_event("d");      // mark as duplicate 
-                pn_log("  Duplicate timed out ignored (i=%d) t=%llu", i, t->ts );
+            //    pn_log("  Duplicate timed out ignored (i=%d) t=%llu", i, t->ts );
             }  else {                        // if not stored, reject
                nts_mark_event("r");      
                t->stored = true;
                //stored++;
-               pn_log("  Rejected for timeout (i=%d) t=%llu [buf start %d, buf next %d]", i, t->ts, buf->start, buf->next);
+               pn_log("  Rejected for timeout (i=%d) t=%llu", i, t->ts);
+             //  pn_log("  Rejected for timeout (i=%d) t=%llu [buf start %d, buf next %d]", i, t->ts, buf->start, buf->next);
    
                int cs_k7 = t->cs_k7;   
                mapped[AMZ_DEVICESEL] =  cs_k7;	         // select FPGA 
@@ -513,7 +514,7 @@ int nts_store_remote(NTS *nts, const char *msg, volatile unsigned int *mapped)
     if (!any_match)
         nts_mark_event("u");
 
-    pn_log("  nts_store done");
+   // pn_log("  nts_store done");
 
     return stored;
 }
