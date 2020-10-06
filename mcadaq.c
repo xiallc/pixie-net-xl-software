@@ -128,6 +128,11 @@ int main(void) {
       NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
       NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
    }
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+   } 
 
    // check if FPGA booted
    tmp0 = mapped[AMZ_CSROUTL];

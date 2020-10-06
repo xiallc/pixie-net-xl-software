@@ -160,6 +160,14 @@ int main(void) {
       SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB01;
       FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
    }
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB06_250;    
+      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB06;             
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB06;
+   } 
    if((revsn & PNXL_DB_VARIANT_MASK) == 0xF00000)      // no ADC DB: default to DB02
    {
       printf("HW Rev = 0x%04X, SN = %d, NO ADC DB! - assuming default DB02_12_250\n", revsn>>16, revsn&0xFFFF);
@@ -906,7 +914,16 @@ int main(void) {
             reghi = reghi + (fippiconfig.QDCLen3[ch]<<16);        //  QDC       // in samples  
           } else {
 
-
+            if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
+            {
+            // PN style PSA
+               reglo = (fippiconfig.QDCLen0[ch]>>1)+1;                           //  L0 FPGA expects "len/2 + 1" for effective "len" 
+               reghi = fippiconfig.QDCLen0[ch]*2 + 6 + fippiconfig.QDCLen2[ch]*2;    //  D0 FPGA expects total length + delay (=end)
+               mval  = (fippiconfig.QDCLen1[ch]>>1)+1;
+               reglo = reglo + (mval<<16);                                       //  L1 FPGA expects "len/2 + 1" for effective "len"                                                                                
+               mval  = fippiconfig.QDCLen1[ch]*2 + 6 + fippiconfig.QDCLen3[ch]*2;     //  D1 FPGA expects total length + delay (=end)
+               reghi = reghi + (mval<<16);     
+            } // end revsn
             if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
             {
             // PN style PSA

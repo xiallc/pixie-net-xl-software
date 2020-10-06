@@ -98,16 +98,30 @@ int main( void ) {
     // ************************ read data  *********************************
 
    revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
+//   revsn = 0xA1110008;
    mapped[AMZ_HWINFO] = revsn >> 16;      // store PROM revsion info in MZ register, so it can be read without slow I2C
-   mapped[AMZ_PLLSTART] = 1;              // any write will start programming the LMK PLL for ADC and FPGA processing clock  
-
+//   mapped[AMZ_PLLSTART] = 4;              // low 2 bits set CLK SEL for PLL input (1=WRclkDB, 0 = FPGA/other)
+                                          // any write will start programming the LMK PLL for ADC and FPGA processing clock  
    N_FPGA_BYTES =10;
+   // Rev B DB options
    if((revsn & PNXL_MB_REV_MASK) == PNXL_MB_REVB)
    {
+      if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
+      {
+         fil = fopen("PNXLK7B_DB01_14_125.bin","rb");  
+         printf(" HW Rev = 0x%04X, SN = %d, loading PNXLK7B_DB01_14_125.bin\n", revsn>>16, revsn&0xFFFF);
+         N_FPGA_BYTES = N_FPGA_BYTES_B;
+      }
       if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
       {
          fil = fopen("PNXLK7B_DB02_12_250.bin","rb");
          printf(" HW Rev = 0x%04X, SN = %d,  loading PNXLK7B_DB02_12_250.bin\n", revsn>>16, revsn&0xFFFF);
+         N_FPGA_BYTES = N_FPGA_BYTES_B;
+      }
+      if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
+      {
+         fil = fopen("PNXLK7B_DB06_16_250.bin","rb");
+         printf(" HW Rev = 0x%04X, SN = %d,  loading PNXLK7B_DB06_16_250.bin\n", revsn>>16, revsn&0xFFFF);
          N_FPGA_BYTES = N_FPGA_BYTES_B;
       }
       if((revsn & PNXL_DB_VARIANT_MASK) == 0xF00000)      // no ADC DB: default to DB02
@@ -117,6 +131,7 @@ int main( void ) {
          N_FPGA_BYTES = N_FPGA_BYTES_B;
       }
    } else {
+   // Rev A DB options
       if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
       {
          fil = fopen("PNXLK7_DB02_12_250.bin","rb");
@@ -233,10 +248,15 @@ int main( void ) {
     printf(" Programming FPGA successful !\n");
   }
 
+    // ************************ LMK PLL  initialization  *********************************
+
+    mapped[AMZ_PLLSTART] = 4;              // low 2 bits set CLK SEL for PLL input (1=WRclkDB, 0 = FPGA/other)
+                                          // any write will start programming the LMK PLL for ADC and FPGA processing clock  
+
 
    // ************************ ADC  initialization  *********************************
 
-    if((revsn & PNXL_DB_VARIANT_MASK) != PNXL_DB02_12_250)
+    if( (revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125 | (revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75 )
     {
       printf("Initializing ADCs:\n");  
       ADCinit_DB01(mapped);

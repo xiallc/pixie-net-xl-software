@@ -218,7 +218,8 @@ int main(void) {
   // TODO!
 
   // ----------- calibrate the ADC bit slip   -------------
-  if( (revsn & PNXL_DB_VARIANT_MASK)!=PNXL_DB02_12_250)  // if DB01, need to adjust the bitslip
+  if( (revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125 | (revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75 )
+  // if DB01, need to adjust the bitslip
   {
      printf("Initializing ADCs:\n");
 

@@ -151,6 +151,13 @@ int main(void) {
       ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01_75;             
       FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
    }
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB06_250;             
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB06;
+   } 
 
    // check if FPGA booted
    tmp0 = mapped[AMZ_CSROUTL];
@@ -622,7 +629,7 @@ int main(void) {
                         cfdout2 = 0x1000000 - cfdout2;        // convert to positive
                         ph = (double)cfdout1 / ( (double)cfdout1 + (double)cfdout2 );              
                         //printf(", frac %f \n ",ph); 
-                        if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)   {
+                        if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250  | (revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)   {
                           cfd = (int)floor(ph*16384); 
                           cfd = (cfd&0x3FFF);                  // combine cfd value and bits
                           cfd = cfd + (cfdsrc<<14);         

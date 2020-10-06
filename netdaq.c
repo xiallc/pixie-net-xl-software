@@ -211,6 +211,13 @@ int main(int argc, const char **argv) {
       ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01_75;             
       FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
    }
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB06_250;             
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB06;
+   } 
 
    // check if FPGA booted
    tmp0 = mapped[AMZ_CSROUTL];
