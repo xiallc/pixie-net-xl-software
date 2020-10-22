@@ -87,11 +87,6 @@ typedef struct PixieNetFippiConfig {
   // ***** 16 system parameters ******************************************************
 
 
-   /** Number of ADC channels on the ADC carrier board.
-      Typical value of 4. May be overwritten by EEPROM value.
-   */
-    unsigned int NUMBER_CHANNELS;
-
     /** Reserved for options in the C code, e.g printing errors.
       Currently unused
    */
@@ -119,8 +114,13 @@ typedef struct PixieNetFippiConfig {
 
   unsigned int WR_RUNTIME_CTRL;      // if 1, use WR time counters to determine start/stop of run
 
+  unsigned int UDP_PAUSE;            // min time between UDP output packets 
+
   unsigned long long DEST_MAC0;      // destination MAC for data from first K7 
   unsigned long long DEST_MAC1;      // destination MAC for data from second K7 
+
+  unsigned long long SRC_MAC0;      // source MAC for data from first K7  (ignored by WR core)
+  unsigned long long SRC_MAC1;      // source MAC for data from second K7 
 
   unsigned long long DEST_IP0;       // destination IP for data from first K7 
   unsigned long long DEST_IP1;       // destination IP for data from second K7 

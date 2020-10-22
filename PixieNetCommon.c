@@ -985,13 +985,6 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
       SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB01;
       FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
    }
-   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
-   {
-      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
-      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
-      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB06;             
-      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB06;
-   } 
 
 
   // ---------------- open the output file -------------------------------------------
@@ -1280,43 +1273,39 @@ int PLLinit(volatile unsigned int *mapped ) {
  // programs the PLL registers for WR clock conditioning and returns 0 if successful, -1 if not
 
    int ret=0;
-   int nbytes = 20;
+   //int nbytes = 68;
+   int nbytes = 67;
    unsigned int mval[nbytes];
    unsigned int addr[nbytes];
    
    unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
    int k7, by; 
 
-   // hardcoded address byte data to write PLL registers of AD9516-4
+   // hardcoded address byte data to write PLL registers of AD9516
    // input 20 MHz
    // VCO = input /R * (P*B+A) = 1500 MHz
    // R=2
    // A=6
    // B=18
-   // P=8 
    // VCO divided by 3 for clock output channels (using 3,4 LVDS) = 500 MHz
    // channel output divided by 4 = 125 MHz
    // after programming, write 0x232[0] to activate
    // after changing settings, toggle 0 > 1 transition of reg 0x18[0] for calibration 
    //   (this bit powers up at as zero, so setting it to 1 in the first programming initialized calibration. afterwards, explicitely set to 0, then 1
 
-   // for 156.25 MHz output must use AD9516-1,  VCO = 2500 MHz
-   // R=2
-   // A=2
-   // B=31
-   // P=8 
-   // VCO divided by 4 for clock output channels (using 3,4 LVDS) = 625 MHz
-   // channel output divided by 4 = 125 MHz
-   // (VCO divided by 5 gives 500 > 125 MHz)
-
-
-   /*
+   
    // 1. configure I/O
+   //addr[0] = 0x0000;                         // reg 0x000:config
+   //mval[0] = 0xBD;                           // SDO is output, long instructions
+
    addr[0] = 0x0000;                         // reg 0x000:config
    mval[0] = 0x99;                           // SDO is output, long instructions
+
+   addr[1] = 0x0018;                         // reg 0x000:config
+   mval[1] = 0x00;                           // SDO is output, long instructions
  
-   addr[1] = 0x0232;                         // reg 0x232: update register
-   mval[1] = 0x01;                           // set to 1 to update registers
+   addr[2] = 0x0232;                         // reg 0x232: update register
+   mval[2] = 0x01;                           // set to 1 to update registers
 
    
    for(k7=0;k7<N_K7_FPGAS;k7++)
@@ -1328,7 +1317,7 @@ int PLLinit(volatile unsigned int *mapped ) {
          mapped[AMZ_EXDWR] = PAGE_SYS;          //  0x000  = system page       
          
          // write registers
-         for(by=0;by<2;by++)
+         for(by=0;by<3;by++)
          {
          // 
             mapped[AMZ_EXAFWR] = AK7_PLLSPIA;      // write to  k7's addr     addr 27 = PLL SPI addr
@@ -1341,7 +1330,6 @@ int PLLinit(volatile unsigned int *mapped ) {
 
    
    } // end for K7s
-   */
 
     //2. read back key info  -- seems required to properly write data to PLL??
    addr[0] = 0x8003;                         // read reg 0x003:g
@@ -1379,14 +1367,158 @@ int PLLinit(volatile unsigned int *mapped ) {
           printf( "  \n");
 
    
-   } // end for K7s
-
-  
+   } // end for K7s                        	
 
 
+   addr[0] = 0x0001;                                                 
+   mval[0] = 0x00;
+   addr[1] = 0x0003;                                                 
+   mval[1] = 0xC3;
+   addr[2] = 0x0004;                                                 
+   mval[2] = 0x00;
+   addr[3] = 0x0010;                                                 
+   mval[3] = 0x7C;
+   addr[4] = 0x0011;                                                 
+   mval[4] = 0x02;
+   addr[5] = 0x0012;                                                 
+   mval[5] = 0x00;
+   addr[6] = 0x0013;                                                 
+   mval[6] = 0x06;
+   addr[7] = 0x0014;                                                 
+   mval[7] = 0x12;
+   addr[8] = 0x0015;                                                 
+   mval[8] = 0x00;
+   addr[9] = 0x0016;                                                 
+   mval[9] = 0x04;
+   addr[10] = 0x0017;                                                 
+   mval[10] = 0x00;
+   addr[11] = 0x0019;                                                 
+   mval[11] = 0x00;
+   addr[12] = 0x001A;                                                 
+   mval[12] = 0x00;
+   addr[13] = 0x001B;                                                 
+   mval[13] = 0x00;
+   addr[14] = 0x001C;                                                 
+   mval[14] = 0x02;
+   addr[15] = 0x001D;                                                 
+   mval[15] = 0x00;
+   addr[16] = 0x001E;                                                 
+   mval[16] = 0x00;
+   addr[17] = 0x001F;                                                 
+   mval[17] = 0x0E;
+
+   addr[18] = 0x00A0;                                                 
+   mval[18] = 0x01;
+   addr[19] = 0x00A1;                                                 
+   mval[19] = 0x00;
+   addr[20] = 0x00A2;                                                 
+   mval[20] = 0x00;
+   addr[21] = 0x00A3;                                                 
+   mval[21] = 0x01;
+   addr[22] = 0x00A4;                                                 
+   mval[22] = 0x00;
+   addr[23] = 0x00A5;                                                 
+   mval[23] = 0x00;
+   addr[24] = 0x00A6;                                                 
+   mval[24] = 0x01;
+   addr[25] = 0x00A7;                                                 
+   mval[25] = 0x00;
+   addr[26] = 0x00A8;                                                 
+   mval[26] = 0x00;
+   addr[27] = 0x00A9;                                                 
+   mval[27] = 0x01;
+   addr[28] = 0x00AA;                                                 
+   mval[28] = 0x00;
+   addr[29] = 0x00AB;                                                 
+   mval[29] = 0x00;
+
+   addr[30] = 0x00F0;                                                 
+   mval[30] = 0x0B;
+   addr[31] = 0x00F1;                                                 
+   mval[31] = 0x0A;
+   addr[32] = 0x00F2;                                                 
+   mval[32] = 0x0B;
+   addr[33] = 0x00F3;                                                 
+   mval[33] = 0x0A;
+   addr[34] = 0x00F4;                                                 
+   mval[34] = 0x0B;
+   addr[35] = 0x00F5;                                                 
+   mval[35] = 0x0A;
+
+   addr[36] = 0x0140;                                                 
+   mval[36] = 0x42;
+   addr[37] = 0x0141;                                                 
+   mval[37] = 0x43;
+   addr[38] = 0x0142;                                                 
+   mval[38] = 0x42;
+   addr[39] = 0x0143;                                                 
+   mval[39] = 0x42;
+
+   addr[40] = 0x0190;                                                 
+   mval[40] = 0x00;
+   addr[41] = 0x0191;                                                 
+   mval[41] = 0x80;
+   addr[42] = 0x0192;                                                 
+   mval[42] = 0x00;
+   addr[43] = 0x0193;                                                 
+   mval[43] = 0xBB;
+   addr[44] = 0x0194;                                                 
+   mval[44] = 0x80;
+   addr[45] = 0x0195;                                                 
+   mval[45] = 0x00;
+   addr[46] = 0x0196;                                                 
+   mval[46] = 0x00;
+   addr[47] = 0x0197;                                                 
+   mval[47] = 0x00;
+   addr[48] = 0x0198;                                                 
+   mval[48] = 0x00;
+   addr[49] = 0x0199;                                                 
+   mval[49] = 0x00;
+   addr[50] = 0x019A;                                                 
+   mval[50] = 0x00;
+   addr[51] = 0x019B;                                                 
+   mval[51] = 0x00;
+   addr[52] = 0x019C;                                                 
+   mval[52] = 0x00;
+   addr[53] = 0x019D;                                                 
+   mval[53] = 0x00;
+   addr[54] = 0x019E;                                                 
+   mval[54] = 0x00;
+   addr[55] = 0x019F;                                                 
+   mval[55] = 0x00;
+
+   addr[56] = 0x01A0;                                                 
+   mval[56] = 0x00;
+   addr[57] = 0x01A1;                                                 
+   mval[57] = 0x00;
+   addr[58] = 0x01A2;                                                 
+   mval[58] = 0x00;
+   addr[59] = 0x01A3;                                                 
+   mval[59] = 0x00;
+
+   addr[60] = 0x01E0;                                                 
+   mval[60] = 0x01;
+   addr[61] = 0x01E1;                                                 
+   mval[61] = 0x02;
+
+   addr[62] = 0x0230;                                                 
+   mval[62] = 0x00;
+   addr[63] = 0x0231;                                                 
+   mval[63] = 0x00;
+   addr[64] = 0x0232;                                                 
+   mval[64] = 0x00;
+
+   addr[65] = 0x0018;                                                 
+   mval[65] = 0x01;
+   addr[66] = 0x0232;                                                 
+   mval[66] = 0x01;
+
+
+/*
    addr[0] = 0x0010;                         // R/W*, 00 for write 1 byte, 13bit reg addr
-   mval[0] = 0x5C;                           // CP current 3.6mA, CP mode normal, PLL op mode normal
- 
+   //mval[0] = 0x5c;                           // CP current 3.6mA, CP mode normal, PLL op mode normal
+   mval[0] = 0x5C;
+
    addr[1] = 0x0011;                         // reg 0x11/12: input ref divider R
    mval[1] = 0x02;                           // R=2 
 
@@ -1397,50 +1529,57 @@ int PLLinit(volatile unsigned int *mapped ) {
    mval[3] = 0x12;                           // B=18
  
    addr[4] = 0x0016;                         // reg 0x16: resets and P
-   mval[4] = 0x04;                           // no reset, P=8 
+   mval[4] = 0x04;                           // no reset, P=8                        
+
+   addr[5] = 0x001C;                         // reg 0x1C:ref input
+   mval[5] = 0x02;                           // REF 1 power on, REF 1 selected ? 0x02
+   
+   addr[6] = 0x0018;                         // reg 0x18: calibration
+   mval[6] = 0x06;                           // AG calibration disable       // VCO cal now > 1 **
   
-   addr[5] = 0x0018;                         // reg 0x18: calibration
-   mval[5] = 0x07;                           // VCO cal now > 1 **
-   
-   addr[6] = 0x001C;                         // reg 0x1C:ref input
-   mval[6] = 0x02;                           // REF 1 power on, REF 1 selected
-   
    // channel output options 0x0140-143         
-   addr[7] = 0x0140;                         //    channel 6 (test)       
+   addr[7] = 0x00140;                         //    channel 6 (test)       
    mval[7] = 0x42;                           //    LVDS, on, 3.5mA                       
-   addr[8] = 0x0142;                         //    channel 8 (GTX)  
+   addr[8] = 0x00142;                         //    channel 8 (GTX)  
    mval[8] = 0x42;                           //    LVDS, on, 3.5mA                            
-   addr[9] = 0x0143;                         //    channel 9 (MAIN/ADC/LMK)    
+   addr[9] = 0x00143;                         //    channel 9 (MAIN/ADC/LMK)    
    mval[9] = 0x42;                           //    LVDS, on, 3.5mA [default is off]     
 
    // channel dividers in 0x0199-01A2        // defaults are NOT divide by 4 but 24 (DS disagrees in summary and detail page)
-   addr[10] = 0x0199;                         //    channel div 3.1       
-   mval[10] = 0x00;                           //                          
-   addr[11] = 0x019A;                         //    channel phase 3.1     
+   addr[10] = 0x00199;                         //    channel div 3.1       
+   //mval[10] = 0x11;                           //                          
+   mval[10] = 0x00;
+   addr[11] = 0x0019A;                         //    channel phase 3.1     
    mval[11] = 0x00;                           //                          
-   addr[12] = 0x019B;                         //    channel div 3.2       
+   addr[12] = 0x0019B;                         //    channel div 3.2       
    mval[12] = 0x00;                           // 
+   //mval[12] = 0x00;
+   addr[13] = 0x0019c;                         //    div 3.1 and 3.2 control    
+   //mval[13] = 0x20;                           //	bypass 3.2, start low, no force
+   mval[13] = 0x00;
 
-   addr[13] = 0x019E;                         //    channel div 4.1
-   mval[13] = 0x00;                           // 
-   addr[14] = 0x019F;                         //    channel phase 4.1
-   mval[14] = 0x00;                           // 
-   addr[15] = 0x01A0;                         //    channel div 4.2
+   addr[14] = 0x0019E;                         //    channel div 4.1
+   mval[14] = 0x11;       
+   //mval[14] = 0x00;                           // 
+   addr[15] = 0x0019F;                         //    channel phase 4.1
    mval[15] = 0x00;                           // 
-   addr[16] = 0x01A1;                         //      bypass channel 4
-   mval[16] = 0x00;                           //      no bypass, use dividers
-
-   addr[17] = 0x01E0;                         // reg 0x1E0:VCO divider
-   mval[17] = 0x01;                           // VCO divider = 3
-
-   addr[18] = 0x01E1;                         // reg 0x1E1:VCO divider source
-   mval[18] = 0x02;                           // VCO divider source = VCO
- 
-   addr[19] = 0x0232;                         // reg 0x232: update register
-   mval[19] = 0x01;                           // set to 1 to update registers
-
-
+   addr[16] = 0x001A0;                         //    channel div 4.2
+   //mval[16] = 0x00;
+   mval[16] = 0x11;                           // 
+   addr[17] = 0x001A1;                         //      bypass channel 4
+   //mval[17] = 0x20;				//	bypass 4.2, start low, no force
+   mval[17] = 0x00;                           //      no bypass, use dividers
    
+   addr[18] = 0x001E0;                         // reg 0x1E0:VCO divider
+   mval[18] = 0x01;                           // VCO divider = 3
+
+   addr[19] = 0x001E1;                         // reg 0x1E1:VCO divider source
+   mval[19] = 0x02;                           // VCO divider source = VCO
+
+   addr[20] = 0x00232;                        
+   mval[20] = 0x81;  
+*/
+
    for(k7=0;k7<N_K7_FPGAS;k7++)
    {
       
@@ -1454,11 +1593,12 @@ int PLLinit(volatile unsigned int *mapped ) {
       //     for(by=0;by<1;by++)
          {
          // 
-            mapped[AMZ_EXAFWR] = AK7_PLLSPIA;      // write to  k7's addr     addr 27 = PLL SPI addr
-            mapped[AMZ_EXDWR] = addr[by];          //  write to ADC SPI
-            mapped[AMZ_EXAFWR] = AK7_PLLSPID;      // write to  k7's addr     addr 28= PLL SPI data and start transfer
+            mapped[AMZ_EXAFWR] = AK7_PLLSPIA;      	// write to  k7's addr     addr 27 = PLL SPI addr
+           mapped[AMZ_EXDWR] = addr[by];          //  write to ADC SPI
+	    mapped[AMZ_EXAFWR] = AK7_PLLSPID;      // write to  k7's addr     addr 28= PLL SPI data and start transfer
             mapped[AMZ_EXDWR] = mval[by];          //  write to ADC SPI
             usleep(10);
+	    printf( " reg %x: programmed \n", addr[by]);
          }         
          printf( " K7 %d: PLL programmed \n", k7);
 
@@ -1524,13 +1664,6 @@ int read_print_rates_XL_2x4(int dest, volatile unsigned int *mapped ) {
       SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB01;
       FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
    }
-   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
-   {
-      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
-      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
-      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB06;             
-      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB06;
-   } 
 
 
   // ---------------- open the output file -------------------------------------------

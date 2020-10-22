@@ -545,8 +545,6 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
     return -1;
 
   // *************** system parameters ********************************* 
-  ret = parse_single_int_val( label_to_values, "NUMBER_CHANNELS", config->NUMBER_CHANNELS, ignore_missing );
-  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -1;
   
   ret = parse_single_int_val( label_to_values, "C_CONTROL", config->C_CONTROL, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -2;
@@ -572,10 +570,19 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
   ret = parse_single_int_val( label_to_values, "WR_RUNTIME_CTRL", config->WR_RUNTIME_CTRL, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -12;
 
+  ret = parse_single_int_val( label_to_values, "UDP_PAUSE", config->UDP_PAUSE, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -1;
+
   ret = parse_single_ull_val( label_to_values, "DEST_MAC0", config->DEST_MAC0, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -13;
 
   ret = parse_single_ull_val( label_to_values, "DEST_MAC1", config->DEST_MAC1, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -14;
+
+  ret = parse_single_ull_val( label_to_values, "SRC_MAC0", config->SRC_MAC0, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -13;
+
+  ret = parse_single_ull_val( label_to_values, "SRC_MAC1", config->SRC_MAC1, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -14;
 
   ret = parse_single_ull_val( label_to_values, "DEST_IP0", config->DEST_IP0, ignore_missing ) ;

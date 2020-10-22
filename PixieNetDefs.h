@@ -76,8 +76,6 @@
 #define N_FPGA_BYTES_A     6022736
 #define N_FPGA_BYTES_B     13385232
 #define P16_HDR_LEN        10         // fixed header length for P16 run type 0x100
-#define UDP_PAUSE          500        // number of 64ns ticks to wait between queueueueuing UDP packages, max 65535
-
 
 // Limits for settings
 #define MAX_CRATE_ID    15

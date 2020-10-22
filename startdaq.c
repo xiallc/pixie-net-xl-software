@@ -200,7 +200,7 @@ int main(void) {
    // 0x100, 0x400, 0x401, are ok
    // 0x301 no longer supported because header memory is disabled for pure MCA runs, use mcadaq instead
   } else {
-      printf( "This function only supports runtypes 0x100 (P16), 0x400, 0x401 \n");
+      printf( "This function only supports runtypes 0x100 (P16), 0x400, 0x401, not 0x%x \n",RunType);
       return(-1);
   }
 
@@ -515,7 +515,7 @@ int main(void) {
                   if(eventcount==0) tmp0 = mapped[AMZ_RDMCA]; // dummy read
                   tmp0 = mapped[AMZ_RDMCA+1];   // channel and other info
                   tmp1 = mapped[AMZ_RDMCA];   // energy  and advance FIFO
-                  ch = tmp0 & 0xF;
+                  ch       = (tmp0 & 0x7) + NCHANNELS_PER_K7*((tmp0 & 0x8) >> 3);   // 3 bits for channel number, bit 4 is K7 ID
                   energy = tmp1 & 0xFFFE;
                   over     = (tmp0 & 0x10) >> 4;    // negative or overflow
                   pileup   = (tmp0 & 0x20) >> 5;    // pileup
@@ -629,7 +629,7 @@ int main(void) {
                         cfdout2 = 0x1000000 - cfdout2;        // convert to positive
                         ph = (double)cfdout1 / ( (double)cfdout1 + (double)cfdout2 );              
                         //printf(", frac %f \n ",ph); 
-                        if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250  | (revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)   {
+                        if( ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)  | ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250) )   {
                           cfd = (int)floor(ph*16384); 
                           cfd = (cfd&0x3FFF);                  // combine cfd value and bits
                           cfd = cfd + (cfdsrc<<14);         
@@ -895,7 +895,7 @@ int main(void) {
                      }
                      else { // event not acceptable (piled up) 
    
-                        eventcount_ch[ch+1]++; // debug
+                     //   eventcount_ch[ch+1]++; // debug
                           // advance header memory by 5 x4 words
                           for( k=0; k < 5; k++)
                            {
@@ -982,7 +982,8 @@ int main(void) {
       WR_tm_tai = tmp0 +  65536*tmp1 + TWOTO32*tmp2;
 
       printf( "Run completed. Current WR time %llu\n",WR_tm_tai );
-      printf( "Events transfered %d, rejected %d\n",eventcount_ch[13],eventcount_ch[14] );
+      //printf( "Events transfered %d, rejected %d\n",eventcount,eventcount_ch[14] );
+      printf( "Events transfered %d\n",eventcount );
       
      
       

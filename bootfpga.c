@@ -250,9 +250,13 @@ int main( void ) {
 
     // ************************ LMK PLL  initialization  *********************************
 
-    mapped[AMZ_PLLSTART] = 4;              // low 2 bits set CLK SEL for PLL input (1=WRclkDB, 0 = FPGA/other)
+    mval = 4;
+    mapped[AMZ_PLLSTART] = mval;              // low 2 bits set CLK SEL for PLL input (1=WRclkDB, 0 = FPGA/other)
                                           // any write will start programming the LMK PLL for ADC and FPGA processing clock  
-
+    if( (mval & 0x3) >0)
+       printf(" initializing PLL for WWRclkDB\n");
+    else
+       printf(" initializing PLL for FPGA controlled clk\n");
 
    // ************************ ADC  initialization  *********************************
 

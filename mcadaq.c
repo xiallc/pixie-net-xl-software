@@ -298,12 +298,12 @@ int main(void) {
             if(eventcount==0) tmp0 = mapped[AMZ_RDMCA]; // dummy read
             tmp0 = mapped[AMZ_RDMCA+1];   // channel and other info
             tmp1 = mapped[AMZ_RDMCA];   // energy  and advance FIFO
-            ch       = tmp0 & 0xF;
+            ch       = (tmp0 & 0x7) + NCHANNELS_PER_K7*((tmp0 & 0x8) >> 3);   // 3 bits for channel number, bit 4 is K7 ID
             energy   = tmp1 & 0xFFFE;
             over     = (tmp0 & 0x10) >> 4;    // negative or overflow
             pileup   = (tmp0 & 0x20) >> 5;    // pileup
             if(eventcount<maxmsg) printf( "CSR: 0x%x MCA FIFO: ch %d, E %d (0x %x %x)\n", tmp2, ch, energy, tmp0, tmp1 );
-            if(ch!=13) printf( "CSR: 0x%x MCA FIFO: ch %d, E %d (0x %x %x)\n",tmp2, ch, energy, tmp0, tmp1 );
+          //  if(ch!=13) printf( "CSR: 0x%x MCA FIFO: ch %d, E %d (0x %x %x)\n",tmp2, ch, energy, tmp0, tmp1 );
             
             if( (PILEUPCTRL[ch]==0)     || (PILEUPCTRL[ch]==1 && !pileup )    )  // this pileup check is probably redundant, also in FPGA 
             {

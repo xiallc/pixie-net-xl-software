@@ -66,7 +66,7 @@ int main(void) {
 
   // ******************* read ini file and fill struct with values ********************
 
-  int verbose = 0;      // TODO: control with argument to function 
+  int verbose = 1;      // TODO: control with argument to function 
   // 0 print errors and minimal info only
   // 1 print errors and full info
   
@@ -190,10 +190,10 @@ int main(void) {
   // with xx = parameter number (line) in file and yy = channel number (0 for module)
 
   // ********** SYSTEM PARAMETERS ******************
-    if(fippiconfig.NUMBER_CHANNELS != NCHANNELS_PRESENT) {
-      printf("Invalid NUMBER_CHANNELS = %d, should be %d\n",fippiconfig.NUMBER_CHANNELS,NCHANNELS_PRESENT);
-      return -100;
-    }
+  //  if(fippiconfig.NUMBER_CHANNELS != NCHANNELS_PRESENT) {
+  //    printf("Invalid NUMBER_CHANNELS = %d, should be %d\n",fippiconfig.NUMBER_CHANNELS,NCHANNELS_PRESENT);
+  //    return -100;
+  //  }
 
   if(fippiconfig.C_CONTROL > 65535) {
       printf("Invalid C_CONTROL = %d, and actually currently unused\n",fippiconfig.C_CONTROL);
@@ -237,6 +237,16 @@ int main(void) {
       return -900;
     }
 
+    // UDP_PAUSE
+    if(fippiconfig.UDP_PAUSE < 10) {
+      printf("Invalid UDP_PAUSE = %d, must be > 10\n",fippiconfig.UDP_PAUSE);
+      return -900;
+    }
+    if(fippiconfig.UDP_PAUSE > 65535) {
+      printf("Invalid UDP_PAUSE = %d, must be < 64K\n",fippiconfig.UDP_PAUSE);
+      return -900;
+    }
+
     //  DATA_FLOW:
     if(fippiconfig.DATA_FLOW > 6) {
       printf("Invalid DATA_FLOW = 0x%x\n",fippiconfig.DATA_FLOW);
@@ -259,6 +269,14 @@ int main(void) {
     // Not checking MAC and IP addresses (e.g. DEST_MAC0) for errors, but report for sanity check with hex numbers
     mac = fippiconfig.DEST_MAC1; 
     if(verbose) printf( " DEST_MAC1 equal to %02llX:%02llX:%02llX:%02llX:%02llX:%02llX\n", 
+            (mac>>40) &0xFF,
+            (mac>>32) &0xFF,
+            (mac>>24) &0xFF,
+            (mac>>16) &0xFF,
+            (mac>> 8) &0xFF,
+            (mac    ) &0xFF) ;
+    mac = fippiconfig.SRC_MAC1; 
+    if(verbose) printf( " SRC_MAC1 equal to %02llX:%02llX:%02llX:%02llX:%02llX:%02llX\n", 
             (mac>>40) &0xFF,
             (mac>>32) &0xFF,
             (mac>>24) &0xFF,
@@ -660,6 +678,7 @@ int main(void) {
       if(fippiconfig.DATA_FLOW==5) reglo = reglo + (1<<SCSR_AUTOQSPI);                             // enabling MCA output (only) to FIFO without interaction with C code
       if(fippiconfig.DATA_FLOW!=5) reglo = reglo + (1<<SCSR_HDRENA);                               // disable header memory in pure MCA runs where ARM only reads E from FIFO
       if(fippiconfig.DATA_FLOW==6) reglo = reglo + (1<<SCSR_DMCONTROL);                            // require DM approval to move data from SDRAM FIFO to WR (Eth out)
+      //reglo = reglo + (1<<6);    // enable 10G test
       mapped[AMZ_EXAFWR] = AK7_SCSRIN;    // write to  k7's addr to select register for write
       mapped[AMZ_EXDWR]  = reglo;        // write lower 16 bit
    
@@ -741,10 +760,10 @@ int main(void) {
       mapped[AMZ_EXAFWR] =  AK7_HDR_IDS;              // specify   K7's addr:    HDR_IDS
       mapped[AMZ_EXDWR]  =  mval;        
  
-      mval=10; //UDP_PAUSE;
+      mval=fippiconfig.UDP_PAUSE; //UDP_PAUSE;
       mapped[AMZ_EXAFWR] =  AK7_UDP_PAUSE;              // specify   K7's addr:    AK7_UDP_PAUSE
       mapped[AMZ_EXDWR]  =  mval;      
-
+      if(verbose) printf("UDP_PAUSE, WR Ethernet minimum packet separation: %d (64ns cycles)\n",mval);
       
 
       // set the Ethernet control register with the trace length (for AutoUDP)
