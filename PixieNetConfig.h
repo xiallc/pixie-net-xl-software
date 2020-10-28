@@ -109,8 +109,20 @@ typedef struct PixieNetFippiConfig {
   unsigned int  MODULE_ID;
 
     /** Typical value of 1 
-  Bit0 : pulser enabled   */
+  Bit
+   0 : pulser enabled   
+   1 red LED on/off 
+   2 reserved
+   3 reserved - synchronize to PTP triggers
+   4 select main I2C
+   5 select DB0 I2C
+   6 select DB1 I2C
+   7 green LED on/off
+   8 yellow LED on/off
+ */
   unsigned int AUX_CTRL;
+
+  unsigned int CLK_CTRL;            // switching the LMK ADC PLLs etc
 
   unsigned int WR_RUNTIME_CTRL;      // if 1, use WR time counters to determine start/stop of run
 

@@ -1271,6 +1271,7 @@ int ADCinit_DB01(volatile unsigned int *mapped ) {
 
 int PLLinit(volatile unsigned int *mapped ) {
  // programs the PLL registers for WR clock conditioning and returns 0 if successful, -1 if not
+ // TODO: can be removed, now contained in FPGA
 
    int ret=0;
    //int nbytes = 68;

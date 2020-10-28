@@ -567,6 +567,9 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
   ret = parse_single_int_val( label_to_values, "AUX_CTRL", config->AUX_CTRL, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -11;
 
+  ret = parse_single_int_val( label_to_values, "CLK_CTRL", config->CLK_CTRL, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )   return -11;
+
   ret = parse_single_int_val( label_to_values, "WR_RUNTIME_CTRL", config->WR_RUNTIME_CTRL, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )   return -12;
 

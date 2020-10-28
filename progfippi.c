@@ -230,6 +230,13 @@ int main(void) {
       printf("Invalid AUX_CTRL = 0x%x\n",fippiconfig.AUX_CTRL);
       return -800;
     }
+    // AUX CTRL:
+    if( (fippiconfig.CLK_CTRL == 3) | (fippiconfig.CLK_CTRL == 0) ) {
+      // ok
+    }  else {
+      printf("Invalid CLK_CTRL = 0x%x, should be 0 or 3\n",fippiconfig.CLK_CTRL);
+      return -800;
+    }
 
    //  WR_RUNTIME_CTRL:
     if(fippiconfig.WR_RUNTIME_CTRL > 1) {
@@ -656,6 +663,14 @@ int main(void) {
   if(mapped[AAUXCTRL] != mval) printf("Error writing AUX_CTRL register\n");
 
 
+    mval = fippiconfig.CLK_CTRL;              // low 2 bits set CLK SEL for PLL input (1=WRclkDB, 0 = FPGA/other)
+    mapped[AMZ_PLLSTART] = mval;              // any write will start programming the LMK PLL for ADC and FPGA processing clock                                               
+    if( (mval & 0x3) >0)
+       printf(" initializing ADC PLL with clock from  WRclkDB\n");
+    else
+       printf(" initializing ADC PLL with clock from FPGA/other\n");
+
+
   for(k7=0;k7<N_K7_FPGAS;k7++)
   {
       mapped[AMZ_DEVICESEL] =  cs[k7];	// select FPGA 
@@ -763,7 +778,7 @@ int main(void) {
       mval=fippiconfig.UDP_PAUSE; //UDP_PAUSE;
       mapped[AMZ_EXAFWR] =  AK7_UDP_PAUSE;              // specify   K7's addr:    AK7_UDP_PAUSE
       mapped[AMZ_EXDWR]  =  mval;      
-      if(verbose) printf("UDP_PAUSE, WR Ethernet minimum packet separation: %d (64ns cycles)\n",mval);
+      if(verbose) printf(" UDP_PAUSE, WR Ethernet minimum packet separation: %d (64ns cycles)\n",mval);
       
 
       // set the Ethernet control register with the trace length (for AutoUDP)
@@ -1116,33 +1131,62 @@ int main(void) {
 
   if(1) {
    // --------------------------- Gains ----------------------------------
-   // DB01 has 4 gains. Applied via I2C specific to each DB
+
+    // DB06 has 2 gains. Applied via I2C specific to each DB; 
+    // Two opamps can be enabled with SW0 (gain 2) and SW1 (gain 5)
+    // use 2.4 and 5.4 for easier compatibility to DB01
+    if( ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250) | ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_14_500) )  {
+      for( ch = 0; ch < NCHANNELS_PRESENT; ch ++ )
+      {
+           if( !( (fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN1)  ||
+                  (fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN3)   ) ) {
+           printf("ANALOG_GAIN = %f not matching available gains exactly, please choose from this list:\n",fippiconfig.ANALOG_GAIN[ch]);
+           printf("    %f \n",DB01_GAIN1);
+           printf("    %f \n",DB01_GAIN3);
+           return -8000-ch;
+         }  // end if
+       }    // end for
+
+          // ............. set the bits for 4 channels  ................. 
+          for( ch = 0; ch < NCHANNELS_PER_K7_DB01; ch ++ )            // XXXXXX
+         {
+            ch_k7 = ch;                                         // XXXXXX
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN1)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN3)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 0;  }
+         }    // end for
+    } //end DB
+
+
+   // DB02 has no gains, just ignore
+
+   // DB01 has 8 gains. Applied via I2C specific to each DB
    // no limits for DIG_GAIN
    // bit mapping
    
-  
-   for( ch = 0; ch < NCHANNELS_PRESENT; ch ++ )
-   {
-        if( !( (fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN0)  ||
-               (fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN1)  ||
-               (fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN2)  ||
-               (fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN3)  ||
-               (fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN4)  ||
-               (fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN5)  ||
-               (fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN6)  ||
-               (fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN7)   ) ) {
-        printf("ANALOG_GAIN = %f not matching available gains exactly, please choose from this list:\n",fippiconfig.ANALOG_GAIN[ch]);
-        printf("    %f \n",DB01_GAIN0);
-        printf("    %f \n",DB01_GAIN1);
-        printf("    %f \n",DB01_GAIN2);
-        printf("    %f \n",DB01_GAIN3);
-        printf("    %f \n",DB01_GAIN4);
-        printf("    %f \n",DB01_GAIN5);
-        printf("    %f \n",DB01_GAIN6);
-        printf("    %f \n",DB01_GAIN7);
-        return -8000-ch;
-      }  // end if
-    }    // end for
+   if( ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125) | ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75) )  {
+      for( ch = 0; ch < NCHANNELS_PRESENT; ch ++ )
+      {
+           if( !( (fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN0)  ||
+                  (fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN1)  ||
+                  (fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN2)  ||
+                  (fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN3)  ||
+                  (fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN4)  ||
+                  (fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN5)  ||
+                  (fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN6)  ||
+                  (fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN7)   ) ) {
+           printf("ANALOG_GAIN = %f not matching available gains exactly, please choose from this list:\n",fippiconfig.ANALOG_GAIN[ch]);
+           printf("    %f \n",DB01_GAIN0);
+           printf("    %f \n",DB01_GAIN1);
+           printf("    %f \n",DB01_GAIN2);
+           printf("    %f \n",DB01_GAIN3);
+           printf("    %f \n",DB01_GAIN4);
+           printf("    %f \n",DB01_GAIN5);
+           printf("    %f \n",DB01_GAIN6);
+           printf("    %f \n",DB01_GAIN7);
+           return -8000-ch;
+         }  // end if
+       }    // end for
+   
     /*     (SGA = SW1/SW0/relay)	            gain
 					    (0/0/0)                           1.6             // relay off = low gain    (matching P500e)
 					    (0/1/0)                           2.4
@@ -1178,20 +1222,22 @@ int main(void) {
              unsigned int gnbit[NCHANNELS_PER_K7_DB01]  = {9, 12, 1, 3};
        */
 
-       // ............. set the bits for 4 channels  ................. 
-       for( ch = 0; ch < NCHANNELS_PER_K7_DB01; ch ++ )            // XXXXXX
-      {
-         ch_k7 = ch;                                         // XXXXXX
-         if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN0)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 0;  }
-         if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN1)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 0;  }
-         if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN2)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 0;  }
-         if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN3)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 0;  }
-         if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN4)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 1;  }
-         if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN5)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 1;  }
-         if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN6)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 1;  }
-         if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN7)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 1;  }
-   
-      }    // end for
+         // ............. set the bits for the FIRST 4 channels  ................. 
+          for( ch = 0; ch < NCHANNELS_PER_K7_DB01; ch ++ )            // XXXXXX
+         {
+            ch_k7 = ch;                                         // XXXXXX
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN0)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 1;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN1)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 1;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN2)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 1;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN3)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 1;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN4)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN5)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN6)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN7)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 0;  }
+      
+         }    // end for
+
+       } //end DB
 
       // I2C write for 4 channels
        mapped[AMZ_DEVICESEL] = CS_MZ;	  // select MZ controller
@@ -1257,20 +1303,35 @@ int main(void) {
    
       I2Cstop(mapped);
 
-             // ............. set the bits for 4 more  channels  ................. 
-       for( ch = NCHANNELS_PER_K7_DB01; ch < 2*NCHANNELS_PER_K7_DB01; ch ++ )          // XXXXXX
-      {
-         ch_k7 = ch - NCHANNELS_PER_K7_DB01;                                         // XXXXXX
-         if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN0)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 0;  }
-         if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN1)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 0;  }
-         if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN2)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 0;  }
-         if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN3)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 0;  }
-         if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN4)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 1;  }
-         if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN5)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 1;  }
-         if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN6)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 1;  }
-         if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN7)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 1;  }
-   
-      }    // end for
+      // ............. set the bits for 4 MORE  channels  ................. 
+
+      if( ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250) | ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_14_500) )  {
+         for( ch = NCHANNELS_PER_K7_DB01; ch < 2*NCHANNELS_PER_K7_DB01; ch ++ )          // XXXXXX
+         {
+            ch_k7 = ch - NCHANNELS_PER_K7_DB01;                                         // XXXXXX
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN1)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN3)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 0;  }
+         }    // end for
+      } //end DB
+
+
+   // DB02 has no gains, just ignore
+
+             
+      if( ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125) | ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75) )  {
+         for( ch = NCHANNELS_PER_K7_DB01; ch < 2*NCHANNELS_PER_K7_DB01; ch ++ )          // XXXXXX
+         {
+            ch_k7 = ch - NCHANNELS_PER_K7_DB01;                                         // XXXXXX
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN0)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 1;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN1)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 1;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN2)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 1;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN3)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 1;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN4)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN5)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN6)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN7)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 0;  }  
+         }    // end for
+      } //end DB
 
       // I2C write for 4 channels
        mapped[AMZ_DEVICESEL] = CS_MZ;	  // select MZ controller
@@ -1388,23 +1449,23 @@ int main(void) {
 
  
    // ADC board temperature
-    printf("PXdesk board temperature: %d C \n",(int)board_temperature(mapped, I2C_SELMAIN) );
-    if(verbose) printf("DB0 board temperature: %d C \n",(int)board_temperature(mapped, I2C_SELDB0) );
-    if(verbose) printf("DB1 board temperature: %d C \n",(int)board_temperature(mapped, I2C_SELDB1) );
+    printf(" PXdesk board temperature: %d C \n",(int)board_temperature(mapped, I2C_SELMAIN) );
+    if(verbose) printf(" DB0 board temperature: %d C \n",(int)board_temperature(mapped, I2C_SELDB0) );
+    if(verbose) printf(" DB1 board temperature: %d C \n",(int)board_temperature(mapped, I2C_SELDB1) );
 
    // ***** ZYNQ temperature
-    if(verbose) printf("MZ Zynq temperature: %d C \n",(int)zynq_temperature() );
+    if(verbose) printf(" MZ Zynq temperature: %d C \n",(int)zynq_temperature() );
 
    // ***** check HW info *********
    revsn = hwinfo(mapped,I2C_SELMAIN);
-   printf("Main board Revision 0x%04X, Serial Number %d \n",(revsn>>16) & 0xFFFF, revsn & 0xFFFF);
+   printf(" Main board Revision 0x%04X, Serial Number %d \n",(revsn>>16) & 0xFFFF, revsn & 0xFFFF);
 //   if(mval==0) printf("WARNING: HW may be incompatible with this SW/FW \n");
 
    revsn = hwinfo(mapped,I2C_SELDB0);
-   if(verbose) printf("DB0 Revision 0x%04X\n",(revsn>>16) & 0xFFFF);
+   if(verbose) printf(" DB0 Revision 0x%04X\n",(revsn>>16) & 0xFFFF);
 
    revsn = hwinfo(mapped,I2C_SELDB1);
-   if(verbose) printf("DB1 Revision 0x%04X\n",(revsn>>16) & 0xFFFF);
+   if(verbose) printf(" DB1 Revision 0x%04X\n",(revsn>>16) & 0xFFFF);
 
  
  // clean up  

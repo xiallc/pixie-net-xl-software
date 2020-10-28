@@ -249,7 +249,7 @@ int main( void ) {
   }
 
     // ************************ LMK PLL  initialization  *********************************
-
+    /* moved to progfippi 
     mval = 4;
     mapped[AMZ_PLLSTART] = mval;              // low 2 bits set CLK SEL for PLL input (1=WRclkDB, 0 = FPGA/other)
                                           // any write will start programming the LMK PLL for ADC and FPGA processing clock  
@@ -258,9 +258,11 @@ int main( void ) {
     else
        printf(" initializing PLL for FPGA controlled clk\n");
 
+       */
+
    // ************************ ADC  initialization  *********************************
 
-    if( (revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125 | (revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75 )
+    if( ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125) | ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75) )
     {
       printf("Initializing ADCs:\n");  
       ADCinit_DB01(mapped);
@@ -268,6 +270,7 @@ int main( void ) {
     }
 
     // ************************ WR PLL  initialization  *********************************
+    /* no longer needed, now inside FPGA
     if((revsn & PNXL_MB_REV_MASK) == PNXL_MB_REVB)
     {
       printf("Initializing PLLs:\n");  
@@ -275,6 +278,7 @@ int main( void ) {
       // TODO: check return value for success
     }
 
+    */
    // ************************ clean up  *********************************
 
  

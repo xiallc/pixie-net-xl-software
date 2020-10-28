@@ -44,6 +44,7 @@
 #define PNXL_DB01_14_125      0x00100000   // value for DB01 with 14/125 MHZ ADC
 #define PNXL_DB02_12_250      0x00200000   // value for DB02 with 12/250 MHZ ADC
 #define PNXL_DB06_16_250      0x00600000   // value for DB06 with 16/250 MHZ ADC
+#define PNXL_DB06_14_500      0x00700000   // value for DB06 with 14/500 MHZ ADC
 #define PNXL_MB_REVA          0x00000000   // value for Rev A Main board
 #define PNXL_MB_REVB          0x00010000   // value for Rev B Main board
 #define ADC_CLK_MHZ_DB01_75      75
