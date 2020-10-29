@@ -24,8 +24,8 @@ adcinit: adcinit.o PixieNetCommon.o PixieNetDefs.h
 pllinit: pllinit.o PixieNetCommon.o PixieNetDefs.h
 	gcc pllinit.o PixieNetCommon.o $(LIBS) -o pllinit
 
-bootfpga: bootfpga.o PixieNetCommon.o PixieNetDefs.h
-	gcc bootfpga.o PixieNetCommon.o $(LIBS) -o bootfpga
+bootfpga: bootfpga.o PixieNetCommon.o PixieNetConfig.o PixieNetDefs.h
+	g++ bootfpga.o PixieNetCommon.o PixieNetConfig.o $(LIBS) -o bootfpga
 	
 cgitraces.cgi: cgitraces.o PixieNetCommon.o PixieNetConfig.o PixieNetDefs.h
 	g++ cgitraces.o PixieNetCommon.o PixieNetConfig.o $(LIBS) -o cgitraces.cgi

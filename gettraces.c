@@ -103,7 +103,9 @@ int main(void) {
   for( ch = 0; ch < NCHANNELS; ch ++ )
   {
       GOOD_CH[ch]  =  ( fippiconfig.CHANNEL_CSRA[ch] & (1<<CCSRA_GOOD) ) >0;  
+    //   printf( "%d ", GOOD_CH[ch] );
   }
+  //printf( "\n " );
 
   // ************************** check HW version ********************************
 

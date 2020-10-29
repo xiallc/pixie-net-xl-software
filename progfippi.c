@@ -78,7 +78,7 @@ int main(void) {
     printf( "Failed to parse FPGA settings from %s, rval=%d\n", defaults_file, rval );
     return rval;
   }
-  const char *settings_file = "settings.ini";      // TODO restore to settings.ini
+  const char *settings_file = "settings.ini";      
   rval = init_PixieNetFippiConfig_from_file( settings_file, 2, &fippiconfig );   // second override with user settings, do allow missing, don't print missing
   if( rval != 0 )
   {
@@ -91,9 +91,12 @@ int main(void) {
   unsigned int CW, SFR, FFR, SL[NCHANNELS], SG[NCHANNELS], FL[NCHANNELS], FG[NCHANNELS], TH[NCHANNELS];
   unsigned int PSAM, TL[NCHANNELS], TD[NCHANNELS], SAVER0[NCHANNELS];
   unsigned int i2cdata[8];
-  unsigned int sw0bit[NCHANNELS_PER_K7_DB01] = {6, 11, 4, 0};       // these arrays encode the mapping of gain bits to I2C signals
-  unsigned int sw1bit[NCHANNELS_PER_K7_DB01] = {8, 2, 5, 10};
-  unsigned int gnbit[NCHANNELS_PER_K7_DB01] = {9, 12, 1, 3};
+  unsigned int sw0bit01[NCHANNELS_PER_K7_DB01] = {6, 11, 4,  0};       // these arrays encode the mapping of gain bits to I2C signals for DB01
+  unsigned int sw1bit01[NCHANNELS_PER_K7_DB01] = {8,  2, 5, 10};
+  unsigned int gnbit01[NCHANNELS_PER_K7_DB01]  = {9, 12, 1,  3};
+  unsigned int sw0bit06[NCHANNELS_PER_K7_DB01] = {0, 11, 2,  5};       // these arrays encode the mapping of gain bits to I2C signals for DB06
+  unsigned int sw1bit06[NCHANNELS_PER_K7_DB01] = {8, 10, 4,  6};
+  unsigned int gnbit06[NCHANNELS_PER_K7_DB01]  = {9, 12, 1,  3};
   unsigned int i2cgain[16] = {0}; 
   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
   int ch, k7, ch_k7;    // loop counter better be signed int  . ch = abs ch. no; ch_k7 = ch. no in k7
@@ -230,13 +233,14 @@ int main(void) {
       printf("Invalid AUX_CTRL = 0x%x\n",fippiconfig.AUX_CTRL);
       return -800;
     }
-    // AUX CTRL:
+    
+    /* // CLK CTRL:
     if( (fippiconfig.CLK_CTRL == 3) | (fippiconfig.CLK_CTRL == 0) ) {
       // ok
     }  else {
       printf("Invalid CLK_CTRL = 0x%x, should be 0 or 3\n",fippiconfig.CLK_CTRL);
       return -800;
-    }
+    }    */
 
    //  WR_RUNTIME_CTRL:
     if(fippiconfig.WR_RUNTIME_CTRL > 1) {
@@ -662,14 +666,14 @@ int main(void) {
   mapped[AAUXCTRL] = mval;
   if(mapped[AAUXCTRL] != mval) printf("Error writing AUX_CTRL register\n");
 
-
+ /*
     mval = fippiconfig.CLK_CTRL;              // low 2 bits set CLK SEL for PLL input (1=WRclkDB, 0 = FPGA/other)
     mapped[AMZ_PLLSTART] = mval;              // any write will start programming the LMK PLL for ADC and FPGA processing clock                                               
     if( (mval & 0x3) >0)
        printf(" initializing ADC PLL with clock from  WRclkDB\n");
     else
        printf(" initializing ADC PLL with clock from FPGA/other\n");
-
+*/
 
   for(k7=0;k7<N_K7_FPGAS;k7++)
   {
@@ -801,10 +805,13 @@ int main(void) {
          // package
          reglo = 1;     // halt bit =1
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_POLARITY,      FiPPI_INVRT   );    
-         if( (ch_k7==2) && (revsn & PNXL_DB_VARIANT_MASK)!=PNXL_DB02_12_250 )  // if DB01, ch.2 is inverted   
-         {
-            reglo = reglo ^ (1<<FiPPI_INVRT); 
-            //printf("reglo_ch.2 0x%08x, revsn 0x%08x\n",reglo, revsn);
+         if(ch_k7==2)  {
+            //if( ((revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_125 ) | ((revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_75) )  // if DB01, ch.2 is inverted   
+            if( ((revsn & PNXL_DB_VARIANT_MASK)!=PNXL_DB02_12_250 ) | ((revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_75) )
+            {
+               reglo = reglo ^ (1<<FiPPI_INVRT); 
+               //printf("reglo_ch.2 0x%08x, revsn 0x%08x\n",reglo, revsn);
+            }
          }
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_VETOENA,       FiPPI_VETOENA   );     
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_EXTTRIGSEL,    FiPPI_EXTTRIGSEL   );     
@@ -1135,6 +1142,31 @@ int main(void) {
     // DB06 has 2 gains. Applied via I2C specific to each DB; 
     // Two opamps can be enabled with SW0 (gain 2) and SW1 (gain 5)
     // use 2.4 and 5.4 for easier compatibility to DB01
+
+         /* gain bit map for PXdesk+DB06
+        I2C bit   PXdesk DB signal      DB06 gain
+         0        IO_DB_5                SW0_A (enable low)
+         1        Gain_C                 unused
+         2        IO_DB_2                SW0_C (enable low)
+         3        Gain_D                 unused
+         4        IO_DB_3                SW1_C (enable high)
+         5        IO_DB_4                SW0_D (enable low)
+         6        IO_DB_N                SW1_D (enable high)
+         7        IO_DB_P                unused
+         8        IO_DB_0                SW1_A (enable high)
+         9        Gain_A                 unused
+         10       IO_DB_6                SW1_B (enable high)
+         11       IO_DB_1                SW0_B (enable low)
+         12       Gain_B                 unused
+         13       unused                 unused
+         14       unused                 unused
+         15       unused                 unused
+         
+         =>  unsigned int sw0bit[NCHANNELS_PER_K7_DB01] = {0, 11, 2, 5};       // these arrays encode the mapping of gain bits to I2C signals
+             unsigned int sw1bit[NCHANNELS_PER_K7_DB01] = {8, 10, 4, 6};
+             unsigned int gnbit[NCHANNELS_PER_K7_DB01]  = {9, 12, 1, 3};
+       */
+
     if( ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250) | ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_14_500) )  {
       for( ch = 0; ch < NCHANNELS_PRESENT; ch ++ )
       {
@@ -1151,8 +1183,8 @@ int main(void) {
           for( ch = 0; ch < NCHANNELS_PER_K7_DB01; ch ++ )            // XXXXXX
          {
             ch_k7 = ch;                                         // XXXXXX
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN1)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 0;  }
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN3)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN1)  { i2cgain[sw1bit06[ch_k7]] = 0; i2cgain[sw0bit06[ch_k7]] = 1; i2cgain[gnbit06[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN3)  { i2cgain[sw1bit06[ch_k7]] = 1; i2cgain[sw0bit06[ch_k7]] = 0; i2cgain[gnbit06[ch_k7]] = 0;  }
          }    // end for
     } //end DB
 
@@ -1226,14 +1258,14 @@ int main(void) {
           for( ch = 0; ch < NCHANNELS_PER_K7_DB01; ch ++ )            // XXXXXX
          {
             ch_k7 = ch;                                         // XXXXXX
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN0)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 1;  }
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN1)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 1;  }
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN2)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 1;  }
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN3)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 1;  }
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN4)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 0;  }
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN5)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 0;  }
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN6)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 0;  }
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN7)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN0)  { i2cgain[sw1bit01[ch_k7]] = 0; i2cgain[sw0bit01[ch_k7]] = 0; i2cgain[gnbit01[ch_k7]] = 1;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN1)  { i2cgain[sw1bit01[ch_k7]] = 0; i2cgain[sw0bit01[ch_k7]] = 1; i2cgain[gnbit01[ch_k7]] = 1;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN2)  { i2cgain[sw1bit01[ch_k7]] = 1; i2cgain[sw0bit01[ch_k7]] = 0; i2cgain[gnbit01[ch_k7]] = 1;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN3)  { i2cgain[sw1bit01[ch_k7]] = 1; i2cgain[sw0bit01[ch_k7]] = 1; i2cgain[gnbit01[ch_k7]] = 1;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN4)  { i2cgain[sw1bit01[ch_k7]] = 0; i2cgain[sw0bit01[ch_k7]] = 0; i2cgain[gnbit01[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN5)  { i2cgain[sw1bit01[ch_k7]] = 0; i2cgain[sw0bit01[ch_k7]] = 1; i2cgain[gnbit01[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN6)  { i2cgain[sw1bit01[ch_k7]] = 1; i2cgain[sw0bit01[ch_k7]] = 0; i2cgain[gnbit01[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN7)  { i2cgain[sw1bit01[ch_k7]] = 1; i2cgain[sw0bit01[ch_k7]] = 1; i2cgain[gnbit01[ch_k7]] = 0;  }
       
          }    // end for
 
@@ -1309,8 +1341,8 @@ int main(void) {
          for( ch = NCHANNELS_PER_K7_DB01; ch < 2*NCHANNELS_PER_K7_DB01; ch ++ )          // XXXXXX
          {
             ch_k7 = ch - NCHANNELS_PER_K7_DB01;                                         // XXXXXX
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN1)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 0;  }
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN3)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN1)  { i2cgain[sw1bit06[ch_k7]] = 0; i2cgain[sw0bit06[ch_k7]] = 1; i2cgain[gnbit06[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN3)  { i2cgain[sw1bit06[ch_k7]] = 1; i2cgain[sw0bit06[ch_k7]] = 0; i2cgain[gnbit06[ch_k7]] = 0;  }
          }    // end for
       } //end DB
 
@@ -1322,14 +1354,14 @@ int main(void) {
          for( ch = NCHANNELS_PER_K7_DB01; ch < 2*NCHANNELS_PER_K7_DB01; ch ++ )          // XXXXXX
          {
             ch_k7 = ch - NCHANNELS_PER_K7_DB01;                                         // XXXXXX
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN0)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 1;  }
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN1)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 1;  }
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN2)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 1;  }
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN3)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 1;  }
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN4)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 0;  }
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN5)  { i2cgain[sw1bit[ch_k7]] = 0; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 0;  }
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN6)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 0; i2cgain[gnbit[ch_k7]] = 0;  }
-            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN7)  { i2cgain[sw1bit[ch_k7]] = 1; i2cgain[sw0bit[ch_k7]] = 1; i2cgain[gnbit[ch_k7]] = 0;  }  
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN0)  { i2cgain[sw1bit01[ch_k7]] = 0; i2cgain[sw0bit01[ch_k7]] = 0; i2cgain[gnbit01[ch_k7]] = 1;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN1)  { i2cgain[sw1bit01[ch_k7]] = 0; i2cgain[sw0bit01[ch_k7]] = 1; i2cgain[gnbit01[ch_k7]] = 1;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN2)  { i2cgain[sw1bit01[ch_k7]] = 1; i2cgain[sw0bit01[ch_k7]] = 0; i2cgain[gnbit01[ch_k7]] = 1;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN3)  { i2cgain[sw1bit01[ch_k7]] = 1; i2cgain[sw0bit01[ch_k7]] = 1; i2cgain[gnbit01[ch_k7]] = 1;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN4)  { i2cgain[sw1bit01[ch_k7]] = 0; i2cgain[sw0bit01[ch_k7]] = 0; i2cgain[gnbit01[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN5)  { i2cgain[sw1bit01[ch_k7]] = 0; i2cgain[sw0bit01[ch_k7]] = 1; i2cgain[gnbit01[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN6)  { i2cgain[sw1bit01[ch_k7]] = 1; i2cgain[sw0bit01[ch_k7]] = 0; i2cgain[gnbit01[ch_k7]] = 0;  }
+            if(fippiconfig.ANALOG_GAIN[ch] == DB01_GAIN7)  { i2cgain[sw1bit01[ch_k7]] = 1; i2cgain[sw0bit01[ch_k7]] = 1; i2cgain[gnbit01[ch_k7]] = 0;  }  
          }    // end for
       } //end DB
 

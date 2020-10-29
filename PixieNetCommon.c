@@ -985,6 +985,20 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
       SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB01;
       FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
    }
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;          
+      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB06;
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB06;
+   }
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_14_500)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;          
+      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB06;
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB06;
+   }
 
 
   // ---------------- open the output file -------------------------------------------
@@ -1665,7 +1679,20 @@ int read_print_rates_XL_2x4(int dest, volatile unsigned int *mapped ) {
       SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB01;
       FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
    }
-
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;          
+      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB06;
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB06;
+   }
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_14_500)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;          
+      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB06;
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB06;
+   }
 
   // ---------------- open the output file -------------------------------------------
   if(dest != 1)  {

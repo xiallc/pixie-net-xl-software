@@ -51,6 +51,7 @@
 
 #include "PixieNetDefs.h"
 #include "PixieNetCommon.h"
+#include "PixieNetConfig.h"
 
 
 unsigned short confdata[N_FPGA_BYTES_B/2];
@@ -248,17 +249,55 @@ int main( void ) {
     printf(" Programming FPGA successful !\n");
   }
 
-    // ************************ LMK PLL  initialization  *********************************
-    /* moved to progfippi 
-    mval = 4;
-    mapped[AMZ_PLLSTART] = mval;              // low 2 bits set CLK SEL for PLL input (1=WRclkDB, 0 = FPGA/other)
-                                          // any write will start programming the LMK PLL for ADC and FPGA processing clock  
-    if( (mval & 0x3) >0)
-       printf(" initializing PLL for WWRclkDB\n");
-    else
-       printf(" initializing PLL for FPGA controlled clk\n");
 
-       */
+    // ******************* read ini file and fill struct with values ********************
+
+  int verbose = 1;      // TODO: control with argument to function 
+  // 0 print errors and minimal info only
+  // 1 print errors and full info
+  
+  PixieNetFippiConfig fippiconfig;		// struct holding the input parameters
+  const char *defaults_file = "defaults.ini";
+  int rval = init_PixieNetFippiConfig_from_file( defaults_file, 0, &fippiconfig );   // first load defaults, do not allow missing parameters
+  if( rval != 0 )
+  {
+    printf( "Failed to parse FPGA settings from %s, rval=%d\n", defaults_file, rval );
+    return rval;
+  }
+  const char *settings_file = "settings.ini";      
+  rval = init_PixieNetFippiConfig_from_file( settings_file, 2, &fippiconfig );   // second override with user settings, do allow missing, don't print missing
+  if( rval != 0 )
+  {
+    printf( "Failed to parse FPGA settings from %s, rval=%d\n", settings_file, rval );
+    return rval;
+  }
+
+
+    // ************************ LMK PLL  initialization  *********************************
+
+    printf(" Waiting for clock initialization\n",fippiconfig.CLK_CTRL);
+    usleep(100000);
+
+
+
+    // CLK CTRL:
+    if( (fippiconfig.CLK_CTRL == 3) | (fippiconfig.CLK_CTRL == 0) ) {
+      // ok
+    }  else {
+      printf("Invalid CLK_CTRL = 0x%x, should be 0 or 3\n",fippiconfig.CLK_CTRL);
+      return -800;
+    }
+
+    
+    mval = fippiconfig.CLK_CTRL;              // low 2 bits set CLK SEL for PLL input (1=WRclkDB, 0 = FPGA/other)
+    mapped[AMZ_PLLSTART] = mval;              // any write will start programming the LMK PLL for ADC and FPGA processing clock                                               
+    if( (mval & 0x3) >0)
+       printf(" initializing ADC PLL with clock from  WRclkDB\n");
+    else
+       printf(" initializing ADC PLL with clock from FPGA/other\n");
+
+    printf(" Waiting for clock initialization\n",fippiconfig.CLK_CTRL);
+    usleep(100000);  
 
    // ************************ ADC  initialization  *********************************
 
