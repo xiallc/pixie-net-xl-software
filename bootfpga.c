@@ -296,8 +296,9 @@ int main( void ) {
     else
        printf(" initializing ADC PLL with clock from FPGA/other\n");
 
-    printf(" Waiting for clock initialization\n",fippiconfig.CLK_CTRL);
+    printf(" Waiting for clock initialization (0x%x)...",fippiconfig.CLK_CTRL);
     usleep(100000);  
+    printf(" ... done\n");
 
    // ************************ ADC  initialization  *********************************
 

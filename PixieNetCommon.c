@@ -1044,7 +1044,10 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
          ch = ch_k7+k7*NCHANNELS_PER_K7;
          mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
          mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
-   
+ 
+                  mapped[AMZ_EXAFWR] = AK7_PAGE;     // specify   K7's addr     addr 3 = channel/system
+         mapped[AMZ_EXDWR]  = PAGE_CHN+ch_k7;      //                         0x10n  = channel n     -> now addressing channel ch page of K7-0
+
          for( k = 0; k < 3; k ++ )      // loop over number of time words
          {
             mapped[AMZ_EXAFRD] = AK7_CHN_RS_CT+k;    // read from channel output range
@@ -1058,10 +1061,12 @@ char Channel_PLRS_Names[N_PL_RS_PAR][MAX_PAR_NAME_LENGTH] = {
             mapped[AMZ_EXAFRD] = AK7_CHN_RS_NOUT+k;    // read from channel output range
             chn[ch][k+8] = mapped[AMZ_EXDRD];
             if(SLOWREAD) chn[ch][k+8] = mapped[AMZ_EXDRD]; 
-          
-            //printf("CT value %x   ", chn[ch+k7*NCHANNEL_PER_K7][k+0]);
-            //printf("NTRIG value %x   ", chn[ch+k7*NCHANNEL_PER_K7][k+4]);
-            //printf("NPPI value %x\n", chn[ch+k7*NCHANNEL_PER_K7][k+8]);
+           
+      //      if(dest == 0)  {
+      //         printf("ch %d CT value %d   ", ch_k7, chn[ch][k+0]);
+      //         printf("NTRIG value %d   ", chn[ch][k+4]);
+      //         printf("NPPI value %d (%x)\n", chn[ch][k+8],chn[ch][k+8]);
+      //      }
          }     //end for time words
      }    // end for channels in k7
   } // end for K7s
@@ -1749,9 +1754,9 @@ int read_print_rates_XL_2x4(int dest, volatile unsigned int *mapped ) {
             chn[ch][k+8] = mapped[AMZ_EXDRD];
             if(SLOWREAD) chn[ch][k+8] = mapped[AMZ_EXDRD]; 
           
-            //printf("CT value %x   ", chn[ch+k7*NCHANNEL_PER_K7][k+0]);
-            //printf("NTRIG value %x   ", chn[ch+k7*NCHANNEL_PER_K7][k+4]);
-            //printf("NPPI value %x\n", chn[ch+k7*NCHANNEL_PER_K7][k+8]);
+        //    printf("CT value %x   ", chn[ch][k+0]);
+        //    printf("NTRIG value %x   ", chn[ch][k+4]);
+        //    printf("NPPI value %x\n", chn[ch][k+8]);
          }     //end for time words
      }    // end for channels in k7
   } // end for K7s
