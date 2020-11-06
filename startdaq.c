@@ -69,7 +69,7 @@ int main(void) {
   //unsigned int SG[NCHANNELS];
   float Tau[NCHANNELS], Dgain[NCHANNELS];
   unsigned int BLavg[NCHANNELS], BLcut[NCHANNELS], Binfactor[NCHANNELS];
-  unsigned int TL[NCHANNELS], TRACEENA[NCHANNELS], Emin[NCHANNELS];
+  unsigned int TL[NCHANNELS], TRACEENA[NCHANNELS]; //, Emin[NCHANNELS];
   unsigned int GoodChanMASK[N_K7_FPGAS] = {0} ;
   double C0[NCHANNELS], C1[NCHANNELS], Cg[NCHANNELS];
   double baseline[NCHANNELS] = {0};
@@ -223,7 +223,7 @@ int main(void) {
          CCSRA[ch]       =  fippiconfig.CHANNEL_CSRA[ch]; 
          TRACEENA[ch]    = (( CCSRA[ch] & (1<<CCSRA_TRACEENA)) >0) && (RunType!=0x301) && (RunType!=0x401); 
          PILEUPCTRL[ch] =  ( CCSRA[ch] & (1<<CCSRA_PILEUPCTRL) ) >0;   // if bit set, only allow "single" non-piledup events
-         Emin[ch]  = fippiconfig.EMIN[ch];  
+         //Emin[ch]  = fippiconfig.EMIN[ch];  
          if( (CCSRA[ch] & (1<<CCSRA_GOOD)) >0 )
             GoodChanMASK[k7] = GoodChanMASK[k7] + (1<<ch_k7) ;   // build good channel mask
      }

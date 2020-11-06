@@ -67,7 +67,7 @@ int main(void) {
   unsigned int Binfactor[NCHANNELS];
   unsigned int GoodChanMASK[N_K7_FPGAS] = {0} ;
   time_t starttime, currenttime;
-  unsigned int mval, tmp0, tmp1, tmp2; //, tmp3;
+  unsigned int tmp0, tmp1, tmp2; //mval , tmp3;
   unsigned long long WR_tm_tai, WR_tm_tai_start, WR_tm_tai_stop, WR_tm_tai_next;
   unsigned int pileup;
   unsigned int evstats, R1;
@@ -352,12 +352,12 @@ int main(void) {
                                          
                      // read for nextevent
                      mapped[AMZ_EXAFRD] = AK7_NEXTEVENT;          // select the "nextevent" address in channel's page
-                     mval = mapped[AMZ_EXDWR];                    // any read ok
+                     tmp0 = mapped[AMZ_EXDWR];                    // any read ok
    
                     if(  eventcount_ch[ch]==0) {
                      // dummy reads
                         mapped[AMZ_EXAFRD] = AK7_HDRMEM_D;        // write to  k7's addr for read -> reading from AK7_HDRMEM_A channel header fifo, low 16bit
-                        mval = mapped[AMZ_EXDRD];                 // read 16 bits
+                        tmp0 = mapped[AMZ_EXDRD];                 // read 16 bits
                      }            
    
                      // read FPGA E

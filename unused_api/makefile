@@ -1,4 +1,4 @@
-TARGET = adcinit bootfpga cgitraces.cgi gettraces progfippi runstats cgistats.cgi startdaq mcadaq findsettings cgireadsettings.cgi cgiwritesettings.cgi
+TARGET = pllinit adcinit bootfpga cgitraces.cgi gettraces progfippi runstats cgistats.cgi startdaq mcadaq netdaq findsettings cgireadsettings.cgi cgiwritesettings.cgi
 LIBS = -lm 
 CFLAGS = -std=c99 -Wall
 CXXFLAGS = -Wall -O3 -DNDEBUG   -pthread -std=gnu++98
@@ -20,6 +20,9 @@ all: default
 
 adcinit: adcinit.o PixieNetCommon.o PixieNetDefs.h
 	gcc adcinit.o PixieNetCommon.o $(LIBS) -o adcinit
+
+pllinit: pllinit.o PixieNetCommon.o PixieNetDefs.h
+	gcc pllinit.o PixieNetCommon.o $(LIBS) -o pllinit
 
 bootfpga: bootfpga.o PixieNetCommon.o PixieNetConfig.o PixieNetDefs.h
 	g++ bootfpga.o PixieNetCommon.o PixieNetConfig.o $(LIBS) -o bootfpga
@@ -47,6 +50,9 @@ startdaq: startdaq.o PixieNetCommon.o PixieNetConfig.o PixieNetDefs.h
 
 mcadaq: mcadaq.o PixieNetCommon.o PixieNetConfig.o PixieNetDefs.h
 	g++ mcadaq.o PixieNetCommon.o PixieNetConfig.o $(LIBS) -o mcadaq
+
+netdaq: netdaq.o PixieNetCommon.o PixieNetConfig.o PixieNetDefs.h log.o nts.o zhelpers.h
+	g++ netdaq.o PixieNetCommon.o PixieNetConfig.o log.o nts.o $(ZMQLIBS) -o netdaq
 
 coincdaq: coincdaq.o PixieNetCommon.o PixieNetConfig.o PixieNetDefs.h
 	g++ coincdaq.o PixieNetCommon.o PixieNetConfig.o $(LIBS) -o coincdaq

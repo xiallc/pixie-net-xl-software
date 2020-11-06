@@ -252,7 +252,7 @@ int main( void ) {
 
     // ******************* read ini file and fill struct with values ********************
 
-  int verbose = 1;      // TODO: control with argument to function 
+  //int verbose = 1;      // TODO: control with argument to function 
   // 0 print errors and minimal info only
   // 1 print errors and full info
   
@@ -275,7 +275,7 @@ int main( void ) {
 
     // ************************ LMK PLL  initialization  *********************************
 
-    printf(" Waiting for clock initialization\n",fippiconfig.CLK_CTRL);
+    printf(" Waiting for clock initialization (0x%x)\n",fippiconfig.CLK_CTRL);
     usleep(100000);
 
 
