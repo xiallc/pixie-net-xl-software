@@ -34,7 +34,7 @@
  *----------------------------------------------------------------------*/
 
 // system constants
-#define PS_CODE_VERSION 0x0305
+#define PS_CODE_VERSION 0x0306
 #define PN_BOARD_VERSION_12_250_A 0xA990    
 #define PN_BOARD_VERSION_12_250_B 0xA991  
 #define PN_BOARD_VERSION_12_250_B_PTP 0xA981  
@@ -255,7 +255,7 @@
 #define AK7_ADCBITSLIP        0x06
 #define AK7_WR_TM_TAI_START   0x07
 #define AK7_WR_TM_TAI_STOP    0x0A
-#define AK7_ETH_MAC           0x0D     // 3 addr for destination MAC
+#define AK7_ETH_DEST_MAC      0x0D     // 3 addr for destination MAC
 #define AK7_ETH_DEST_IP       0x10     // 2 addr for destination IP
 #define AK7_ETH_SRC_IP        0x12     // 2 addr for source IP
 #define AK7_ETH_CHECK_SHORT   0x14     // IPv4 checksum, precomputed for short package
@@ -268,6 +268,10 @@
 #define AK7_PLLSPIA           0x1B     // address of PLL register
 #define AK7_PLLSPID           0x1C     // data for PLL register (write starts transfer)
 #define AK7_DM_CONTROL        0x1D     // write DM's accept/reject decision (write starts transfer to WR) 
+#define AK7_ETH_DEST_PORT     0x1E     // 1 addr for destination IP
+#define AK7_ETH_SRC_PORT      0x1F     // 1 addr for source IP
+#define AK7_ETH_SRC_MAC       0x20     // 3 addr for source MAC
+
 
 #define AK7_P16REG00          0x40
 #define AK7_P16REG01          0x44

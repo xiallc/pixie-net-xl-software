@@ -697,23 +697,53 @@ int main(void) {
       if(fippiconfig.DATA_FLOW==5) reglo = reglo + (1<<SCSR_AUTOQSPI);                             // enabling MCA output (only) to FIFO without interaction with C code
       if(fippiconfig.DATA_FLOW!=5) reglo = reglo + (1<<SCSR_HDRENA);                               // disable header memory in pure MCA runs where ARM only reads E from FIFO
       if(fippiconfig.DATA_FLOW==6) reglo = reglo + (1<<SCSR_DMCONTROL);                            // require DM approval to move data from SDRAM FIFO to WR (Eth out)
-      //reglo = reglo + (1<<6);    // enable 10G test
+      //reglo = reglo + (1<<7);    // enable 10G test
       mapped[AMZ_EXAFWR] = AK7_SCSRIN;    // write to  k7's addr to select register for write
       mapped[AMZ_EXDWR]  = reglo;        // write lower 16 bit
    
 
       // ................ WR Ethernet output settings .............................
+
+      // MAC addresses
       if(k7==0)
          mac = fippiconfig.DEST_MAC0;
       else 
          mac = fippiconfig.DEST_MAC1;
-      mapped[AMZ_EXAFWR] =  AK7_ETH_MAC;     // specify   K7's addr:    WR destination MAC
+      mapped[AMZ_EXAFWR] =  AK7_ETH_DEST_MAC;     // specify   K7's addr:    WR destination MAC
       mapped[AMZ_EXDWR]  =  mac      & 0x00000000FFFF;
-      mapped[AMZ_EXAFWR] =  AK7_ETH_MAC+1;   // specify   K7's addr:    
+      mapped[AMZ_EXAFWR] =  AK7_ETH_DEST_MAC+1;   // specify   K7's addr:    
       mapped[AMZ_EXDWR]  =  (mac>>16) & 0x00000000FFFF;
-      mapped[AMZ_EXAFWR] =  AK7_ETH_MAC+2;   // specify   K7's addr:   
+      mapped[AMZ_EXAFWR] =  AK7_ETH_DEST_MAC+2;   // specify   K7's addr:   
+      mapped[AMZ_EXDWR]  =  (mac>>32) & 0x00000000FFFF;
+
+      if(k7==0)
+         mac = fippiconfig.SRC_MAC0;
+      else 
+         mac = fippiconfig.SRC_MAC1;
+      mapped[AMZ_EXAFWR] =  AK7_ETH_SRC_MAC;     // specify   K7's addr:    source MAC (WR uses EEPROM instead)
+      mapped[AMZ_EXDWR]  =  mac      & 0x00000000FFFF;
+      mapped[AMZ_EXAFWR] =  AK7_ETH_SRC_MAC+1;   // specify   K7's addr:    
+      mapped[AMZ_EXDWR]  =  (mac>>16) & 0x00000000FFFF;
+      mapped[AMZ_EXAFWR] =  AK7_ETH_SRC_MAC+2;   // specify   K7's addr:   
       mapped[AMZ_EXDWR]  =  (mac>>32) & 0x00000000FFFF;
  
+
+      // UDP port numbers
+      if(k7==0)
+         mval = fippiconfig.DEST_PORT0;
+      else 
+         mval = fippiconfig.DEST_PORT1;
+      mapped[AMZ_EXAFWR] =  AK7_ETH_DEST_PORT;     // specify   K7's addr:    UDP dest port
+      mapped[AMZ_EXDWR]  =  mval      & 0xFFFF;
+  
+      if(k7==0)
+         mval = fippiconfig.SRC_PORT0;
+      else 
+         mval = fippiconfig.SRC_PORT1;
+      mapped[AMZ_EXAFWR] =  AK7_ETH_SRC_PORT;     // specify   K7's addr:    UDP dest port
+      mapped[AMZ_EXDWR]  =  mval      & 0xFFFF;
+
+      // IP addresses
       if(k7==0)
          dip = fippiconfig.DEST_IP0;
       else 
@@ -727,10 +757,11 @@ int main(void) {
          sip = fippiconfig.SRC_IP0;
       else 
          sip = fippiconfig.SRC_IP1;
-      mapped[AMZ_EXAFWR] =  AK7_ETH_SRC_IP;     // specify   K7's addr:    WR source IP (matching EPROM)
+      mapped[AMZ_EXAFWR] =  AK7_ETH_SRC_IP;     // specify   K7's addr:    source IP (should match WR EPROM)
       mapped[AMZ_EXDWR]  =  sip      & 0x00000000FFFF;
       mapped[AMZ_EXAFWR] =  AK7_ETH_SRC_IP+1;   // specify   K7's addr:    
       mapped[AMZ_EXDWR]  =  (sip>>16) & 0x00000000FFFF;
+
 
       // IPv4 checksum computation: SHORT (20 word header only)
       mval = 0;
@@ -782,7 +813,7 @@ int main(void) {
       mval=fippiconfig.UDP_PAUSE; //UDP_PAUSE;
       mapped[AMZ_EXAFWR] =  AK7_UDP_PAUSE;              // specify   K7's addr:    AK7_UDP_PAUSE
       mapped[AMZ_EXDWR]  =  mval;      
-      if(verbose) printf(" UDP_PAUSE, WR Ethernet minimum packet separation: %d (64ns cycles)\n",mval);
+      if(verbose) printf(" UDP_PAUSE, WR Ethernet minimum packet separation: %d (x 64ns cycles)\n",mval);
       
 
       // set the Ethernet control register with the trace length (for AutoUDP)

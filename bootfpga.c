@@ -339,6 +339,7 @@ int main( int argc, const char **argv) {
     usleep(100000);  
     printf(" ... done\n");
 
+    
    // ************************ ADC  initialization  *********************************
 
     if( ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125) | ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75) )
@@ -347,7 +348,7 @@ int main( int argc, const char **argv) {
       ADCinit_DB01(mapped);
       // TODO: check return value for success
     }
-
+      
     // ************************ WR PLL  initialization  *********************************
     /* no longer needed, now inside FPGA
     if((revsn & PNXL_MB_REV_MASK) == PNXL_MB_REVB)

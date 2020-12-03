@@ -140,6 +140,11 @@ typedef struct PixieNetFippiConfig {
   unsigned long long SRC_IP0;        // source IP for data from first K7   (should match WR IP from PROM)
   unsigned long long SRC_IP1;        // source IP for data from second K7 
 
+  unsigned int DEST_PORT0;          // UDP source and destination port for LM packages
+  unsigned int DEST_PORT1;   
+  unsigned int SRC_PORT0;   
+  unsigned int SRC_PORT1;   
+
   unsigned int DATA_FLOW;           // options for readout 
       // if 0, ARM does everything
       // if 1, ARM uses FPGA's weighted sum result
