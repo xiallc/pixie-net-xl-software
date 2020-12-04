@@ -978,12 +978,22 @@ int main(void) {
          
          
          // ......... P16 Reg 6  .......................    
-         if(  (fippiconfig.CHANNEL_CSRA[ch] & (1<<CCSRA_QDCENA)) >0 ) {
+         if(  (fippiconfig.CHANNEL_CSRA[ch] & (1<<CCSRA_QDCENA)) >0 ) {    
             // P16 style QDC
-            reglo = fippiconfig.QDCLen0[ch];                      //  QDC       // in samples
-            reglo = reglo + (fippiconfig.QDCLen1[ch]<<16);        //  QDC       // in samples                                                                                 
-            reghi = fippiconfig.QDCLen2[ch];                      //  QDC       // in samples
-            reghi = reghi + (fippiconfig.QDCLen3[ch]<<16);        //  QDC       // in samples  
+            // TODO: this will require variant switch for other ADC rates
+            mval = 0x7FFF - (int)floorf(fippiconfig.QDCLen0[ch]/2) + 1 ;       // FPGA expects 0x7FFF for a length of 1 x 2 samples per cycle
+            reglo = mval;
+            mval = 0x7FFF - (int)floorf(fippiconfig.QDCLen1[ch]/2) + 1 ;
+            reglo = reglo + (mval<<16);
+            mval = 0x7FFF - (int)floorf(fippiconfig.QDCLen2[ch]/2) + 1 ;
+            reghi = mval;
+            mval = 0x7FFF - (int)floorf(fippiconfig.QDCLen3[ch]/2) + 1 ;
+            reghi = reghi + (mval<<16);
+
+         //   reglo = 0x7FF0; //(int)floorf((0xFFFF-fippiconfig.QDCLen0[ch])/2);                      //  QDC       // in samples.  FPGA expects "len/2 - 1" for effective "len"
+         //   reglo = reglo + (0x7FF8<<16); //((int)floorf((0xFFFF-fippiconfig.QDCLen1[ch])/2)<<16);        //  QDC       // in samples                                                                                 
+         //   reghi = 0x7FFF; //(int)floorf((0xFFFF-fippiconfig.QDCLen2[ch])/2);                      //  QDC       // in samples
+         //   reghi = reghi + (0x7FFD<<16); //((int)floorf((0xFFFF-fippiconfig.QDCLen3[ch])/2)<<16);        //  QDC       // in samples  
           } else {
 
             if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
@@ -1031,10 +1041,30 @@ int main(void) {
          
          // ......... P16 Reg 7  .......................    
        
-         reglo = fippiconfig.QDCLen4[ch];                      //  QDC       // in samples     or divide result by 8
-         reglo = reglo + (fippiconfig.QDCLen5[ch]<<16);        //  QDC       // in samples     or PSA threshold                                                                          
-         reghi = fippiconfig.QDCLen6[ch];                      //  QDC       // in samples
-         reghi = reghi + (fippiconfig.QDCLen7[ch]<<16);        //  QDC       // in samples 
+
+
+          if(  (fippiconfig.CHANNEL_CSRA[ch] & (1<<CCSRA_QDCENA)) >0 ) {    
+            // P16 style QDC
+            // TODO: this will require variant switch for other ADC rates
+            mval = 0x7FFF - (int)floorf(fippiconfig.QDCLen4[ch]/2) + 1 ;       // FPGA expects 0x7FFF for a length of 1 x 2 samples per cycle
+            reglo = mval;
+            mval = 0x7FFF - (int)floorf(fippiconfig.QDCLen5[ch]/2) + 1 ;
+            reglo = reglo + (mval<<16);
+            mval = 0x7FFF - (int)floorf(fippiconfig.QDCLen6[ch]/2) + 1 ;
+            reghi = mval;
+            mval = 0x7FFF - (int)floorf(fippiconfig.QDCLen7[ch]/2) + 1 ;
+            reghi = reghi + (mval<<16);
+
+     //       reglo = 0x7FFE; //(int)floorf((0xFFFF-fippiconfig.QDCLen4[ch])/2);                      //  QDC       // in samples.  FPGA expects "len/2 - 1" for effective "len"
+     //       reglo = reglo + ((int)floorf((0xFFFF-fippiconfig.QDCLen5[ch])/2)<<16);        //  QDC       // in samples                                                                                 
+     //       reghi = 0x7FFF; //(int)floorf((0xFFFF-fippiconfig.QDCLen6[ch])/2);                      //  QDC       // in samples
+     //       reghi = reghi + ((int)floorf((0xFFFF-fippiconfig.QDCLen7[ch])/2)<<16);        //  QDC       // in samples  
+         } else {
+            reglo = fippiconfig.QDCLen4[ch];                      //  QDC       // in samples     or divide result by 8
+            reglo = reglo + (fippiconfig.QDCLen5[ch]<<16);        //  QDC       // in samples     or PSA threshold                                                                          
+            reghi = fippiconfig.QDCLen6[ch];                      //  QDC       // in samples
+            reghi = reghi + (fippiconfig.QDCLen7[ch]<<16);        //  QDC       // in samples 
+         }
         
          // now write 
          mapped[AMZ_EXAFWR] = AK7_P16REG07+0;              // write to  k7's addr to select channel's register N        

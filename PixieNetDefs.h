@@ -138,8 +138,8 @@
 #define FASTTRIGBACKDELAY_MAX_REVBCD      255
 #define FASTTRIGBACKDELAY_MAX_REVF        511
 #define FASTTRIGBACKDELAY_MIN             0
-#define QDCLEN_MAX                        32767
-#define QDCLEN_MIN                        0
+#define QDCLEN_MAX                        32766
+#define QDCLEN_MIN                        2
 #define TRACELEN_MIN_500MHZADC		      10
 #define TRACELEN_MIN_250OR100MHZADC	      4
 #define TRACEDELAY_MAX                    1023
