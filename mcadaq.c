@@ -113,25 +113,36 @@ int main(void) {
      // ************************** check HW version ********************************
 
    revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
+ 
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;         
+   }
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;           
+   } 
    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
    {
       NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
       NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
    }
-   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB04_14_250)
    {
-      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
-      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
-   } 
-   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75)
-   {
-      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
-      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
    }
    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
    {
       NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
-      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;            
+   } 
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_14_500)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;          
    } 
 
    // check if FPGA booted

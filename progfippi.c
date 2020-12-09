@@ -138,23 +138,11 @@ int main(void) {
 
    // ************************** check HW version ********************************
 
+
    revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
-   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
-   {
-      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
-      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
-      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB02;
-      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB02;
-      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
-   }
-   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
-   {
-      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
-      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
-      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01_125;             
-      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB02;       // DB1 125 operates at same filter, sys freq as DB02 (and all other DB's, probably)
-      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
-   } 
+   SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_MOST;     // defaults
+   FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_MOST; 
+
    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75)
    {
       NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
@@ -163,13 +151,35 @@ int main(void) {
       SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB01;
       FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
    }
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01_125;             
+   } 
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB02;
+   }
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB04_14_250)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB02;
+   }
    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
    {
       NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
       NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
       ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB06_250;    
-      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB06;             
-      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB06;
+   } 
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_14_500)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB06_500;    
    } 
    if((revsn & PNXL_DB_VARIANT_MASK) == 0xF00000)      // no ADC DB: default to DB02
    {
@@ -177,8 +187,6 @@ int main(void) {
       NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
       NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
       ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB02;
-      SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_DB02;
-      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
    }
 
    // check if FPGA booted
@@ -996,17 +1004,9 @@ int main(void) {
          //   reghi = reghi + (0x7FFD<<16); //((int)floorf((0xFFFF-fippiconfig.QDCLen3[ch])/2)<<16);        //  QDC       // in samples  
           } else {
 
-            if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
-            {
-            // PN style PSA
-               reglo = (fippiconfig.QDCLen0[ch]>>1)+1;                           //  L0 FPGA expects "len/2 + 1" for effective "len" 
-               reghi = fippiconfig.QDCLen0[ch]*2 + 6 + fippiconfig.QDCLen2[ch]*2;    //  D0 FPGA expects total length + delay (=end)
-               mval  = (fippiconfig.QDCLen1[ch]>>1)+1;
-               reglo = reglo + (mval<<16);                                       //  L1 FPGA expects "len/2 + 1" for effective "len"                                                                                
-               mval  = fippiconfig.QDCLen1[ch]*2 + 6 + fippiconfig.QDCLen3[ch]*2;     //  D1 FPGA expects total length + delay (=end)
-               reghi = reghi + (mval<<16);     
-            } // end revsn
-            if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
+            if( ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250) |
+                ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB04_14_250) |
+                ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)    )
             {
             // PN style PSA
                reglo = (fippiconfig.QDCLen0[ch]>>1)+1;                           //  L0 FPGA expects "len/2 + 1" for effective "len" 
@@ -1130,7 +1130,7 @@ int main(void) {
       Cg = Cg * 262144; //67108864;
       C1 = C1 * 262144;
 
-  //     C0 = 17;    
+  //    C0 = 17;    
   //    Cg = 18;
   //    C1 = 19;
   //    if(ch==10) printf("E coefs scaled ch %d: C0  %u Cg %u C1  %u\n", ch, (int)floor(C0), (int)floor(Cg), (int)floor(C1) );    
@@ -1175,7 +1175,15 @@ int main(void) {
 
    // --------------------------- DACs -----------------------------------
    // DACs are all controlled by MZ controller
-   if((revsn & PNXL_DB_VARIANT_MASK) != PNXL_DB02_12_250)    // DB02 has no DACs
+
+
+  // if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)    // DB02 has no DACs
+  // {   }
+
+   if( ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75)  |
+       ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125) |
+       ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250) |      
+       ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_14_500)    )
    {
      mapped[AMZ_DEVICESEL] = CS_MZ;	  // select MZ controller
 
@@ -1194,7 +1202,13 @@ int main(void) {
          usleep(DACWAIT);     
     //   printf("DAC %d, value 0x%x (%d), [%f V] \n",k, dac, dac,fippiconfig.VOFFSET[k]);
       }     // end for channels DAC
-   }        // end  if not DB02
+   }        // end most DBs
+
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB04_14_250)    // DB04 has I2C DACs
+   {
+     printf("TODO: implement DB04 DAC programming\n");
+   }
+
 
 
   if(1) {
@@ -1249,6 +1263,7 @@ int main(void) {
          }    // end for
     } //end DB
 
+   // DB04 has no gains, just ignore
 
    // DB02 has no gains, just ignore
 
@@ -1407,6 +1422,7 @@ int main(void) {
          }    // end for
       } //end DB
 
+    // DB04 has no gains, just ignore
 
    // DB02 has no gains, just ignore
 

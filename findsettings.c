@@ -147,7 +147,8 @@ int main(void) {
   mapped[AMZ_CSRIN] = 0x0000; // all off
 
   // ----------- swap channels 0<>1 and 2<>3 if necessary  -------------
-  if( (revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB02_12_250)  // if DB02, need to check for swapped channels from ADC
+//  if( (revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB02_12_250)  // if DB02, need to check for swapped channels from ADC
+  if( ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250) | ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB04_14_250) )
   {
      printf("Checking for swapped channels ...\n");
      for(k7=0;k7<N_K7_FPGAS;k7++)

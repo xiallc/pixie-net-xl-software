@@ -43,20 +43,25 @@
 #define PNXL_DB01_14_75       0x00000000   // value for DB01 with 14/75 MHZ ADC
 #define PNXL_DB01_14_125      0x00100000   // value for DB01 with 14/125 MHZ ADC
 #define PNXL_DB02_12_250      0x00200000   // value for DB02 with 12/250 MHZ ADC
+#define PNXL_DB04_14_250      0x00400000   // value for DB04 with 14/250 MHZ ADC
 #define PNXL_DB06_16_250      0x00600000   // value for DB06 with 16/250 MHZ ADC
 #define PNXL_DB06_14_500      0x00700000   // value for DB06 with 14/500 MHZ ADC
 #define PNXL_MB_REVA          0x00000000   // value for Rev A Main board
 #define PNXL_MB_REVB          0x00010000   // value for Rev B Main board
+
 #define ADC_CLK_MHZ_DB01_75      75
 #define ADC_CLK_MHZ_DB01_125    125
-#define SYSTEM_CLOCK_MHZ_DB01    75
-#define FILTER_CLOCK_MHZ_DB01    75
 #define ADC_CLK_MHZ_DB02        250
-#define SYSTEM_CLOCK_MHZ_DB02   125
-#define FILTER_CLOCK_MHZ_DB02   125
+#define ADC_CLK_MHZ_DB04        250
 #define ADC_CLK_MHZ_DB06_250    250
-#define SYSTEM_CLOCK_MHZ_DB06   125
-#define FILTER_CLOCK_MHZ_DB06   125
+#define ADC_CLK_MHZ_DB06_500    500
+ 
+#define SYSTEM_CLOCK_MHZ_DB01    75
+#define SYSTEM_CLOCK_MHZ_MOST   125
+
+#define FILTER_CLOCK_MHZ_DB01    75
+#define FILTER_CLOCK_MHZ_MOST   125
+
 #define NCHANNELS                32    // number of channels in parameter files (=max)
 #define NCHANNELS_PRESENT_DB02   16    // actual number of channels per module with DB02
 #define NCHANNELS_PRESENT_DB01    8    // actual number of channels per module with DB01

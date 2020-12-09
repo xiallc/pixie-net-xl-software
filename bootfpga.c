@@ -130,10 +130,22 @@ int main( int argc, const char **argv) {
             printf(" HW Rev = 0x%04X, SN = %d,  loading PNXLK7B_DB02_12_250_1G.bin\n", revsn>>16, revsn&0xFFFF);
             N_FPGA_BYTES = N_FPGA_BYTES_B;
          }
+         if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB04_14_250)
+         {
+            fil = fopen("PNXLK7B_DB04_14_250_1G.bin","rb");
+            printf(" HW Rev = 0x%04X, SN = %d,  loading PNXLK7B_DB04_14_250_1G.bin\n", revsn>>16, revsn&0xFFFF);
+            N_FPGA_BYTES = N_FPGA_BYTES_B;
+         }
          if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
          {
             fil = fopen("PNXLK7B_DB06_16_250_1G.bin","rb");
             printf(" HW Rev = 0x%04X, SN = %d,  loading PNXLK7B_DB06_16_250_1G.bin\n", revsn>>16, revsn&0xFFFF);
+            N_FPGA_BYTES = N_FPGA_BYTES_B;
+         }
+         if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_14_500)
+         {
+            fil = fopen("PNXLK7B_DB06_14_500_1G.bin","rb");
+            printf(" HW Rev = 0x%04X, SN = %d,  loading PNXLK7B_DB06_14_500_1G.bin\n", revsn>>16, revsn&0xFFFF);
             N_FPGA_BYTES = N_FPGA_BYTES_B;
          }
          if((revsn & PNXL_DB_VARIANT_MASK) == 0xF00000)      // no ADC DB: default to DB02
@@ -156,10 +168,23 @@ int main( int argc, const char **argv) {
             printf(" HW Rev = 0x%04X, SN = %d,  loading PNXLK7B_DB02_12_250_10G.bin\n", revsn>>16, revsn&0xFFFF);
             N_FPGA_BYTES = N_FPGA_BYTES_B;
          }
+         if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB04_14_250)
+         {
+            fil = fopen("PNXLK7B_DB04_14_250_10G.bin","rb");
+            printf(" HW Rev = 0x%04X, SN = %d,  loading PNXLK7B_DB04_14_250_10G.bin\n", revsn>>16, revsn&0xFFFF);
+            N_FPGA_BYTES = N_FPGA_BYTES_B;
+         }
+
          if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
          {
             fil = fopen("PNXLK7B_DB06_16_250_10G.bin","rb");
             printf(" HW Rev = 0x%04X, SN = %d,  loading PNXLK7B_DB06_16_250_10G.bin\n", revsn>>16, revsn&0xFFFF);
+            N_FPGA_BYTES = N_FPGA_BYTES_B;
+         }
+         if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_14_500)
+         {
+            fil = fopen("PNXLK7B_DB06_14_500_10G.bin","rb");
+            printf(" HW Rev = 0x%04X, SN = %d,  loading PNXLK7B_DB06_14_500_10G.bin\n", revsn>>16, revsn&0xFFFF);
             N_FPGA_BYTES = N_FPGA_BYTES_B;
          }
          if((revsn & PNXL_DB_VARIANT_MASK) == 0xF00000)      // no ADC DB: default to DB02

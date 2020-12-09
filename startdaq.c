@@ -130,20 +130,8 @@ int main(void) {
      // ************************** check HW version ********************************
 
    revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
-   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
-   {
-      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
-      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
-      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB02;
-      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
-   }
-   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
-   {
-      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
-      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
-      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01_125;             
-      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
-   } 
+   FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_MOST;    // default
+
    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75)
    {
       NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
@@ -151,12 +139,35 @@ int main(void) {
       ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01_75;             
       FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
    }
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01_125;             
+   } 
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB02;
+   }
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB04_14_250)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB02;
+   }
    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
    {
       NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
       NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
       ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB06_250;             
-      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB06;
+   } 
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_14_500)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB06_500;             
    } 
 
    // check if FPGA booted
@@ -629,7 +640,7 @@ int main(void) {
                         cfdout2 = 0x1000000 - cfdout2;        // convert to positive
                         ph = (double)cfdout1 / ( (double)cfdout1 + (double)cfdout2 );              
                         //printf(", frac %f \n ",ph); 
-                        if( ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)  | ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250) )   {
+                        if( ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)  | ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250) | ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB04_14_250) )   {
                           cfd = (int)floor(ph*16384); 
                           cfd = (cfd&0x3FFF);                  // combine cfd value and bits
                           cfd = cfd + (cfdsrc<<14);         
