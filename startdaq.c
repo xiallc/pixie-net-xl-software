@@ -993,8 +993,8 @@ int main(void) {
       WR_tm_tai = tmp0 +  65536*tmp1 + TWOTO32*tmp2;
 
       printf( "Run completed. Current WR time %llu\n",WR_tm_tai );
-      //printf( "Events transfered %d, rejected %d\n",eventcount,eventcount_ch[14] );
-      printf( "Events transfered %d\n",eventcount );
+      //printf( "Events transferred %d, rejected %d\n",eventcount,eventcount_ch[14] );
+      printf( "Events transferred %d\n",eventcount );
       
      
       

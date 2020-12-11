@@ -99,7 +99,7 @@
 #define MIN_FL          2             // trigger filter limits
 #define MIN_FG          0
 #define MAX_FLFG        127
-#define MAX_TH          65536
+#define MAX_TH          65535
 #define GAIN_HIGH       5          // gain limits
 #define GAIN_LOW        2
 #define MAX_TL          4092           // max length of captured waveform and pre-trigger delay

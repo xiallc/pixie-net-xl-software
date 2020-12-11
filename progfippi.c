@@ -100,7 +100,7 @@ int main(void) {
   unsigned int i2cgain[16] = {0}; 
   unsigned int cs[N_K7_FPGAS] = {CS_K0,CS_K1};
   int ch, k7, ch_k7;    // loop counter better be signed int  . ch = abs ch. no; ch_k7 = ch. no in k7
-  unsigned int revsn, NCHANNELS_PER_K7, NCHANNELS_PRESENT;
+  unsigned int revsn, NCHANNELS_PER_K7, NCHANNELS_PRESENT, NSAMPLES_PER_CYCLE;
   unsigned int ADC_CLK_MHZ, SYSTEM_CLOCK_MHZ, FILTER_CLOCK_MHZ;
   unsigned long long mac;
   unsigned int dip, sip;
@@ -140,8 +140,9 @@ int main(void) {
 
 
    revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
-   SYSTEM_CLOCK_MHZ  =  SYSTEM_CLOCK_MHZ_MOST;     // defaults
-   FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_MOST; 
+   SYSTEM_CLOCK_MHZ   =  SYSTEM_CLOCK_MHZ_MOST;     // defaults
+   FILTER_CLOCK_MHZ   =  FILTER_CLOCK_MHZ_MOST; 
+
 
    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75)
    {
@@ -159,27 +160,27 @@ int main(void) {
    } 
    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
    {
-      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
-      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
-      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB02;
+      NCHANNELS_PRESENT  =  NCHANNELS_PRESENT_DB02;
+      NCHANNELS_PER_K7   =  NCHANNELS_PER_K7_DB02;
+      ADC_CLK_MHZ        =  ADC_CLK_MHZ_DB02;
    }
    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB04_14_250)
    {
-      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
-      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
-      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB02;
+      NCHANNELS_PRESENT  =  NCHANNELS_PRESENT_DB02;
+      NCHANNELS_PER_K7   =  NCHANNELS_PER_K7_DB02;
+      ADC_CLK_MHZ        =  ADC_CLK_MHZ_DB02;
    }
    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
    {
-      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
-      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
-      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB06_250;    
+      NCHANNELS_PRESENT  =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7   =  NCHANNELS_PER_K7_DB01;
+      ADC_CLK_MHZ        =  ADC_CLK_MHZ_DB06_250;   
    } 
    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_14_500)
    {
-      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
-      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
-      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB06_500;    
+      NCHANNELS_PRESENT  =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7   =  NCHANNELS_PER_K7_DB01;
+      ADC_CLK_MHZ        =  ADC_CLK_MHZ_DB06_500;    
    } 
    if((revsn & PNXL_DB_VARIANT_MASK) == 0xF00000)      // no ADC DB: default to DB02
    {
@@ -188,6 +189,8 @@ int main(void) {
       NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
       ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB02;
    }
+
+   NSAMPLES_PER_CYCLE =  (int)floor(ADC_CLK_MHZ/FILTER_CLOCK_MHZ); 
 
    // check if FPGA booted
    mval = mapped[AMZ_CSROUTL];
@@ -452,9 +455,10 @@ int main(void) {
          return -3700-ch;
       } 
       
-      TH[ch] = (int)floor(fippiconfig.TRIGGER_THRESHOLD[ch]*FL[ch]);
+      TH[ch] = (int)floor(fippiconfig.TRIGGER_THRESHOLD[ch]*FL[ch]*NSAMPLES_PER_CYCLE);
       if(TH[ch] > MAX_TH)     {
-         printf("Invalid TRIGGER_THRESHOLD = %f, maximum %f at this trigger filter rise time\n",fippiconfig.TRIGGER_THRESHOLD[ch],MAX_TH*8.0/(double)FL[ch]);
+         printf("Invalid TRIGGER_THRESHOLD = %f, maximum %f at this trigger filter rise time\n",fippiconfig.TRIGGER_THRESHOLD[ch],MAX_TH/(double)FL[ch]/NSAMPLES_PER_CYCLE);
+         printf("(Note: pulses over %f always cause a trigger)\n",MAX_TH/(double)FL[ch]/NSAMPLES_PER_CYCLE);
          return -3800-ch;
       } 
 
