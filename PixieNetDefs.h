@@ -34,7 +34,7 @@
  *----------------------------------------------------------------------*/
 
 // system constants
-#define PS_CODE_VERSION 0x0306
+#define PS_CODE_VERSION 0x0307
 #define PN_BOARD_VERSION_12_250_A 0xA990    
 #define PN_BOARD_VERSION_12_250_B 0xA991  
 #define PN_BOARD_VERSION_12_250_B_PTP 0xA981  
@@ -69,6 +69,7 @@
 #define NCHANNELS_PER_K7_DB01     4    // actual number of channels per K7 with DB01
 #define NCHANNEL_MAX400           4    // maximum number of channels recorded in a single 0x400 .bin file
 #define N_K7_FPGAS         2
+
 #define V_OFFSET_MAX			1.25			// Pixie voltage offset maximum
 #define MAX_MCA_BINS       32768
 #define WEB_MCA_BINS       4096
