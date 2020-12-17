@@ -378,11 +378,15 @@
 #define CCSRC_CHANVETOSEL    3  // Channel veto selection - 1: channel validation trigger; 0: front panel channel veto
 #define CCSRC_MODVETOSEL     4  // Module veto selection - 1: module validation trigger; 0: front panel module veto
 #define CCSRC_EXTTSENA       5  // External timestamps in event header - 1: enable; 0: disable
-#define CCSRC_RBADDIS        6  // if 1, disable rangebad logic and accept even pulses going out of range
+#define CCSRC_RBADDIS        6  // if 1, disable rangebad logic and accept even pulses going out of range      
 
 // other CSR bits
 #define WRC_RUNTIME          0  // if set, Enable WR run time control
 #define MCSRA_P4ERUNSTATS    1  // if set, use P4e convention for live time etc
+#define MCSRA_FP_COUNT       4  // option to count FP pulses as ext_ts, else local clock (or WR)     
+#define MCSRA_FP_VETO        5  // option to use FP as VETO                                          
+#define MCSRA_FP_EXTCLR      6  // option to use FP to clear ext_ts                                  
+#define MCSRA_FP_PEDGE       7  // option to select rising/falling edge for count or clear.   
 
 // P16 Fippi register bits
 #define FiPPI_HALT           0   // Halt Fippi (lower 32-bit word)
@@ -415,5 +419,11 @@
 #define SCSR_AUTOQSPI            4  // if set, E is sent out via QSPI without interaction with C code
 #define SCSR_HDRENA              5  // if set, store LM output data in header memory (else only E in E fifo)
 #define SCSR_DMCONTROL           6  // if set, Ethernet output data is held in SDRAM FIFO until DM approves
-
-
+#define SCSR_TGTEST              7  // reserved
+#define SCSR_FP_COUNT            8  // option to count FP pulses as ext_ts, else local clock (or WR)     
+#define SCSR_FP_VETO             9  // option to use FP as VETO                                          
+#define SCSR_FP_EXTCLR          10  // option to use FP to clear ext_ts                                  
+#define SCSR_FP_PEDGE           11  // option to select rising/falling edge for count or clear.          
+ 
+ 
+ 

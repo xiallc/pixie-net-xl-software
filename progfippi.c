@@ -710,9 +710,12 @@ int main(void) {
       if(fippiconfig.DATA_FLOW!=5) reglo = reglo + (1<<SCSR_HDRENA);                               // disable header memory in pure MCA runs where ARM only reads E from FIFO
       if(fippiconfig.DATA_FLOW==6) reglo = reglo + (1<<SCSR_DMCONTROL);                            // require DM approval to move data from SDRAM FIFO to WR (Eth out)
       //reglo = reglo + (1<<7);    // enable 10G test
+      reglo = reglo + setbit(fippiconfig.MODULE_CSRA,MCSRA_FP_COUNT,  SCSR_FP_COUNT   );        // option to count FP pulses as ext_ts, else local clock (or WR) 
+      reglo = reglo + setbit(fippiconfig.MODULE_CSRA,MCSRA_FP_VETO,   SCSR_FP_VETO   );         // option to use FP as VETO
+      reglo = reglo + setbit(fippiconfig.MODULE_CSRA,MCSRA_FP_EXTCLR, SCSR_FP_EXTCLR   );       // option to use FP to clear ext_ts  
+      reglo = reglo + setbit(fippiconfig.MODULE_CSRA,MCSRA_FP_PEDGE,  SCSR_FP_PEDGE   );        // option to select rising/falling edge for count or clear.  
       mapped[AMZ_EXAFWR] = AK7_SCSRIN;    // write to  k7's addr to select register for write
       mapped[AMZ_EXDWR]  = reglo;        // write lower 16 bit
-   
 
       // ................ WR Ethernet output settings .............................
 

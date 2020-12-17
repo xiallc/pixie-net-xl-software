@@ -629,10 +629,18 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
   ret = parse_single_bool_val( label_to_values, "MCSRA_P4ERUNSTATS_01", bit, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -1;
   if(ret==0) config->MODULE_CSRA = SetOrClrBit(1, config->MODULE_CSRA, bit); 
-  
+
+  ret = parse_single_bool_val( label_to_values, "MCSRA_FPCOUNT_04", bit, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -1;
+  if(ret==0) config->MODULE_CSRA = SetOrClrBit(4, config->MODULE_CSRA, bit); 
+
   ret = parse_single_bool_val( label_to_values, "MCSRA_FPVETO_05", bit, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -1;
   if(ret==0) config->MODULE_CSRA = SetOrClrBit(5, config->MODULE_CSRA, bit); 
+  
+  ret = parse_single_bool_val( label_to_values, "MCSRA_FPEXTCLR_06", bit, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -1;
+  if(ret==0) config->MODULE_CSRA = SetOrClrBit(6, config->MODULE_CSRA, bit); 
   
   ret = parse_single_bool_val( label_to_values, "MCSRA_FPPEDGE_07", bit, ignore_missing ) ;
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -2;
