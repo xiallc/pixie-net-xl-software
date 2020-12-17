@@ -1211,7 +1211,79 @@ int main(void) {
    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB04_14_250)    // DB04 has I2C DACs
    {
      printf("TODO: implement DB04 DAC programming\n");
-   }
+
+     // programming the LTC2655 via DB-specific TWI interface
+     // write address + 3 bytes
+     // byte 0: command (4 bits) + address (4bits)
+     // byte 1/2: 16bit DAC value, MSB first
+    
+     // I2C write for first 8 channels
+     mapped[AMZ_DEVICESEL] = CS_MZ;	  // select MZ controller
+
+    for(k7=0;k7<N_K7_FPGAS;k7++)
+    {
+        if(k7==0)
+          mapped[AAUXCTRL] = I2C_SELDB0;	  // select bit 5 -> DB0 I2C        // XXXXXX
+        else 
+          mapped[AAUXCTRL] = I2C_SELDB1;	  // select bit 6 -> DB1 I2C        // XXXXXX
+    
+        for( ch_k7 = 0; ch_k7 < NCHANNELS_PER_K7_DB02 ; ch_k7 ++ )    //  8 DACs per K7 (DB02/04), not "NCHANNELS_PER_K7"
+        {      
+            ch = ch_k7+k7*NCHANNELS_PER_K7_DB02;
+            dac = (int)floor( (1 - fippiconfig.VOFFSET[ch]/ V_OFFSET_MAX) * 32768);	
+            if(dac > 65535)  {
+               printf("Invalid VOFFSET = %f, must be between %f and -%f\n",fippiconfig.VOFFSET[ch], V_OFFSET_MAX-0.05, V_OFFSET_MAX-0.05);
+               return -4300-ch;
+            }
+                     
+            I2Cstart(mapped);
+      
+            // I2C addr byte
+            i2cdata[7] = 0;
+            i2cdata[6] = 0;
+            i2cdata[5] = 1;
+            i2cdata[4] = 0;
+            i2cdata[3] = 0;                  // A2
+            i2cdata[2] = 0;                  // A1
+            i2cdata[1] = (ch_k7<4);          // A0       // 2nd DAC chip for upper 4 channels
+            i2cdata[0] = 0;                  // R/W*     // no reads possible
+            I2Cbytesend(mapped, i2cdata);
+            I2Cslaveack(mapped);
+         
+            // I2C control byte
+            i2cdata[7] = 0;                  // C3
+            i2cdata[6] = 0;                  // C2
+            i2cdata[5] = 1;                  // C1
+            i2cdata[4] = 1;                  // C0      // 0011: write to and update channel N (N set by A3-0)
+            i2cdata[3] = 0;                  // A3
+            i2cdata[2] = 0;                  // A2
+            i2cdata[1] = (ch_k7>>1 & 0x01);  // A1
+            i2cdata[0] = (ch_k7    & 0x01);  // A0
+            I2Cbytesend(mapped, i2cdata);
+            I2Cslaveack(mapped);
+         
+            // I2C data byte
+            for( k = 0; k <8; k++ )     // fill i2cdata array with dac bits 
+            {
+               i2cdata[k] = (dac>>(k+8)) & 0x01;
+            }
+            I2Cbytesend(mapped, i2cdata);      // send same bits again for enable?
+            I2Cslaveack(mapped);
+      
+            // I2C data byte
+            for( k = 0; k <8; k++ )    // fill i2cdata array with dac bits 
+            {
+               i2cdata[k] = (dac>>(k)) & 0x01;
+            }
+            I2Cbytesend(mapped, i2cdata );      // send same bits again for enable?
+            I2Cslaveack(mapped);
+         
+            I2Cstop(mapped);
+   
+        }   // end for (N channels)
+      } // end for (K7s)
+
+   } // end DB04
 
 
 
