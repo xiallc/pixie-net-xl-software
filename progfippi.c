@@ -618,38 +618,76 @@ int main(void) {
 
 
       // QDC parameters specified in samples, not as as in P16!
-      if( (fippiconfig.QDCLen0[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen0[ch] < QDCLEN_MIN)  )  {
-         printf("Invalid QDCLen0 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen0[ch], QDCLEN_MIN, QDCLEN_MAX);
-         return -6900-ch;
-      }
-      if( (fippiconfig.QDCLen1[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen1[ch] < QDCLEN_MIN)  )  {
-         printf("Invalid QDCLen1 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen1[ch], QDCLEN_MIN, QDCLEN_MAX);
-         return -7000-ch;
-      }
-      if( (fippiconfig.QDCLen2[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen2[ch] < QDCLEN_MIN)  )  {
-         printf("Invalid QDCLen2 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen2[ch], QDCLEN_MIN, QDCLEN_MAX);
-         return -7100-ch;
-      }
-      if( (fippiconfig.QDCLen3[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen3[ch] < QDCLEN_MIN)  )  {
-         printf("Invalid QDCLen3 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen3[ch], QDCLEN_MIN, QDCLEN_MAX);
-         return -7200-ch;
-      }
-      if( (fippiconfig.QDCLen4[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen4[ch] < QDCLEN_MIN)  )  {
-         printf("Invalid QDCLen4 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen4[ch], QDCLEN_MIN, QDCLEN_MAX);
-         return -7300-ch;
-      }
-      if( (fippiconfig.QDCLen5[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen5[ch] < QDCLEN_MIN)  )  {
-         printf("Invalid QDCLen5 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen5[ch], QDCLEN_MIN, QDCLEN_MAX);
-         return -7400-ch;
-      }
-      if( (fippiconfig.QDCLen6[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen6[ch] < QDCLEN_MIN)  )  {
-         printf("Invalid QDCLen6 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen6[ch], QDCLEN_MIN, QDCLEN_MAX);
-         return -7500-ch;
-      }
-      if( (fippiconfig.QDCLen7[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen7[ch] < QDCLEN_MIN)  )  {
-         printf("Invalid QDCLen7 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen7[ch], QDCLEN_MIN, QDCLEN_MAX);
-         return -7600-ch;
-      }
+      if  ( (fippiconfig.CHANNEL_CSRA[ch] & (1<<CCSRA_QDCENA)) >0 )  {
+
+         if( (fippiconfig.QDCLen0[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen0[ch] < QDCLEN_MIN)  )  {
+            printf("Invalid QDCLen0 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen0[ch], QDCLEN_MIN, QDCLEN_MAX);
+            return -6900-ch;
+         }
+         if( (fippiconfig.QDCLen1[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen1[ch] < QDCLEN_MIN)  )  {
+            printf("Invalid QDCLen1 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen1[ch], QDCLEN_MIN, QDCLEN_MAX);
+            return -7000-ch;
+         }
+         if( (fippiconfig.QDCLen2[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen2[ch] < QDCLEN_MIN)  )  {
+            printf("Invalid QDCLen2 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen2[ch], QDCLEN_MIN, QDCLEN_MAX);
+            return -7100-ch;
+         }
+         if( (fippiconfig.QDCLen3[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen3[ch] < QDCLEN_MIN)  )  {
+            printf("Invalid QDCLen3 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen3[ch], QDCLEN_MIN, QDCLEN_MAX);
+            return -7200-ch;
+         }
+         if( (fippiconfig.QDCLen4[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen4[ch] < QDCLEN_MIN)  )  {
+            printf("Invalid QDCLen4 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen4[ch], QDCLEN_MIN, QDCLEN_MAX);
+            return -7300-ch;
+         }
+         if( (fippiconfig.QDCLen5[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen5[ch] < QDCLEN_MIN)  )  {
+            printf("Invalid QDCLen5 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen5[ch], QDCLEN_MIN, QDCLEN_MAX);
+            return -7400-ch;
+         }
+         if( (fippiconfig.QDCLen6[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen6[ch] < QDCLEN_MIN)  )  {
+            printf("Invalid QDCLen6 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen6[ch], QDCLEN_MIN, QDCLEN_MAX);
+            return -7500-ch;
+         }
+         if( (fippiconfig.QDCLen7[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen7[ch] < QDCLEN_MIN)  )  {
+            printf("Invalid QDCLen7 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen7[ch], QDCLEN_MIN, QDCLEN_MAX);
+            return -7600-ch;
+         }
+
+       } else {
+         if( (fippiconfig.QDCLen0[ch] > 60) || (fippiconfig.QDCLen0[ch] < 2)  )  {
+            printf("Invalid PSA L0 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen0[ch], 2, 60);
+            return -6900-ch;
+         }
+         if( (fippiconfig.QDCLen1[ch] > 60) || (fippiconfig.QDCLen1[ch] < 2)  )  {
+            printf("Invalid PSA L1 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen1[ch], 2, 60);
+            return -7000-ch;
+         }
+         if( (fippiconfig.QDCLen2[ch]+fippiconfig.QDCLen0[ch] > 250)   )  {
+            printf("Invalid PSA D0+L1 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen2[ch], 2, 250);
+            return -7100-ch;
+         }
+         if( (fippiconfig.QDCLen3[ch]+fippiconfig.QDCLen1[ch] > 250)   )  {
+            printf("Invalid PSA D1+L1 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen3[ch], 2, 250);
+            return -7200-ch;
+         }
+         if( (fippiconfig.QDCLen4[ch] > 1)  )  {
+            printf("Invalid PSA scale option = %d, must be between %d and %d (ch %d)\n",fippiconfig.QDCLen4[ch], 0, 1, ch);
+            return -7300-ch;
+         }
+         if( (fippiconfig.QDCLen5[ch] > 255) || (fippiconfig.QDCLen5[ch] < 1)  )  {
+            printf("Invalid PSA TH = %d, must be between %d and %d \n",fippiconfig.QDCLen5[ch], 1, 255);
+            return -7400-ch;
+         }
+         if( (fippiconfig.QDCLen6[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen6[ch] < QDCLEN_MIN)  )  {
+            printf("Invalid QDCLen6 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen6[ch], QDCLEN_MIN, QDCLEN_MAX);
+            return -7500-ch;
+         }
+         if( (fippiconfig.QDCLen7[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen7[ch] < QDCLEN_MIN)  )  {
+            printf("Invalid QDCLen7 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen7[ch], QDCLEN_MIN, QDCLEN_MAX);
+            return -7600-ch;
+         }
+
+       } // end QDC ena
 
       // EMIN can be used to cut outputs below a threshold of interest. TODO: use CSR bits to specify where cust occur      
       if( (fippiconfig.EMIN[ch] > 65535) || (fippiconfig.EMIN[ch] < 0)  )  {

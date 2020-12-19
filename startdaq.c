@@ -806,11 +806,28 @@ int main(void) {
                                 memcpy( buffer2 + 4,  &(timeL), 4 );
                                 memcpy( buffer2 + 8,  &(out2),  4 );
                                 memcpy( buffer2 + 12, &(out3),  4 );
+
+                                out2 = hdr[8];
+                                memcpy( buffer2 + 16, &(out2),  2 );
+                                out2 = hdr[9];
+                                memcpy( buffer2 + 18, &(out2),  2 );
+                                out2 = hdr[10];
+                                memcpy( buffer2 + 20, &(out2),  2 );
+                                out2 = hdr[11];
+                                memcpy( buffer2 + 22, &(out2),  2 );
+                                out2 = hdr[12];
+                                memcpy( buffer2 + 24, &(out2),  2 );
+                                out2 = hdr[13];
+                                memcpy( buffer2 + 26, &(out2),  2 );
+                                out2 = hdr[14];
+                                memcpy( buffer2 + 28, &(out2),  2 );
+                                out2 = hdr[15];
+                                memcpy( buffer2 + 30, &(out2),  2 );
          
-                                memcpy( buffer2 + 16, &(tsum),  4 );
-                                memcpy( buffer2 + 20, &(lsum),  4 );   
-                                memcpy( buffer2 + 24, &(gsum),  4 );
-                                memcpy( buffer2 + 28, &(out7),  4 );      // BL
+                                //memcpy( buffer2 + 16, &(tsum),  4 );
+                                //memcpy( buffer2 + 20, &(lsum),  4 );   
+                                //memcpy( buffer2 + 24, &(gsum),  4 );
+                                //memcpy( buffer2 + 28, &(out7),  4 );      // BL
          
                                 memcpy( buffer2 + 32, &(exttsL), 4 );      // ext TS
                                 memcpy( buffer2 + 36, &(exttsH), 4 );      // ext TS
