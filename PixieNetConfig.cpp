@@ -1039,6 +1039,36 @@ int init_PixieNetFippiConfig_from_file( const char * const filename,
   ret = parse_multiple_int_val( label_to_values, "QDCLen7", config->QDCLen7, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -39;
 
+  ret = parse_multiple_int_val( label_to_values, "QDCDel0", config->QDCDel0, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -38;
+  
+  ret = parse_multiple_int_val( label_to_values, "QDCDel1", config->QDCDel1, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -39;
+ 
+  ret = parse_multiple_int_val( label_to_values, "QDCDel2", config->QDCDel2, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -38;
+  
+  ret = parse_multiple_int_val( label_to_values, "QDCDel3", config->QDCDel3, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -39;
+  
+  ret = parse_multiple_int_val( label_to_values, "QDCDel4", config->QDCDel4, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -38;
+  
+  ret = parse_multiple_int_val( label_to_values, "QDCDel5", config->QDCDel5, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -39;
+  
+  ret = parse_multiple_int_val( label_to_values, "QDCDel6", config->QDCDel6, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -38;
+  
+  ret = parse_multiple_int_val( label_to_values, "QDCDel7", config->QDCDel7, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -39;
+
+  ret = parse_multiple_int_val( label_to_values, "QDC_DIV", config->QDC_DIV, ignore_missing ) ;
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -38;
+  
+  ret = parse_multiple_int_val( label_to_values, "PSA_THRESHOLD", config->PSA_THRESHOLD, ignore_missing );
+  if( (ignore_missing==0 && ret==1) || (ret<0) )  return -39;
+
   ret = parse_multiple_int_val( label_to_values, "EMIN", config->EMIN, ignore_missing );
   if( (ignore_missing==0 && ret==1) || (ret<0) )  return -39;
 

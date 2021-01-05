@@ -107,12 +107,15 @@
 #define MULT_TL         32             // trace lenght must be a multiple of this number
 #define TWEAK_UD        0           // adjustment to pre-trigger delay for internal pipelining
 #define MAX_BFACT       16
-#define MAX_PSATH       2044
+#define MAX_PSATH       255
 #define MAX_GW          255
 #define MAX_GD          255
 #define MAX_CD          255
 #define MAX_QDCL        60          // length of QDC sum samples
+#define MIN_QDCL        2           // length of QDC sum samples
 #define MAX_QDCLD       250         // length plus delay of QDC sum, in samples
+#define VAL0_QDC_DIV    4           // scaling factor for QDC sums
+#define VAL1_QDC_DIV    32
 #define MAX_BLAVG       16
 #define MAX_BADBL       20
 #define DB01_GAIN0      1.6

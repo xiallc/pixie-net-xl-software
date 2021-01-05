@@ -471,6 +471,18 @@ int main(void) {
          return -4000-ch;
          // Note: enfore TL >32 which is the minimum for 0x400 if traces are recorded. For no trace, use CCSRA bit to disable trace
       }
+      // in UDP mode, all channels must have same TL  and CCSRA_TRACEENA
+       if( (fippiconfig.DATA_FLOW==4) || (fippiconfig.DATA_FLOW==3) ) {
+            if(TL[ch] != TL[0])   {
+               printf("Invalid TRACE_LENGTH = %f (ch. %d), must be same as ch.0 in DATA_FLOW 3 or 4\n",fippiconfig.TRACE_LENGTH[ch],ch);
+               return -4000-ch;
+            }
+            if( (fippiconfig.CHANNEL_CSRA[ch] &  (1<<CCSRA_TRACEENA)) != (fippiconfig.CHANNEL_CSRA[0] &  (1<<CCSRA_TRACEENA))   ) {
+                printf("Invalid TRACEENA (ch. %d), must be same as ch.0 in DATA_FLOW 3 or 4\n",ch);
+                return -4000-ch;
+            }
+
+       }
 
       if(TL[ch] <fippiconfig.TRACE_LENGTH[ch]*ADC_CLK_MHZ/(1<<FFR))  {
          printf("TRACE_LENGTH[%d] will be rounded off to = %f us, %d samples\n",ch,(double)TL[ch]/ADC_CLK_MHZ,TL[ch]);
@@ -654,38 +666,119 @@ int main(void) {
          }
 
        } else {
-         if( (fippiconfig.QDCLen0[ch] > 60) || (fippiconfig.QDCLen0[ch] < 2)  )  {
-            printf("Invalid PSA L0 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen0[ch], 2, 60);
+         // check length limits
+         if( (fippiconfig.QDCLen0[ch] > MAX_QDCL) || (fippiconfig.QDCLen0[ch] < MIN_QDCL)  )  {
+            printf("Invalid PSA L0 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen0[ch], ch, MIN_QDCL, MAX_QDCL);
             return -6900-ch;
          }
-         if( (fippiconfig.QDCLen1[ch] > 60) || (fippiconfig.QDCLen1[ch] < 2)  )  {
-            printf("Invalid PSA L1 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen1[ch], 2, 60);
+         if( (fippiconfig.QDCLen1[ch] > MAX_QDCL) || (fippiconfig.QDCLen1[ch] < MIN_QDCL)  )  {
+            printf("Invalid PSA L1 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen1[ch], ch, MIN_QDCL, MAX_QDCL);
             return -7000-ch;
          }
-         if( (fippiconfig.QDCLen2[ch]+fippiconfig.QDCLen0[ch] > 250)   )  {
-            printf("Invalid PSA D0+L1 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen2[ch], 2, 250);
+          if( (fippiconfig.QDCLen2[ch] > MAX_QDCL) || (fippiconfig.QDCLen0[ch] < MIN_QDCL)  )  {
+            printf("Invalid PSA L2 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen2[ch], ch, MIN_QDCL, MAX_QDCL);
+            return -6900-ch;
+         }
+         if( (fippiconfig.QDCLen3[ch] > MAX_QDCL) || (fippiconfig.QDCLen1[ch] < MIN_QDCL)  )  {
+            printf("Invalid PSA L3 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen3[ch], ch, MIN_QDCL, MAX_QDCL);
+            return -7000-ch;
+         }
+         if( (fippiconfig.QDCLen4[ch] > MAX_QDCL) || (fippiconfig.QDCLen0[ch] < MIN_QDCL)  )  {
+            printf("Invalid PSA L4 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen4[ch], ch, MIN_QDCL, MAX_QDCL);
+            return -6900-ch;
+         }
+         if( (fippiconfig.QDCLen5[ch] > MAX_QDCL) || (fippiconfig.QDCLen1[ch] < MIN_QDCL)  )  {
+            printf("Invalid PSA L5 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen5[ch], ch, MIN_QDCL, MAX_QDCL);
+            return -7000-ch;
+         }
+         if( (fippiconfig.QDCLen6[ch] > MAX_QDCL) || (fippiconfig.QDCLen0[ch] < MIN_QDCL)  )  {
+            printf("Invalid PSA L6 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen6[ch], ch, MIN_QDCL, MAX_QDCL);
+            return -6900-ch;
+         }
+         if( (fippiconfig.QDCLen7[ch] > MAX_QDCL) || (fippiconfig.QDCLen1[ch] < MIN_QDCL)  )  {
+            printf("Invalid PSA L7 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen7[ch], ch, MIN_QDCL, MAX_QDCL);
+            return -7000-ch;
+         }
+
+         // check delay+length max
+         if( (fippiconfig.QDCLen0[ch]+fippiconfig.QDCDel0[ch] > MAX_QDCLD)   )  {
+            printf("Invalid PSA D0+L0 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen0[ch]+fippiconfig.QDCDel0[ch], ch, MIN_QDCL, MAX_QDCLD);
             return -7100-ch;
          }
-         if( (fippiconfig.QDCLen3[ch]+fippiconfig.QDCLen1[ch] > 250)   )  {
-            printf("Invalid PSA D1+L1 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen3[ch], 2, 250);
+         if( (fippiconfig.QDCLen1[ch]+fippiconfig.QDCDel1[ch] > MAX_QDCLD)   )  {
+            printf("Invalid PSA D1+L1 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen1[ch]+fippiconfig.QDCDel1[ch], ch, MIN_QDCL, MAX_QDCLD);
             return -7200-ch;
          }
-         if( (fippiconfig.QDCLen4[ch] > 1)  )  {
-            printf("Invalid PSA scale option = %d, must be between %d and %d (ch %d)\n",fippiconfig.QDCLen4[ch], 0, 1, ch);
+         if( (fippiconfig.QDCLen2[ch]+fippiconfig.QDCDel2[ch] > MAX_QDCLD)   )  {
+            printf("Invalid PSA D2+L2 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen2[ch]+fippiconfig.QDCDel2[ch], ch, MIN_QDCL, MAX_QDCLD);
+            return -7100-ch;
+         }
+         if( (fippiconfig.QDCLen3[ch]+fippiconfig.QDCDel3[ch] > MAX_QDCLD)   )  {
+            printf("Invalid PSA D3+L3 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen3[ch]+fippiconfig.QDCDel3[ch], ch, MIN_QDCL, MAX_QDCLD);
+            return -7200-ch;
+         }
+         if( (fippiconfig.QDCLen4[ch]+fippiconfig.QDCDel4[ch] > MAX_QDCLD)   )  {
+            printf("Invalid PSA D4+L4 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen4[ch]+fippiconfig.QDCDel4[ch], ch, MIN_QDCL, MAX_QDCLD);
+            return -7100-ch;
+         }
+         if( (fippiconfig.QDCLen5[ch]+fippiconfig.QDCDel5[ch] > MAX_QDCLD)   )  {
+            printf("Invalid PSA D5+L5 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen5[ch]+fippiconfig.QDCDel5[ch], ch, MIN_QDCL, MAX_QDCLD);
+            return -7200-ch;
+         }
+         if( (fippiconfig.QDCLen6[ch]+fippiconfig.QDCDel6[ch] > MAX_QDCLD)   )  {
+            printf("Invalid PSA D6+L6 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen6[ch]+fippiconfig.QDCDel6[ch], ch, MIN_QDCL, MAX_QDCLD);
+            return -7100-ch;
+         }
+         if( (fippiconfig.QDCLen7[ch]+fippiconfig.QDCDel7[ch] > MAX_QDCLD)   )  {
+            printf("Invalid PSA D7+L7 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen7[ch]+fippiconfig.QDCDel7[ch], ch, MIN_QDCL, MAX_QDCLD);
+            return -7200-ch;                
+         }
+
+         // all sums must have same delay (in sub-sample group) as sum 0
+         if( (fippiconfig.QDCDel1[ch] & 0x0001) != (fippiconfig.QDCDel0[ch] & 0x0001) ) {
+            printf("Invalid PSA D1 = %d (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCLen1[ch], ch );
+            return -7200-ch;  
+         }
+         if( (fippiconfig.QDCDel2[ch] & 0x0001) != (fippiconfig.QDCDel0[ch] & 0x0001) ) {
+            printf("Invalid PSA D2 = %d (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCLen1[ch], ch );
+            return -7200-ch;  
+         }
+         if( (fippiconfig.QDCDel3[ch] & 0x0001) != (fippiconfig.QDCDel0[ch] & 0x0001) ) {
+            printf("Invalid PSA D3 = %d (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCLen1[ch], ch );
+            return -7200-ch;  
+         }
+         if( (fippiconfig.QDCDel4[ch] & 0x0001) != (fippiconfig.QDCDel0[ch] & 0x0001) ) {
+            printf("Invalid PSA D4 = %d (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCLen1[ch], ch );
+            return -7200-ch;  
+         }
+         if( (fippiconfig.QDCDel5[ch] & 0x0001) != (fippiconfig.QDCDel0[ch] & 0x0001) ) {
+            printf("Invalid PSA D5 = %d (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCLen1[ch], ch );
+            return -7200-ch;  
+         }
+         if( (fippiconfig.QDCDel6[ch] & 0x0001) != (fippiconfig.QDCDel0[ch] & 0x0001) ) {
+            printf("Invalid PSA D6 = %d (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCLen1[ch], ch );
+            return -7200-ch;  
+         }
+         if( (fippiconfig.QDCDel7[ch] & 0x0001) != (fippiconfig.QDCDel0[ch] & 0x0001) ) {
+            printf("Invalid PSA D7 = %d (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCLen1[ch], ch );
+            return -7200-ch;  
+         }
+
+
+         // check scaling factor
+         if( (fippiconfig.QDC_DIV[ch] == VAL0_QDC_DIV)  || (fippiconfig.QDC_DIV[ch] == VAL1_QDC_DIV))  {
+            // ok
+         } else {
+            printf("Invalid PSA scale option = %d (ch. %d), must be %d  or %d \n",fippiconfig.QDCLen4[ch], ch, VAL0_QDC_DIV, VAL1_QDC_DIV);
             return -7300-ch;
          }
-         if( (fippiconfig.QDCLen5[ch] > 255) || (fippiconfig.QDCLen5[ch] < 1)  )  {
-            printf("Invalid PSA TH = %d, must be between %d and %d \n",fippiconfig.QDCLen5[ch], 1, 255);
+
+         // check threshold
+         if( (fippiconfig.PSA_THRESHOLD[ch] > MAX_PSATH) || (fippiconfig.QDCLen5[ch] < 1)  )  {
+            printf("Invalid PSA TH = %d (ch. %d), must be between %d and %d \n",fippiconfig.QDCLen5[ch], ch, 1, MAX_PSATH);
             return -7400-ch;
          }
-         if( (fippiconfig.QDCLen6[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen6[ch] < QDCLEN_MIN)  )  {
-            printf("Invalid QDCLen6 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen6[ch], QDCLEN_MIN, QDCLEN_MAX);
-            return -7500-ch;
-         }
-         if( (fippiconfig.QDCLen7[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen7[ch] < QDCLEN_MIN)  )  {
-            printf("Invalid QDCLen7 = %d, must be between %d and %d samples\n",fippiconfig.QDCLen7[ch], QDCLEN_MIN, QDCLEN_MAX);
-            return -7600-ch;
-         }
+
 
        } // end QDC ena
 
@@ -1043,27 +1136,40 @@ int main(void) {
             mval = 0x7FFF - (int)floorf(fippiconfig.QDCLen3[ch]/2) + 1 ;
             reghi = reghi + (mval<<16);
 
-         //   reglo = 0x7FF0; //(int)floorf((0xFFFF-fippiconfig.QDCLen0[ch])/2);                      //  QDC       // in samples.  FPGA expects "len/2 - 1" for effective "len"
-         //   reglo = reglo + (0x7FF8<<16); //((int)floorf((0xFFFF-fippiconfig.QDCLen1[ch])/2)<<16);        //  QDC       // in samples                                                                                 
-         //   reghi = 0x7FFF; //(int)floorf((0xFFFF-fippiconfig.QDCLen2[ch])/2);                      //  QDC       // in samples
-         //   reghi = reghi + (0x7FFD<<16); //((int)floorf((0xFFFF-fippiconfig.QDCLen3[ch])/2)<<16);        //  QDC       // in samples  
-          } else {
+         } else {
 
             if( ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250) |
                 ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB04_14_250) |
                 ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)    )
             {
             // PN style PSA
-               reglo = (fippiconfig.QDCLen0[ch]>>1)+1;                           //  L0 FPGA expects "len/2 + 1" for effective "len" 
-               reghi = fippiconfig.QDCLen0[ch]*2 + 6 + fippiconfig.QDCLen2[ch]*2;    //  D0 FPGA expects total length + delay (=end)
-               mval  = (fippiconfig.QDCLen1[ch]>>1)+1;
-               reglo = reglo + (mval<<16);                                       //  L1 FPGA expects "len/2 + 1" for effective "len"                                                                                
-               mval  = fippiconfig.QDCLen1[ch]*2 + 6 + fippiconfig.QDCLen3[ch]*2;     //  D1 FPGA expects total length + delay (=end)
-               reghi = reghi + (mval<<16);     
+               reglo = (fippiconfig.QDCLen0[ch]>>1)+1;                              //  FPGA expects "len/2 + 1" for effective "len" 
+               mval  =  fippiconfig.QDCLen0[ch]*2 + 6 + fippiconfig.QDCDel0[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
+               reglo = reglo + (mval<<5);
+               if( fippiconfig.QDC_DIV[ch] == VAL1_QDC_DIV)  reglo = reglo + (1<<15);  // set "divide by extra 8" bit  
+
+               mval  = (fippiconfig.QDCLen1[ch]>>1)+1;                              //  FPGA expects "len/2 + 1" for effective "len" 
+               reglo = reglo + (mval<<16);
+               mval  =  fippiconfig.QDCLen1[ch]*2 + 6 + fippiconfig.QDCDel1[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
+               reglo = reglo + (mval<<21);
+               if( fippiconfig.QDC_DIV[ch] == VAL1_QDC_DIV)  reglo = reglo + (1<<31);  // set "divide by extra 8" bit  
+
+               reghi = (fippiconfig.QDCLen2[ch]>>1)+1;                              //  FPGA expects "len/2 + 1" for effective "len" 
+               mval  =  fippiconfig.QDCLen2[ch]*2 + 6 + fippiconfig.QDCDel2[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
+               reghi = reghi + (mval<<5);
+               if( fippiconfig.QDC_DIV[ch] == VAL1_QDC_DIV)  reghi = reghi + (1<<15);  // set "divide by extra 8" bit  
+
+               mval  = (fippiconfig.QDCLen3[ch]>>1)+1;                              //  FPGA expects "len/2 + 1" for effective "len" 
+               reghi = reghi + (mval<<16);
+               mval  =  fippiconfig.QDCLen3[ch]*2 + 6 + fippiconfig.QDCDel3[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
+               reghi = reghi + (mval<<21);
+               if( fippiconfig.QDC_DIV[ch] == VAL1_QDC_DIV)  reghi = reghi + (1<<31);  // set "divide by extra 8" bit     
             } // end revsn
+
             if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
             {
             // P4e style PSA
+            // to be updated for Len+Del variables
                reglo = (fippiconfig.QDCLen0[ch]>>2)+1;                           //  L0 FPGA expects "len/4 + 1" for effective "len" 
                reghi = fippiconfig.QDCLen0[ch] + 4 + fippiconfig.QDCLen2[ch];    //  D0 FPGA expects total length + delay (=end)
                mval  = (fippiconfig.QDCLen1[ch]>>2)+1;
@@ -1071,7 +1177,7 @@ int main(void) {
                mval  = fippiconfig.QDCLen1[ch] +4 + fippiconfig.QDCLen3[ch];     //  D1 FPGA expects total length + delay (=end)
                reghi = reghi + (mval<<16);     
             } // end revsn
-          }
+         }  // end QDC enable
          
          // now write 
          mapped[AMZ_EXAFWR] = AK7_P16REG06+0;              // write to  k7's addr to select channel's register N        
@@ -1099,17 +1205,37 @@ int main(void) {
             reghi = mval;
             mval = 0x7FFF - (int)floorf(fippiconfig.QDCLen7[ch]/2) + 1 ;
             reghi = reghi + (mval<<16);
+          } else {
 
-     //       reglo = 0x7FFE; //(int)floorf((0xFFFF-fippiconfig.QDCLen4[ch])/2);                      //  QDC       // in samples.  FPGA expects "len/2 - 1" for effective "len"
-     //       reglo = reglo + ((int)floorf((0xFFFF-fippiconfig.QDCLen5[ch])/2)<<16);        //  QDC       // in samples                                                                                 
-     //       reghi = 0x7FFF; //(int)floorf((0xFFFF-fippiconfig.QDCLen6[ch])/2);                      //  QDC       // in samples
-     //       reghi = reghi + ((int)floorf((0xFFFF-fippiconfig.QDCLen7[ch])/2)<<16);        //  QDC       // in samples  
-         } else {
-            reglo = fippiconfig.QDCLen4[ch];                      //  QDC       // in samples     or divide result by 8
-            reglo = reglo + (fippiconfig.QDCLen5[ch]<<16);        //  QDC       // in samples     or PSA threshold                                                                          
-            reghi = fippiconfig.QDCLen6[ch];                      //  QDC       // in samples
-            reghi = reghi + (fippiconfig.QDCLen7[ch]<<16);        //  QDC       // in samples 
-         }
+            if( ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250) |
+                ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB04_14_250) |
+                ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)    )
+            {
+            // PN style PSA
+               reglo = (fippiconfig.QDCLen4[ch]>>1)+1;                              //  FPGA expects "len/2 + 1" for effective "len" 
+               mval  =  fippiconfig.QDCLen4[ch]*2 + 6 + fippiconfig.QDCDel4[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
+               reglo = reglo + (mval<<5);
+               if( fippiconfig.QDC_DIV[ch] == VAL1_QDC_DIV)  reglo = reglo + (1<<15);  // set "divide by extra 8" bit  
+
+               mval  = (fippiconfig.QDCLen5[ch]>>1)+1;                              //  FPGA expects "len/2 + 1" for effective "len" 
+               reglo = reglo + (mval<<16);
+               mval  =  fippiconfig.QDCLen5[ch]*2 + 6 + fippiconfig.QDCDel5[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
+               reglo = reglo + (mval<<21);
+               if( fippiconfig.QDC_DIV[ch] == VAL1_QDC_DIV)  reglo = reglo + (1<<31);  // set "divide by extra 8" bit  
+
+               reghi = (fippiconfig.QDCLen6[ch]>>1)+1;                              //  FPGA expects "len/2 + 1" for effective "len" 
+               mval  =  fippiconfig.QDCLen6[ch]*2 + 6 + fippiconfig.QDCDel6[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
+               reghi = reghi + (mval<<5);
+               if( fippiconfig.QDC_DIV[ch] == VAL1_QDC_DIV)  reghi = reghi + (1<<15);  // set "divide by extra 8" bit  
+
+               mval  = (fippiconfig.QDCLen7[ch]>>1)+1;                              //  FPGA expects "len/2 + 1" for effective "len" 
+               reghi = reghi + (mval<<16);
+               mval  =  fippiconfig.QDCLen7[ch]*2 + 6 + fippiconfig.QDCDel7[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
+               reghi = reghi + (mval<<21);
+               if( fippiconfig.QDC_DIV[ch] == VAL1_QDC_DIV)  reghi = reghi + (1<<31);  // set "divide by extra 8" bit     
+            } // end revsn
+
+         }  // end QDC enable
         
          // now write 
          mapped[AMZ_EXAFWR] = AK7_P16REG07+0;              // write to  k7's addr to select channel's register N        
@@ -1123,7 +1249,8 @@ int main(void) {
          
          // ......... P16 Reg 13  .......................    
          
-         reglo = fippiconfig.CFD_THRESHOLD[ch];             //  CFDThresh       // in steps
+         reglo = fippiconfig.CFD_THRESHOLD[ch];                //  CFD Thresh       // in steps
+         reglo = reglo + (fippiconfig.PSA_THRESHOLD[ch]<<16);  //  PSA Thresh       // in steps
          
          // now write 
          mapped[AMZ_EXAFWR] = AK7_P16REG13+0;              // write to  k7's addr to select channel's register N
@@ -1175,9 +1302,6 @@ int main(void) {
       Cg = Cg * 262144; //67108864;
       C1 = C1 * 262144;
 
-  //    C0 = 17;    
-  //    Cg = 18;
-  //    C1 = 19;
   //    if(ch==10) printf("E coefs scaled ch %d: C0  %u Cg %u C1  %u\n", ch, (int)floor(C0), (int)floor(Cg), (int)floor(C1) );    
 
 

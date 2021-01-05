@@ -708,16 +708,20 @@ int main(void) {
                                  mapped[AMZ_EXAFRD] = AK7_TRCMEM_A;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
                                  w0 = mapped[AMZ_EXDRD];      // read 16 bits
                                  if(SLOWREAD)  w0 = mapped[AMZ_EXDRD];
+                                 if(SLOWREAD)  w0 = mapped[AMZ_EXDRD];
                                  mapped[AMZ_EXAFRD] = AK7_TRCMEM_B;     // write to  k7's addr for read -> reading from AK7_TRCMEM_B channel header memory, high 16bit and addr increase
                                  w1 = mapped[AMZ_EXDRD];      // read 16 bits  , increments trace memory address
+                                 if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
                                  if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
                                  wf[2*k+0] = w0+(w1<<16);   // re-order 2 sample words from 32bit FIFO
       
                                  mapped[AMZ_EXAFRD] = AK7_TRCMEM_C;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
                                  w0 = mapped[AMZ_EXDRD];      // read 16 bits
                                  if(SLOWREAD)  w0 = mapped[AMZ_EXDRD];
+                                 if(SLOWREAD)  w0 = mapped[AMZ_EXDRD];
                                  mapped[AMZ_EXAFRD] = AK7_TRCMEM_D;     // write to  k7's addr for read -> reading from AK7_TRCMEM_B channel header memory, high 16bit and addr increase
                                  w1 = mapped[AMZ_EXDRD];      // read 16 bits  , increments trace memory address
+                                 if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
                                  if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
                                  wf[2*k+1] = w0+(w1<<16);   // re-order 2 sample words from 32bit FIFO   
                              }  // end trace length   

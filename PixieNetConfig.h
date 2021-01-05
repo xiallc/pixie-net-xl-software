@@ -294,14 +294,24 @@ typedef struct PixieNetFippiConfig {
   double CHANTRIG_STRETCH[NCHANNELS];    //          //
   double EXTERN_DELAYLEN[NCHANNELS] ;    //          //               Delay length for each channel's input signal
   double FTRIGOUT_DELAY[NCHANNELS];      //          //               Fast trigger output delay for system synchronization; delay = (FtrigoutDelay + 4)*10ns 
-  unsigned int QDCLen0[NCHANNELS];             //  ticks      iThemba QDC length #0 
-  unsigned int QDCLen1[NCHANNELS];             //  ticks      iThemba QDC length #1 
-  unsigned int QDCLen2[NCHANNELS];             //  ticks      iThemba QDC length #2 
-  unsigned int QDCLen3[NCHANNELS];             //  ticks      iThemba QDC length #3 
-  unsigned int QDCLen4[NCHANNELS];             //  ticks      iThemba QDC length #4 
-  unsigned int QDCLen5[NCHANNELS];             //  ticks      iThemba QDC length #5 
-  unsigned int QDCLen6[NCHANNELS];             //  ticks      iThemba QDC length #6 
-  unsigned int QDCLen7[NCHANNELS];             //  ticks      iThemba QDC length #7 
+  unsigned int QDCLen0[NCHANNELS];             //  ticks      QDC length #0 
+  unsigned int QDCLen1[NCHANNELS];             //  ticks      QDC length #1 
+  unsigned int QDCLen2[NCHANNELS];             //  ticks      QDC length #2 
+  unsigned int QDCLen3[NCHANNELS];             //  ticks      QDC length #3 
+  unsigned int QDCLen4[NCHANNELS];             //  ticks      QDC length #4 
+  unsigned int QDCLen5[NCHANNELS];             //  ticks      QDC length #5 
+  unsigned int QDCLen6[NCHANNELS];             //  ticks      QDC length #6 
+  unsigned int QDCLen7[NCHANNELS];             //  ticks      QDC length #7 
+  unsigned int QDCDel0[NCHANNELS];             //  ticks      QDC delay #0 
+  unsigned int QDCDel1[NCHANNELS];             //  ticks      QDC delay #1 
+  unsigned int QDCDel2[NCHANNELS];             //  ticks      QDC delay #2 
+  unsigned int QDCDel3[NCHANNELS];             //  ticks      QDC delay #3 
+  unsigned int QDCDel4[NCHANNELS];             //  ticks      QDC delay #4 
+  unsigned int QDCDel5[NCHANNELS];             //  ticks      QDC delay #5 
+  unsigned int QDCDel6[NCHANNELS];             //  ticks      QDC delay #6 
+  unsigned int QDCDel7[NCHANNELS];             //  ticks      QDC delay #7 
+  unsigned int QDC_DIV[NCHANNELS];             //        scaling factor for QDC sums 
+  unsigned int PSA_THRESHOLD[NCHANNELS];       //        threshold for PSA/QDC logic 
   unsigned int EMIN[NCHANNELS];                //  minimum Energy (in final DSP units) for histogramming or LM output
 
 } PixieNetFippiConfig;
