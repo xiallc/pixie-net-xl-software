@@ -630,6 +630,7 @@ int main(void) {
 
 
       // QDC parameters specified in samples, not as as in P16!
+      printf("  ch. %d: QDCLen0 = %d, QDCDel0 =%d\n", ch, fippiconfig.QDCLen0[ch], fippiconfig.QDCDel0[ch]);
       if  ( (fippiconfig.CHANNEL_CSRA[ch] & (1<<CCSRA_QDCENA)) >0 )  {
 
          if( (fippiconfig.QDCLen0[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen0[ch] < QDCLEN_MIN)  )  {
@@ -1144,15 +1145,25 @@ int main(void) {
             {
             // PN style PSA
                reglo = (fippiconfig.QDCLen0[ch]>>1)+1;                              //  FPGA expects "len/2 + 1" for effective "len" 
+       //     if(ch==6) printf("  QDCLen0 for FPGA: 0x%x\n",reglo);     
                mval  =  fippiconfig.QDCLen0[ch]*2 + 6 + fippiconfig.QDCDel0[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
+        //    if(ch==6) printf("  QDCLen0+Del0 for FPGA: %d 0x%x\n",mval, mval);
                reglo = reglo + (mval<<5);
+        //    if(ch==6) printf("  combined: 0x%x\n",reglo);
                if( fippiconfig.QDC_DIV[ch] == VAL1_QDC_DIV)  reglo = reglo + (1<<15);  // set "divide by extra 8" bit  
+        //    if(ch==6) printf("  add divide bit: 0x%x\n",reglo);
 
                mval  = (fippiconfig.QDCLen1[ch]>>1)+1;                              //  FPGA expects "len/2 + 1" for effective "len" 
+        //    if(ch==6) printf("  QDCLen1 for FPGA: 0x%x\n",mval);     
                reglo = reglo + (mval<<16);
+         //   if(ch==6) printf("  combined: 0x%x\n",reglo);    
                mval  =  fippiconfig.QDCLen1[ch]*2 + 6 + fippiconfig.QDCDel1[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
+         //   if(ch==6)  printf("  QDCLen1+Del1 for FPGA: %d 0x%x\n",mval, mval);
                reglo = reglo + (mval<<21);
+        //    if(ch==6) printf("  combined: 0x%x\n",reglo);
                if( fippiconfig.QDC_DIV[ch] == VAL1_QDC_DIV)  reglo = reglo + (1<<31);  // set "divide by extra 8" bit  
+       //    if(ch==6)  printf("  add divide bit: 0x%x\n",reglo);
+
 
                reghi = (fippiconfig.QDCLen2[ch]>>1)+1;                              //  FPGA expects "len/2 + 1" for effective "len" 
                mval  =  fippiconfig.QDCLen2[ch]*2 + 6 + fippiconfig.QDCDel2[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
