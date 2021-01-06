@@ -1828,6 +1828,34 @@ int main(void) {
    revsn = hwinfo(mapped,I2C_SELDB1);
    if(verbose) printf(" DB1 Revision 0x%04X\n",(revsn>>16) & 0xFFFF);
 
+
+     // --------------------------- debug ----------------------------------
+
+   //  enable/disable  ADC's test ramp
+      //     switch ADC output to ramp :        data/addr = 0xA0 / 0x00C0 
+      //     switch ADC output to signal :      data/addr = 0x00 / 0x00C0 
+      // MSB sequence is R/W WW A12..A0 D7..D0
+   if( ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250) | ((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_14_500) )  {
+
+      for(k7=0;k7<N_K7_FPGAS;k7++)
+      {
+
+        mapped[AMZ_DEVICESEL] = cs[k7];	     // select FPGA  
+        mapped[AMZ_EXAFWR] = AK7_PAGE;         // write to  k7's addr        addr 3 = channel/system, select    
+        mapped[AMZ_EXDWR] = PAGE_SYS;          //  0x000  = system page                
+          
+        mval = 0x00;
+        mapped[AMZ_EXAFWR] = AK7_PLLSPIA;    // write to  k7's addr     addr 0x1B = PLL SPIA (for upper 8 bit) 
+        mapped[AMZ_EXDWR] = mval;           //  write to ADC SPI
+
+        mval = 0xC0A0;     // turn on ramp
+        // mval = 0cC000;  // turn off ramp
+        mapped[AMZ_EXAFWR] = AK7_ADCSPI;    // write to  k7's addr     addr 0x5 = ADC SPI for lower 16 bit and starting the serial write 
+        mapped[AMZ_EXDWR] = mval;           //  write to ADC SPI
+               usleep(5);
+      }  // end for
+   }  // end DB04
+
  
  // clean up  
  flock( fd, LOCK_UN );
