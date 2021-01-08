@@ -913,7 +913,7 @@ int main(void) {
       // IPv4 checksum computation: SHORT (20 word header only)
       mval = 0;
       mval = mval + 0x4500;              // version etc
-      mval = mval + 68;                  // 20 word data header (40bytes), 8bytes UDP header, 20 bytes IPv4 header
+      mval = mval + 74; //+ 68;                  // 20 word data header (40bytes), 8bytes UDP header, 20 bytes IPv4 header , 6 bytes filler
       mval = mval + 0;                   // identification
       mval = mval + 0;                   // flags, fragment offset
       mval = mval + 0x3F11;              // time to live (63), protocol UPD (17)
@@ -933,7 +933,7 @@ int main(void) {
       // Note: all channels must have same TL!
       mval = 0;
       mval = mval + 0x4500;              // version etc
-      mval = mval + TL[0]*2+68;          // 20 word data header (40bytes), 8bytes UDP header, 20 bytes IPv4 header, 2*TL waveform bytes
+      mval = mval + TL[0]*2+74; //+68;          // 20 word data header (40bytes), 8bytes UDP header, 20 bytes IPv4 header, 2*TL waveform bytes
       mval = mval + 0;                   // identification
       mval = mval + 0;                   // flags, fragment offset
       mval = mval + 0x3F11;              // time to live (63), protocol UPD (17)
@@ -1844,15 +1844,36 @@ int main(void) {
         mapped[AMZ_EXAFWR] = AK7_PAGE;         // write to  k7's addr        addr 3 = channel/system, select    
         mapped[AMZ_EXDWR] = PAGE_SYS;          //  0x000  = system page                
           
-        mval = 0x00;
+        mval = fippiconfig.MAX_EVENTS; // 5;    // ADC clk delay delay
+          
         mapped[AMZ_EXAFWR] = AK7_PLLSPIA;    // write to  k7's addr     addr 0x1B = PLL SPIA (for upper 8 bit) 
         mapped[AMZ_EXDWR] = mval;           //  write to ADC SPI
 
-        mval = 0xC0A0;     // turn on ramp
-        // mval = 0cC000;  // turn off ramp
-        mapped[AMZ_EXAFWR] = AK7_ADCSPI;    // write to  k7's addr     addr 0x5 = ADC SPI for lower 16 bit and starting the serial write 
-        mapped[AMZ_EXDWR] = mval;           //  write to ADC SPI
-               usleep(5);
+
+        mapped[AMZ_EXAFWR] = AK7_ADCBITSLIP;    // write to  k7's addr     use bitslip write to apply delay 
+        mapped[AMZ_EXDWR] = mval;           //  write to ADC SPI           any value ok
+
+        
+
+        if(verbose) printf(" clk delay %d\n",mval);
+
+       for( ch_k7 = 0; ch_k7 < NCHANNELS_PER_K7 ; ch_k7 ++ )
+       {
+           mval = 0x00 + (1<<(ch_k7+8));          // bits 8-11 are chip select for this channel
+           mapped[AMZ_EXAFWR] = AK7_PLLSPIA;    // write to  k7's addr     addr 0x1B = PLL SPIA (for upper 8 bit) 
+           mapped[AMZ_EXDWR] = mval;            //  write to ADC SPI
+   
+           if(fippiconfig.REQ_RUNTIME >20)   {
+             mval = 0xC0A0;     // turn on ramp
+           } else {
+             mval = 0xC000;  // turn off ramp
+           }
+           mapped[AMZ_EXAFWR] = AK7_ADCSPI;    // write to  k7's addr     addr 0x5 = ADC SPI for lower 16 bit and starting the serial write 
+           mapped[AMZ_EXDWR] = mval;           //  write to ADC SPI
+                  usleep(5);
+        }
+
+        
       }  // end for
    }  // end DB04
 
