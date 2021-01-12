@@ -630,7 +630,7 @@ int main(void) {
 
 
       // QDC parameters specified in samples, not as as in P16!
-      printf("  ch. %d: QDCLen0 = %d, QDCDel0 =%d\n", ch, fippiconfig.QDCLen0[ch], fippiconfig.QDCDel0[ch]);
+      //printf("  ch. %d: QDCLen0 = %d, QDCDel0 =%d\n", ch, fippiconfig.QDCLen0[ch], fippiconfig.QDCDel0[ch]);
       if  ( (fippiconfig.CHANNEL_CSRA[ch] & (1<<CCSRA_QDCENA)) >0 )  {
 
          if( (fippiconfig.QDCLen0[ch] > QDCLEN_MAX) || (fippiconfig.QDCLen0[ch] < QDCLEN_MIN)  )  {
@@ -1830,7 +1830,7 @@ int main(void) {
 
 
      // --------------------------- debug ----------------------------------
-
+   /*
    //  enable/disable  ADC's test ramp
       //     switch ADC output to ramp :        data/addr = 0xA0 / 0x00C0 
       //     switch ADC output to signal :      data/addr = 0x00 / 0x00C0 
@@ -1876,7 +1876,7 @@ int main(void) {
         
       }  // end for
    }  // end DB04
-
+*/
  
  // clean up  
  flock( fd, LOCK_UN );
