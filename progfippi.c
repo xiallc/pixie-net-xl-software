@@ -984,8 +984,12 @@ int main(void) {
          reglo = 1;     // halt bit =1
          reglo = reglo + setbit(fippiconfig.CHANNEL_CSRA[ch],CCSRA_POLARITY,      FiPPI_INVRT   );    
          if(ch_k7==2)  {
-            //if( ((revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_125 ) | ((revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_75) )  // if DB01, ch.2 is inverted   
-            if( ((revsn & PNXL_DB_VARIANT_MASK)!=PNXL_DB02_12_250 ) | ((revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_75) )
+            //if( ((revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_125 ) | ((revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_75) )  // if DB01, 06(?), ch.2 is inverted   
+            // if( ((revsn & PNXL_DB_VARIANT_MASK)!=PNXL_DB02_12_250 ) | ((revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_75) )
+            if( ((revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_125 ) |
+                ((revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB01_14_75  ) |
+                ((revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB06_16_250 ) |
+                ((revsn & PNXL_DB_VARIANT_MASK)==PNXL_DB06_14_500 ) )
             {
                reglo = reglo ^ (1<<FiPPI_INVRT); 
                //printf("reglo_ch.2 0x%08x, revsn 0x%08x\n",reglo, revsn);
@@ -1386,7 +1390,7 @@ int main(void) {
 
    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB04_14_250)    // DB04 has I2C DACs
    {
-     printf("TODO: implement DB04 DAC programming\n");
+     printf("TODO: debug DB04 DAC programming\n");
 
      // programming the LTC2655 via DB-specific TWI interface
      // write address + 3 bytes
@@ -1409,6 +1413,7 @@ int main(void) {
             dac = (int)floor( (1 - fippiconfig.VOFFSET[ch]/ V_OFFSET_MAX) * 32768);	
             if(dac > 65535)  {
                printf("Invalid VOFFSET = %f, must be between %f and -%f\n",fippiconfig.VOFFSET[ch], V_OFFSET_MAX-0.05, V_OFFSET_MAX-0.05);
+               // Note: this DAC maps from in ini to PCB (at DAC) to 2xbuf output:  -1.2V  > 2.4V > 0.9V,  1.2V > 50 mV > -1.0V 
                return -4300-ch;
             }
                      
