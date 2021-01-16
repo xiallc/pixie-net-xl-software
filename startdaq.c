@@ -666,6 +666,10 @@ int main(void) {
    
                         if(fippiconfig.DATA_FLOW == 3)             // Ethernet storage 
                         {
+                           
+                           mapped[AMZ_EXAFRD] = AK7_SKIPTRACE;              // select the "skiptrace" address in channel's page
+                           out7 = mapped[AMZ_EXDWR];                        // any read ok  -- advances read pointer to start of next trace 
+                         
                            mapped[AMZ_EXAFWR] = AK7_PAGE;         // specify   K7's addr:    PAGE register
                            mapped[AMZ_EXDWR]  = PAGE_SYS;         //  PAGE 0: system, page 0x10n = channel n
                         
@@ -703,25 +707,25 @@ int main(void) {
    
                            // waveform read (if accepted)
                            if(TRACEENA[ch]==1)  {   
+
+                             mapped[AMZ_EXAFRD] = AK7_SKIPTRACE;              // select the "skiptrace" address in channel's page
+                             out7 = mapped[AMZ_EXDWR];                        // any read ok  -- advances read pointer to start of next trace 
+
                              for( k=0; k < (TL[ch]/4); k++)
                              {
                                  mapped[AMZ_EXAFRD] = AK7_TRCMEM_A;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
                                  w0 = mapped[AMZ_EXDRD];      // read 16 bits
                                  if(SLOWREAD)  w0 = mapped[AMZ_EXDRD];
-                                 if(SLOWREAD)  w0 = mapped[AMZ_EXDRD];
                                  mapped[AMZ_EXAFRD] = AK7_TRCMEM_B;     // write to  k7's addr for read -> reading from AK7_TRCMEM_B channel header memory, high 16bit and addr increase
                                  w1 = mapped[AMZ_EXDRD];      // read 16 bits  , increments trace memory address
-                                 if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
                                  if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
                                  wf[2*k+0] = w0+(w1<<16);   // re-order 2 sample words from 32bit FIFO
       
                                  mapped[AMZ_EXAFRD] = AK7_TRCMEM_C;     // write to  k7's addr for read -> reading from AK7_TRCMEM_A channel header memory, next 16bit
                                  w0 = mapped[AMZ_EXDRD];      // read 16 bits
                                  if(SLOWREAD)  w0 = mapped[AMZ_EXDRD];
-                                 if(SLOWREAD)  w0 = mapped[AMZ_EXDRD];
                                  mapped[AMZ_EXAFRD] = AK7_TRCMEM_D;     // write to  k7's addr for read -> reading from AK7_TRCMEM_B channel header memory, high 16bit and addr increase
                                  w1 = mapped[AMZ_EXDRD];      // read 16 bits  , increments trace memory address
-                                 if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
                                  if(SLOWREAD) w1 = mapped[AMZ_EXDRD]; 
                                  wf[2*k+1] = w0+(w1<<16);   // re-order 2 sample words from 32bit FIFO   
                              }  // end trace length   

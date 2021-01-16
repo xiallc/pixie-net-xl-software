@@ -107,7 +107,7 @@
 #define MULT_TL         32             // trace lenght must be a multiple of this number
 #define TWEAK_UD        0           // adjustment to pre-trigger delay for internal pipelining
 #define MAX_BFACT       16
-#define MAX_PSATH       255
+#define MAX_PSATH       65530
 #define MAX_GW          255
 #define MAX_GD          255
 #define MAX_CD          255

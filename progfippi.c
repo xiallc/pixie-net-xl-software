@@ -775,7 +775,7 @@ int main(void) {
          }
 
          // check threshold
-         if( (fippiconfig.PSA_THRESHOLD[ch] > MAX_PSATH) || (fippiconfig.QDCLen5[ch] < 1)  )  {
+         if( (fippiconfig.PSA_THRESHOLD[ch] > MAX_PSATH) || (fippiconfig.PSA_THRESHOLD[ch] < 1)  )  {
             printf("Invalid PSA TH = %d (ch. %d), must be between %d and %d \n",fippiconfig.QDCLen5[ch], ch, 1, MAX_PSATH);
             return -7400-ch;
          }
