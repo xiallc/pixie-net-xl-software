@@ -302,14 +302,14 @@ typedef struct PixieNetFippiConfig {
   unsigned int QDCLen5[NCHANNELS];             //  ticks      QDC length #5 
   unsigned int QDCLen6[NCHANNELS];             //  ticks      QDC length #6 
   unsigned int QDCLen7[NCHANNELS];             //  ticks      QDC length #7 
-  unsigned int QDCDel0[NCHANNELS];             //  ticks      QDC delay #0 
-  unsigned int QDCDel1[NCHANNELS];             //  ticks      QDC delay #1 
-  unsigned int QDCDel2[NCHANNELS];             //  ticks      QDC delay #2 
-  unsigned int QDCDel3[NCHANNELS];             //  ticks      QDC delay #3 
-  unsigned int QDCDel4[NCHANNELS];             //  ticks      QDC delay #4 
-  unsigned int QDCDel5[NCHANNELS];             //  ticks      QDC delay #5 
-  unsigned int QDCDel6[NCHANNELS];             //  ticks      QDC delay #6 
-  unsigned int QDCDel7[NCHANNELS];             //  ticks      QDC delay #7 
+  double QDCDel0[NCHANNELS];             //  ticks      QDC delay #0       // use double because it can be negative. 
+  double QDCDel1[NCHANNELS];             //  ticks      QDC delay #1 
+  double QDCDel2[NCHANNELS];             //  ticks      QDC delay #2 
+  double QDCDel3[NCHANNELS];             //  ticks      QDC delay #3 
+  double QDCDel4[NCHANNELS];             //  ticks      QDC delay #4 
+  double QDCDel5[NCHANNELS];             //  ticks      QDC delay #5 
+  double QDCDel6[NCHANNELS];             //  ticks      QDC delay #6 
+  double QDCDel7[NCHANNELS];             //  ticks      QDC delay #7 
   unsigned int QDC_DIV[NCHANNELS];             //        scaling factor for QDC sums 
   unsigned int PSA_THRESHOLD[NCHANNELS];       //        threshold for PSA/QDC logic 
   unsigned int EMIN[NCHANNELS];                //  minimum Energy (in final DSP units) for histogramming or LM output

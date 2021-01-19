@@ -113,7 +113,8 @@
 #define MAX_CD          255
 #define MAX_QDCL        60          // length of QDC sum samples
 #define MIN_QDCL        2           // length of QDC sum samples
-#define MAX_QDCLD       250         // length plus delay of QDC sum, in samples
+#define MIN_QDCLD       -64         // length plus delay of QDC sum, in samples
+#define MAX_QDCLD       440         // length plus delay of QDC sum, in samples
 #define VAL0_QDC_DIV    4           // scaling factor for QDC sums
 #define VAL1_QDC_DIV    32
 #define MAX_BLAVG       16

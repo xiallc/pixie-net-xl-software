@@ -104,6 +104,7 @@ int main(void) {
   unsigned int ADC_CLK_MHZ, SYSTEM_CLOCK_MHZ, FILTER_CLOCK_MHZ;
   unsigned long long mac;
   unsigned int dip, sip;
+  int sval;
 
 
   // *************** PS/PL IO initialization *********************
@@ -702,66 +703,74 @@ int main(void) {
          }
 
          // check delay+length max
-         if( (fippiconfig.QDCLen0[ch]+fippiconfig.QDCDel0[ch] > MAX_QDCLD)   )  {
-            printf("Invalid PSA D0+L0 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen0[ch]+fippiconfig.QDCDel0[ch], ch, MIN_QDCL, MAX_QDCLD);
+         sval =  fippiconfig.QDCLen0[ch]+(int)floorf(fippiconfig.QDCDel0[ch]);
+         if( (sval > MAX_QDCLD)  ||  (sval < MIN_QDCLD))  {
+            printf("Invalid PSA D0+L0 = %f (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen0[ch]+fippiconfig.QDCDel0[ch], ch, MIN_QDCLD, MAX_QDCLD);
             return -7100-ch;
          }
-         if( (fippiconfig.QDCLen1[ch]+fippiconfig.QDCDel1[ch] > MAX_QDCLD)   )  {
-            printf("Invalid PSA D1+L1 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen1[ch]+fippiconfig.QDCDel1[ch], ch, MIN_QDCL, MAX_QDCLD);
+         sval =  fippiconfig.QDCLen1[ch]+(int)floorf(fippiconfig.QDCDel1[ch]);
+         if( (sval > MAX_QDCLD)  ||  (sval < MIN_QDCLD))  {
+            printf("Invalid PSA D1+L1 = %f (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen1[ch]+fippiconfig.QDCDel1[ch], ch, MIN_QDCLD, MAX_QDCLD);
             return -7200-ch;
          }
-         if( (fippiconfig.QDCLen2[ch]+fippiconfig.QDCDel2[ch] > MAX_QDCLD)   )  {
-            printf("Invalid PSA D2+L2 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen2[ch]+fippiconfig.QDCDel2[ch], ch, MIN_QDCL, MAX_QDCLD);
+         sval =  fippiconfig.QDCLen2[ch]+(int)floorf(fippiconfig.QDCDel2[ch]);
+         if( (sval > MAX_QDCLD)  ||  (sval < MIN_QDCLD))  {
+            printf("Invalid PSA D2+L2 = %f (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen2[ch]+fippiconfig.QDCDel2[ch], ch, MIN_QDCLD, MAX_QDCLD);
             return -7100-ch;
          }
-         if( (fippiconfig.QDCLen3[ch]+fippiconfig.QDCDel3[ch] > MAX_QDCLD)   )  {
-            printf("Invalid PSA D3+L3 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen3[ch]+fippiconfig.QDCDel3[ch], ch, MIN_QDCL, MAX_QDCLD);
+         sval =  fippiconfig.QDCLen3[ch]+(int)floorf(fippiconfig.QDCDel3[ch]);
+         if( (sval > MAX_QDCLD)  ||  (sval < MIN_QDCLD))  {
+            printf("Invalid PSA D3+L3 = %f (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen3[ch]+fippiconfig.QDCDel3[ch], ch, MIN_QDCLD, MAX_QDCLD);
             return -7200-ch;
          }
-         if( (fippiconfig.QDCLen4[ch]+fippiconfig.QDCDel4[ch] > MAX_QDCLD)   )  {
-            printf("Invalid PSA D4+L4 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen4[ch]+fippiconfig.QDCDel4[ch], ch, MIN_QDCL, MAX_QDCLD);
+         sval =  fippiconfig.QDCLen4[ch]+(int)floorf(fippiconfig.QDCDel4[ch]);
+         if( (sval > MAX_QDCLD)  ||  (sval < MIN_QDCLD))  {
+            printf("Invalid PSA D4+L4 = %f (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen4[ch]+fippiconfig.QDCDel4[ch], ch, MIN_QDCLD, MAX_QDCLD);
             return -7100-ch;
          }
-         if( (fippiconfig.QDCLen5[ch]+fippiconfig.QDCDel5[ch] > MAX_QDCLD)   )  {
-            printf("Invalid PSA D5+L5 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen5[ch]+fippiconfig.QDCDel5[ch], ch, MIN_QDCL, MAX_QDCLD);
+         sval =  fippiconfig.QDCLen5[ch]+(int)floorf(fippiconfig.QDCDel5[ch]);
+         if( (sval > MAX_QDCLD)  ||  (sval < MIN_QDCLD))  {
+            printf("Invalid PSA D5+L5 = %f (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen5[ch]+fippiconfig.QDCDel5[ch], ch, MIN_QDCLD, MAX_QDCLD);
             return -7200-ch;
          }
-         if( (fippiconfig.QDCLen6[ch]+fippiconfig.QDCDel6[ch] > MAX_QDCLD)   )  {
-            printf("Invalid PSA D6+L6 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen6[ch]+fippiconfig.QDCDel6[ch], ch, MIN_QDCL, MAX_QDCLD);
+         sval =  fippiconfig.QDCLen6[ch]+(int)floorf(fippiconfig.QDCDel6[ch]);
+         if( (sval > MAX_QDCLD)  ||  (sval < MIN_QDCLD))  {
+            printf("Invalid PSA D6+L6 = %f (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen6[ch]+fippiconfig.QDCDel6[ch], ch, MIN_QDCLD, MAX_QDCLD);
             return -7100-ch;
          }
-         if( (fippiconfig.QDCLen7[ch]+fippiconfig.QDCDel7[ch] > MAX_QDCLD)   )  {
-            printf("Invalid PSA D7+L7 = %d (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen7[ch]+fippiconfig.QDCDel7[ch], ch, MIN_QDCL, MAX_QDCLD);
+         sval =  fippiconfig.QDCLen7[ch]+(int)floorf(fippiconfig.QDCDel7[ch]);
+         if( (sval > MAX_QDCLD)  ||  (sval < MIN_QDCLD))  {
+            printf("Invalid PSA D7+L7 = %f (ch. %d), must be between %d and %d samples\n",fippiconfig.QDCLen7[ch]+fippiconfig.QDCDel7[ch], ch, MIN_QDCLD, MAX_QDCLD);
             return -7200-ch;                
          }
 
          // all sums must have same delay (in sub-sample group) as sum 0
-         if( (fippiconfig.QDCDel1[ch] & 0x0001) != (fippiconfig.QDCDel0[ch] & 0x0001) ) {
-            printf("Invalid PSA D1 = %d (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCLen1[ch], ch );
+         if( ((int)floorf(fippiconfig.QDCDel1[ch]) & 0x0001) != ((int)floorf(fippiconfig.QDCDel0[ch]) & 0x0001) ) {
+            printf("Invalid PSA D1 = %f (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCDel1[ch], ch );
             return -7200-ch;  
          }
-         if( (fippiconfig.QDCDel2[ch] & 0x0001) != (fippiconfig.QDCDel0[ch] & 0x0001) ) {
-            printf("Invalid PSA D2 = %d (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCLen1[ch], ch );
+         if( ((int)floorf(fippiconfig.QDCDel2[ch]) & 0x0001) != ((int)floorf(fippiconfig.QDCDel0[ch]) & 0x0001) ) {
+            printf("Invalid PSA D2 = %f (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCDel2[ch], ch );
             return -7200-ch;  
          }
-         if( (fippiconfig.QDCDel3[ch] & 0x0001) != (fippiconfig.QDCDel0[ch] & 0x0001) ) {
-            printf("Invalid PSA D3 = %d (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCLen1[ch], ch );
+         if( ((int)floorf(fippiconfig.QDCDel3[ch]) & 0x0001) != ((int)floorf(fippiconfig.QDCDel0[ch]) & 0x0001) ) {
+            printf("Invalid PSA D3 = %f (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCDel3[ch], ch );
             return -7200-ch;  
          }
-         if( (fippiconfig.QDCDel4[ch] & 0x0001) != (fippiconfig.QDCDel0[ch] & 0x0001) ) {
-            printf("Invalid PSA D4 = %d (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCLen1[ch], ch );
+         if( ((int)floorf(fippiconfig.QDCDel4[ch]) & 0x0001) != ((int)floorf(fippiconfig.QDCDel0[ch]) & 0x0001) ) {
+            printf("Invalid PSA D4 = %f (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCDel4[ch], ch );
             return -7200-ch;  
          }
-         if( (fippiconfig.QDCDel5[ch] & 0x0001) != (fippiconfig.QDCDel0[ch] & 0x0001) ) {
-            printf("Invalid PSA D5 = %d (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCLen1[ch], ch );
+         if( ((int)floorf(fippiconfig.QDCDel5[ch]) & 0x0001) != ((int)floorf(fippiconfig.QDCDel0[ch]) & 0x0001) ) {
+            printf("Invalid PSA D5 = %f (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCDel5[ch], ch );
             return -7200-ch;  
          }
-         if( (fippiconfig.QDCDel6[ch] & 0x0001) != (fippiconfig.QDCDel0[ch] & 0x0001) ) {
-            printf("Invalid PSA D6 = %d (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCLen1[ch], ch );
+         if( ((int)floorf(fippiconfig.QDCDel6[ch]) & 0x0001) != ((int)floorf(fippiconfig.QDCDel0[ch]) & 0x0001) ) {
+            printf("Invalid PSA D6 = %f (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCDel6[ch], ch );
             return -7200-ch;  
          }
-         if( (fippiconfig.QDCDel7[ch] & 0x0001) != (fippiconfig.QDCDel0[ch] & 0x0001) ) {
-            printf("Invalid PSA D7 = %d (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCLen1[ch], ch );
+         if( ((int)floorf(fippiconfig.QDCDel7[ch]) & 0x0001) != ((int)floorf(fippiconfig.QDCDel0[ch]) & 0x0001) ) {
+            printf("Invalid PSA D7 = %f (ch. %d), lowest bit must be same as D0\n",fippiconfig.QDCDel7[ch], ch );
             return -7200-ch;  
          }
 
@@ -1129,6 +1138,7 @@ int main(void) {
          
          
          // ......... P16 Reg 6  .......................    
+         sval = 6 + 64;    // QDC delay offset: 64 for FPGA logic staring at -64, 6 for register delay
          if(  (fippiconfig.CHANNEL_CSRA[ch] & (1<<CCSRA_QDCENA)) >0 ) {    
             // P16 style QDC
             // TODO: this will require variant switch for other ADC rates
@@ -1150,8 +1160,7 @@ int main(void) {
             // PN style PSA
                reglo = (fippiconfig.QDCLen0[ch]>>1)+1;                              //  FPGA expects "len/2 + 1" for effective "len" 
        //     if(ch==6) printf("  QDCLen0 for FPGA: 0x%x\n",reglo);     
-               mval  =  fippiconfig.QDCLen0[ch]*2 + 6 + fippiconfig.QDCDel0[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
-        //    if(ch==6) printf("  QDCLen0+Del0 for FPGA: %d 0x%x\n",mval, mval);
+               mval  =  fippiconfig.QDCLen0[ch] + sval + (int)floorf(fippiconfig.QDCDel0[ch]);  //  FPGA expects total length + delay (=end), add 64 as FPGA starts at -64
                reglo = reglo + (mval<<5);
         //    if(ch==6) printf("  combined: 0x%x\n",reglo);
                if( fippiconfig.QDC_DIV[ch] == VAL1_QDC_DIV)  reglo = reglo + (1<<15);  // set "divide by extra 8" bit  
@@ -1161,7 +1170,7 @@ int main(void) {
         //    if(ch==6) printf("  QDCLen1 for FPGA: 0x%x\n",mval);     
                reglo = reglo + (mval<<16);
          //   if(ch==6) printf("  combined: 0x%x\n",reglo);    
-               mval  =  fippiconfig.QDCLen1[ch]*2 + 6 + fippiconfig.QDCDel1[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
+               mval  =  fippiconfig.QDCLen1[ch] + sval + (int)floorf(fippiconfig.QDCDel1[ch]);  //  FPGA expects total length + delay (=end),
          //   if(ch==6)  printf("  QDCLen1+Del1 for FPGA: %d 0x%x\n",mval, mval);
                reglo = reglo + (mval<<21);
         //    if(ch==6) printf("  combined: 0x%x\n",reglo);
@@ -1170,13 +1179,13 @@ int main(void) {
 
 
                reghi = (fippiconfig.QDCLen2[ch]>>1)+1;                              //  FPGA expects "len/2 + 1" for effective "len" 
-               mval  =  fippiconfig.QDCLen2[ch]*2 + 6 + fippiconfig.QDCDel2[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
+               mval  =  fippiconfig.QDCLen2[ch] + sval + (int)floorf(fippiconfig.QDCDel2[ch]);  //  FPGA expects total length + delay (=end), 
                reghi = reghi + (mval<<5);
                if( fippiconfig.QDC_DIV[ch] == VAL1_QDC_DIV)  reghi = reghi + (1<<15);  // set "divide by extra 8" bit  
 
                mval  = (fippiconfig.QDCLen3[ch]>>1)+1;                              //  FPGA expects "len/2 + 1" for effective "len" 
                reghi = reghi + (mval<<16);
-               mval  =  fippiconfig.QDCLen3[ch]*2 + 6 + fippiconfig.QDCDel3[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
+               mval  =  fippiconfig.QDCLen3[ch] + sval + (int)floorf(fippiconfig.QDCDel3[ch]);  //  FPGA expects total length + delay (=end), 
                reghi = reghi + (mval<<21);
                if( fippiconfig.QDC_DIV[ch] == VAL1_QDC_DIV)  reghi = reghi + (1<<31);  // set "divide by extra 8" bit     
             } // end revsn
@@ -1228,24 +1237,24 @@ int main(void) {
             {
             // PN style PSA
                reglo = (fippiconfig.QDCLen4[ch]>>1)+1;                              //  FPGA expects "len/2 + 1" for effective "len" 
-               mval  =  fippiconfig.QDCLen4[ch]*2 + 6 + fippiconfig.QDCDel4[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
+               mval  =  fippiconfig.QDCLen4[ch] + sval + (int)floorf(fippiconfig.QDCDel4[ch]);  //  FPGA expects total length + delay (=end),
                reglo = reglo + (mval<<5);
                if( fippiconfig.QDC_DIV[ch] == VAL1_QDC_DIV)  reglo = reglo + (1<<15);  // set "divide by extra 8" bit  
 
                mval  = (fippiconfig.QDCLen5[ch]>>1)+1;                              //  FPGA expects "len/2 + 1" for effective "len" 
                reglo = reglo + (mval<<16);
-               mval  =  fippiconfig.QDCLen5[ch]*2 + 6 + fippiconfig.QDCDel5[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
+               mval  =  fippiconfig.QDCLen5[ch] + sval + (int)floorf(fippiconfig.QDCDel5[ch]);  //  FPGA expects total length + delay (=end),
                reglo = reglo + (mval<<21);
                if( fippiconfig.QDC_DIV[ch] == VAL1_QDC_DIV)  reglo = reglo + (1<<31);  // set "divide by extra 8" bit  
 
                reghi = (fippiconfig.QDCLen6[ch]>>1)+1;                              //  FPGA expects "len/2 + 1" for effective "len" 
-               mval  =  fippiconfig.QDCLen6[ch]*2 + 6 + fippiconfig.QDCDel6[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
+               mval  =  fippiconfig.QDCLen6[ch] + sval + (int)floorf(fippiconfig.QDCDel6[ch]);  //  FPGA expects total length + delay (=end),
                reghi = reghi + (mval<<5);
                if( fippiconfig.QDC_DIV[ch] == VAL1_QDC_DIV)  reghi = reghi + (1<<15);  // set "divide by extra 8" bit  
 
                mval  = (fippiconfig.QDCLen7[ch]>>1)+1;                              //  FPGA expects "len/2 + 1" for effective "len" 
                reghi = reghi + (mval<<16);
-               mval  =  fippiconfig.QDCLen7[ch]*2 + 6 + fippiconfig.QDCDel7[ch]*2;  //  FPGA expects total length + delay (=end), but in 2ns units
+               mval  =  fippiconfig.QDCLen7[ch] + sval + (int)floorf(fippiconfig.QDCDel7[ch]);  //  FPGA expects total length + delay (=end), 
                reghi = reghi + (mval<<21);
                if( fippiconfig.QDC_DIV[ch] == VAL1_QDC_DIV)  reghi = reghi + (1<<31);  // set "divide by extra 8" bit     
             } // end revsn
