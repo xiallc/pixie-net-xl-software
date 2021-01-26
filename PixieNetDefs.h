@@ -82,8 +82,10 @@
 #define ICRSCALE           15         // factor between current ICR read and ICR in cps
 #define N_FPGA_BYTES_A     6022736
 #define N_FPGA_BYTES_B     13385232
-#define P16_HDR_LEN        10         // fixed header length for P16 run type 0x100
+#define P16_HDR_LEN        10         // fixed header length for P16 run type 0x100  (32bit words)
 #define ETH_HDR_LEN_404    122        // fixed Ethernet package header length for run type 0x404 in bytes
+#define ETH_HDR_LEN_104    74         // fixed Ethernet package header length for run type 0x104 in bytes
+#define ETH_HDR_LEN_100    68         // fixed Ethernet package header length for run type 0x100 in bytes
 
 
 // Limits for settings

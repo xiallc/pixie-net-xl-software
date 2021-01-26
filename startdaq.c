@@ -207,11 +207,11 @@ int main(void) {
   hdrids       = hdrids + (fippiconfig.CRATE_ID<<8);
   hdrids       = hdrids + (fippiconfig.SLOT_ID<<4);
 
-  if( (RunType==0x100) || (RunType==0x400) || (RunType==0x401)  ) {      // check run type
-   // 0x100, 0x400, 0x401, are ok
+  if( (RunType==0x100) || (RunType==0x104) || (RunType==0x400) || (RunType==0x401) || (RunType==0x404) ) {      // check run type
+   // 0x100, 0x104 0x400, 0x401, are ok
    // 0x301 no longer supported because header memory is disabled for pure MCA runs, use mcadaq instead
   } else {
-      printf( "This function only supports runtypes 0x100 (P16), 0x400, 0x401, not 0x%x \n",RunType);
+      printf( "This function only supports runtypes 0x100 (P16), 0x104, 0x400, 0x401, 0x404, not 0x%x \n",RunType);
       return(-1);
   }
 
@@ -274,10 +274,10 @@ int main(void) {
    for( ch=0; ch < NCHANNELS; ch++) eventcount_ch[ch] = 0;
    starttime = time(NULL);                         // capture OS start time
 
-   if( (RunType==0x100) ||  (RunType==0x400) ||  (RunType==0x401) )  {    // list mode runtypes  
+   if( (RunType==0x100) || (RunType==0x104) ||  (RunType==0x400) ||  (RunType==0x401) ||  (RunType==0x404) )  {    // list mode runtypes  
    
    
-      if(RunType==0x100){
+      if( (RunType==0x100) | (RunType==0x104) ){
         // write a 0x100 header  -- actually there is no header, just events
         sprintf(filename, "LMdata%d.bin", fippiconfig.MODULE_ID);
         fil = fopen(filename,"wb");
@@ -315,6 +315,8 @@ int main(void) {
    		fprintf(fil, "Run Start Time :\t %lld \n\n", (long long)starttime);
    		fprintf(fil, "Event\tChannel\tTimeStamp\tEnergy\tRT\tApeak\tBsum\tQ0\tQ1\tPSAval\n");
       }
+
+      // currently no local output file for 0x404
 
     }   // end supported run type
 
@@ -804,7 +806,14 @@ int main(void) {
                            else
                               psa_R = 0;
       
-                           if(RunType==0x100)   {   
+                           if( (RunType==0x100) || (RunType==0x104) )   {   
+                                 if(RunType==0x104){
+                                   // extra 3 words for 0x104. Should normally not be used for writing to SD card, though 
+                                   buffer1[0] = P16_HDR_LEN*2+3;           // 0x100 style event header plus 3 extra words
+                                   buffer1[1] = revsn>>16;                 // HW revision from EEPROM
+                                   buffer1[2] = RunType;
+                                   fwrite( buffer1, 2, 3, fil );           // write to file
+                                 }  
                                 // assemble the header words. For now, report always 10 32bit word headers (all except QDC)
                                 out0  = hdrids + ch  + (hdr[1]<<16); // pileup, EL, HL, and crate/slot/channel #
                                 out2  = timeH + (cfd<<16)   ;            // h[4]=timeH, h[5]=cfd placeholder
@@ -1052,7 +1061,7 @@ int main(void) {
 
  
  // clean up  
- if( (RunType==0x100) ||  (RunType==0x400) ||  (RunType==0x401) )  { 
+ if( (RunType==0x100) || (RunType==0x104) ||  (RunType==0x400) ||  (RunType==0x401) )  { 
    fclose(fil);
  }
  flock( fd, LOCK_UN );
