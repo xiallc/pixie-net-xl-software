@@ -283,8 +283,12 @@ int main(void) {
       printf("Invalid DATA_FLOW = %d; can not be used with runtype 0x301\n",fippiconfig.DATA_FLOW);
       return -900;
     }
-    if( ((fippiconfig.DATA_FLOW == 3) || (fippiconfig.DATA_FLOW == 4) || (fippiconfig.DATA_FLOW == 6) ) && (fippiconfig.RUN_TYPE != 0x100) ) {
-      printf("Invalid DATA_FLOW = %d; WR UDP output currently only supported for runtype 0x100\n",fippiconfig.DATA_FLOW);
+    if( (fippiconfig.DATA_FLOW <= 2) && (fippiconfig.RUN_TYPE == 0x404) ) {
+      printf("Invalid DATA_FLOW = %d; can not be used with runtype 0x404\n",fippiconfig.DATA_FLOW);
+      return -900;
+    }
+    if( ((fippiconfig.DATA_FLOW == 3) || (fippiconfig.DATA_FLOW == 4) || (fippiconfig.DATA_FLOW == 6) ) && !((fippiconfig.RUN_TYPE == 0x100) | (fippiconfig.RUN_TYPE == 0x404)) ) {
+      printf("Invalid DATA_FLOW = %d; WR UDP output currently only supported for runtype 0x100 or 0x404\n",fippiconfig.DATA_FLOW);
       return -900;
     }
 
@@ -312,7 +316,7 @@ int main(void) {
             (mac>>16) &0xFF,
             (mac>> 8) &0xFF,
             (mac    ) &0xFF) ;
-    mac = fippiconfig.SRC_IP0; 
+    mac = fippiconfig.SRC_IP1; 
     if(verbose) printf( " SRC_IP1 0x%08llX equal to %lld.%lld.%lld.%lld\n",mac, 
             (mac>>24) &0xFF,
             (mac>>16) &0xFF,
@@ -337,6 +341,7 @@ int main(void) {
     // RUN_TYPE     -- not written to FPGA registers
     if( !( (fippiconfig.RUN_TYPE == 0x301)  ||
            (fippiconfig.RUN_TYPE == 0x100)  ||
+           (fippiconfig.RUN_TYPE == 0x404)  ||
            (fippiconfig.RUN_TYPE == 0x401)  ||
            (fippiconfig.RUN_TYPE == 0x400)   ) ) {
       printf("Invalid RUN_TYPE = 0x%x, please check manual for a list of supported run types\n",fippiconfig.RUN_TYPE);
@@ -855,6 +860,10 @@ int main(void) {
       reglo = reglo + setbit(fippiconfig.MODULE_CSRA,MCSRA_FP_VETO,   SCSR_FP_VETO   );         // option to use FP as VETO
       reglo = reglo + setbit(fippiconfig.MODULE_CSRA,MCSRA_FP_EXTCLR, SCSR_FP_EXTCLR   );       // option to use FP to clear ext_ts  
       reglo = reglo + setbit(fippiconfig.MODULE_CSRA,MCSRA_FP_PEDGE,  SCSR_FP_PEDGE   );        // option to select rising/falling edge for count or clear.  
+      if( fippiconfig.RUN_TYPE == 0x404 )  reglo = reglo + (1<<SCSR_HDRLONG);                   // long LM headers for runtype 0x404
+         
+       
+
       mapped[AMZ_EXAFWR] = AK7_SCSRIN;    // write to  k7's addr to select register for write
       mapped[AMZ_EXDWR]  = reglo;        // write lower 16 bit
 
@@ -922,7 +931,10 @@ int main(void) {
       // IPv4 checksum computation: SHORT (20 word header only)
       mval = 0;
       mval = mval + 0x4500;              // version etc
-      mval = mval + 74; //+ 68;                  // 20 word data header (40bytes), 8bytes UDP header, 20 bytes IPv4 header , 6 bytes filler
+      if( fippiconfig.RUN_TYPE == 0x404 )  
+         mval = mval + ETH_HDR_LEN_404;                  // 40 word data header (80tes), 8bytes UDP header, 20 bytes IPv4 header, 6 bytes filler, 8 bytes system info = 122
+      else
+         mval = mval + 68;                  // 20 word data header (40bytes), 8bytes UDP header, 20 bytes IPv4 header 
       mval = mval + 0;                   // identification
       mval = mval + 0;                   // flags, fragment offset
       mval = mval + 0x3F11;              // time to live (63), protocol UPD (17)
@@ -936,13 +948,16 @@ int main(void) {
       reglo = ~mval;      
       mapped[AMZ_EXAFWR] =  AK7_ETH_CHECK_SHORT;     // specify   K7's addr:    checksum (SHORT)
       mapped[AMZ_EXDWR]  =  reglo;
-      //printf("WR Ethernet data checksum FPGA %d (SHORT) = 0x%x\n",k7, reglo & 0xFFFF);
+      printf("WR Ethernet data checksum FPGA %d (SHORT) = 0x%x\n",k7, reglo & 0xFFFF);
 
       // IPv4 checksum computation: LONG (20 word header plus trace)
       // Note: all channels must have same TL!
       mval = 0;
       mval = mval + 0x4500;              // version etc
-      mval = mval + TL[0]*2+74; //+68;          // 20 word data header (40bytes), 8bytes UDP header, 20 bytes IPv4 header, 2*TL waveform bytes
+       if( fippiconfig.RUN_TYPE == 0x404 ) 
+         mval = mval + TL[0]*2+ETH_HDR_LEN_404;       // 20 word data header (40bytes), 8bytes UDP header, 20 bytes IPv4 header, 2*TL waveform bytes, 6 bytes filler,
+      else
+         mval = mval + TL[0]*2+68;       // 32 word data header (64bytes), 8bytes UDP header, 20 bytes IPv4 header, 2*TL waveform bytes
       mval = mval + 0;                   // identification
       mval = mval + 0;                   // flags, fragment offset
       mval = mval + 0x3F11;              // time to live (63), protocol UPD (17)
@@ -954,9 +969,11 @@ int main(void) {
       mval = (mval&0xFFFF) + (mval>>16); // add accumulated carrys 
       mval = mval + (mval>>16);          // add any more carrys
       reglo = ~mval;      
+   //   reglo = 0xF5EA;
       mapped[AMZ_EXAFWR] =  AK7_ETH_CHECK_LONG;     // specify   K7's addr:    checksum (LONG)
       mapped[AMZ_EXDWR]  =  reglo;
-      //printf("WR Ethernet data checksum FPGA %d (LONG)  = 0x%x\n",k7, reglo & 0xFFFF);
+      printf("WR Ethernet data checksum FPGA %d (LONG)  = 0x%x\n",k7, reglo & 0xFFFF);
+      printf("packet size %d, UDP+IPv4 total length %d bytes, TL (bytes) %d \n",TL[0]*2+ETH_HDR_LEN_404+14,TL[0]*2+ETH_HDR_LEN_404, TL[0]*2 ); 
 
       // event header info (for UDP) 
       mval = 0;

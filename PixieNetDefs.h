@@ -83,6 +83,8 @@
 #define N_FPGA_BYTES_A     6022736
 #define N_FPGA_BYTES_B     13385232
 #define P16_HDR_LEN        10         // fixed header length for P16 run type 0x100
+#define ETH_HDR_LEN_404    122        // fixed Ethernet package header length for run type 0x404 in bytes
+
 
 // Limits for settings
 #define MAX_CRATE_ID    15
@@ -428,6 +430,7 @@
 #define SCSR_FP_VETO             9  // option to use FP as VETO                                          
 #define SCSR_FP_EXTCLR          10  // option to use FP to clear ext_ts                                  
 #define SCSR_FP_PEDGE           11  // option to select rising/falling edge for count or clear.          
+#define SCSR_HDRLONG            12  // enable long header for list mode data      
  
  
  
