@@ -48,20 +48,20 @@
 #define PNXL_DB06_14_500      0x00700000   // value for DB06 with 14/500 MHZ ADC
 #define PNXL_MB_REVA          0x00000000   // value for Rev A Main board
 #define PNXL_MB_REVB          0x00010000   // value for Rev B Main board
-
 #define ADC_CLK_MHZ_DB01_75      75
 #define ADC_CLK_MHZ_DB01_125    125
 #define ADC_CLK_MHZ_DB02        250
 #define ADC_CLK_MHZ_DB04        250
 #define ADC_CLK_MHZ_DB06_250    250
 #define ADC_CLK_MHZ_DB06_500    500
- 
-#define SYSTEM_CLOCK_MHZ_DB01    75
-#define SYSTEM_CLOCK_MHZ_MOST   125
-
 #define FILTER_CLOCK_MHZ_DB01    75
+#define FILTER_CLOCK_MHZ_DB02   125
+#define FILTER_CLOCK_MHZ_DB06   125
 #define FILTER_CLOCK_MHZ_MOST   125
-
+#define SYSTEM_CLOCK_MHZ_DB01    75
+#define SYSTEM_CLOCK_MHZ_DB02   125
+#define SYSTEM_CLOCK_MHZ_DB06   125
+#define SYSTEM_CLOCK_MHZ_MOST   125
 #define NCHANNELS                32    // number of channels in parameter files (=max)
 #define NCHANNELS_PRESENT_DB02   16    // actual number of channels per module with DB02
 #define NCHANNELS_PRESENT_DB01    8    // actual number of channels per module with DB01
@@ -69,7 +69,6 @@
 #define NCHANNELS_PER_K7_DB01     4    // actual number of channels per K7 with DB01
 #define NCHANNEL_MAX400           4    // maximum number of channels recorded in a single 0x400 .bin file
 #define N_K7_FPGAS         2
-
 #define V_OFFSET_MAX			1.25			// Pixie voltage offset maximum
 #define MAX_MCA_BINS       32768
 #define WEB_MCA_BINS       4096
@@ -104,7 +103,7 @@
 #define MIN_FL          2             // trigger filter limits
 #define MIN_FG          0
 #define MAX_FLFG        127
-#define MAX_TH          65535
+#define MAX_TH          65536
 #define GAIN_HIGH       5          // gain limits
 #define GAIN_LOW        2
 #define MAX_TL          4092           // max length of captured waveform and pre-trigger delay
@@ -386,15 +385,15 @@
 #define CCSRC_CHANVETOSEL    3  // Channel veto selection - 1: channel validation trigger; 0: front panel channel veto
 #define CCSRC_MODVETOSEL     4  // Module veto selection - 1: module validation trigger; 0: front panel module veto
 #define CCSRC_EXTTSENA       5  // External timestamps in event header - 1: enable; 0: disable
-#define CCSRC_RBADDIS        6  // if 1, disable rangebad logic and accept even pulses going out of range      
+#define CCSRC_RBADDIS        6  // if 1, disable rangebad logic and accept even pulses going out of range
 
 // other CSR bits
 #define WRC_RUNTIME          0  // if set, Enable WR run time control
 #define MCSRA_P4ERUNSTATS    1  // if set, use P4e convention for live time etc
-#define MCSRA_FP_COUNT       4  // option to count FP pulses as ext_ts, else local clock (or WR)     
-#define MCSRA_FP_VETO        5  // option to use FP as VETO                                          
-#define MCSRA_FP_EXTCLR      6  // option to use FP to clear ext_ts                                  
-#define MCSRA_FP_PEDGE       7  // option to select rising/falling edge for count or clear.   
+#define MCSRA_FP_COUNT       4  // option to count FP pulses as ext_ts, else local clock (or WR)
+#define MCSRA_FP_VETO        5  // option to use FP as VETO
+#define MCSRA_FP_EXTCLR      6  // option to use FP to clear ext_ts
+#define MCSRA_FP_PEDGE       7  // option to select rising/falling edge for count or clear.
 
 // P16 Fippi register bits
 #define FiPPI_HALT           0   // Halt Fippi (lower 32-bit word)
@@ -432,7 +431,4 @@
 #define SCSR_FP_VETO             9  // option to use FP as VETO                                          
 #define SCSR_FP_EXTCLR          10  // option to use FP to clear ext_ts                                  
 #define SCSR_FP_PEDGE           11  // option to select rising/falling edge for count or clear.          
-#define SCSR_HDRLONG            12  // enable long header for list mode data      
- 
- 
- 
+#define SCSR_HDRLONG            12  // enable long header for list mode data
