@@ -4,7 +4,6 @@ Requires=pncontrol.service
 
 [Socket]
 ListenStream=0.0.0.0:9999
-Accept=true
 
 [Install]
 WantedBy=sockets.target
