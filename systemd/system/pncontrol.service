@@ -1,0 +1,12 @@
+[Unit]
+Description=PixieNet XL Control
+After=network.target pncontrol.socket
+PartOf=pncontrol.socket
+
+[Service]
+Type=simple
+ExecStart=/root/pncontrol -v
+WorkingDirectory=/root/
+StandardInput=socket
+StandardOutput=socket
+StandardError=inherit
