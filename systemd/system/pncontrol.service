@@ -1,7 +1,7 @@
 [Unit]
 Description=PixieNet XL Control
-After=network.target pncontrol.socket
-Requires=pncontrol.socket
+After=network.target
+PartOf=pncontrol.socket
 
 [Service]
 Type=simple
