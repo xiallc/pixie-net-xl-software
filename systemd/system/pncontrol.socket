@@ -1,9 +1,9 @@
 [Unit]
 Description=PixieNet XL Control Socket
-Requires=pncontrol.service
 
 [Socket]
 ListenStream=0.0.0.0:9999
+Accept=yes
 
 [Install]
 WantedBy=sockets.target

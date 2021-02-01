@@ -54,7 +54,14 @@ The command line has a prompt:
 pnet #
 ```
 
-`pncontrol` is ready to accept a new command then the prompt is displayed.
+`pncontrol` is ready to accept a new command then the prompt is displayed. 
+
+You can also control the system remotely using telnet (or an equivalent program). 
+An example telnet command looks like this
+```shell
+user@localhost:~/>telnet <IP-OF-PIXIE_NET_XL> 9999
+```
+Where you replace `<IP-OF-PIXIE_NET_XL>` with the actual IP of the Pixie-Net XL
 
 ### Commands
 
