@@ -1,12 +1,17 @@
 [Unit]
 Description=PixieNet XL Control
 After=network.target pncontrol.socket
-PartOf=pncontrol.socket
+Requires=pncontrol.socket
 
 [Service]
 Type=simple
 ExecStart=/root/pncontrol -v
-WorkingDirectory=/root/
+WorkingDirectory=/root
 StandardInput=socket
 StandardOutput=socket
 StandardError=inherit
+TimeoutStopSec=5
+Sockets=pncontrol.socket
+
+[Install]
+WantedBy=multi-user.target

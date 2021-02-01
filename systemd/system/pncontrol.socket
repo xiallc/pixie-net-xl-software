@@ -1,6 +1,6 @@
 [Unit]
 Description=PixieNet XL Control Socket
-Requires=pncontrol.service
+PartOf=pncontrol.service
 
 [Socket]
 ListenStream=0.0.0.0:9999
