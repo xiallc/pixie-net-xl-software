@@ -42,9 +42,44 @@
 extern "C" {
 #endif
 
+struct PixieNet_File;
+typedef struct PixieNet_File PixieNet_File;
+
+typedef int (*PixieNet_FileOpen)(PixieNet_File* pf,
+                                 const char* name,
+                                 const char* mode);
+typedef int (*PixieNet_FileClose)(PixieNet_File* pf);
+typedef size_t (*PixieNet_FileWrite)(const void* ptr,
+                                     size_t size,
+                                     size_t memb,
+                                     PixieNet_File* pf);
+typedef int (*PixieNet_FilePrintf)(PixieNet_File* pf,
+                                   const char * format,
+                                   ...) __attribute__ ((format (printf, 2, 3)));
+
+ struct PixieNet_File
+{
+  PixieNet_FileOpen open;
+  PixieNet_FileClose close;
+  PixieNet_FileWrite write;
+  PixieNet_FilePrintf printf;
+  void* data;
+};
+
 int program_fippi(int verbose,
                   PixieNetFippiConfig *fippiconfig,
                   volatile unsigned int *mapped);
+
+int daq_start(int verbose, PixieNet_File* fil,
+              PixieNetFippiConfig *fippiconfig, volatile unsigned int *mapped);
+// mode = 0 : timed
+// mode = 1 : number of loops
+// mode = 2:  number of events
+int daq_run(int mode, size_t count, int verbose, int maxmsg,
+            PixieNet_File* fil, PixieNet_File* filmca,
+            PixieNetFippiConfig *fippiconfig, volatile unsigned int *mapped);
+int daq_stop(int verbose, PixieNet_File* fil, PixieNet_File* filmca,
+             PixieNetFippiConfig *fippiconfig, volatile unsigned int *mapped);
 
 #ifdef __cplusplus
 }

@@ -53,7 +53,8 @@ def pixienetpl(bld):
     bld.stlib(feature='c c++',
               source=['PixieNetCommon.c',
                       'PixieNetConfig.cpp',
-                      'progfippi.c'],
+                      'progfippi.c',
+                      'startdaq.c'],
               defines=['EMBED_FIPPI'],
               target='pixienetpl')
 
@@ -61,6 +62,11 @@ def pixie_tools(bld):
     bld.program(feature='c c++',
                 source='progfippi.c',
                 target='progfippi',
+                lib=['m', 'stdc++'],
+                use='pixienetpl')
+    bld.program(feature='c',
+                source='startdaq.c',
+                target='pnkdaq',
                 lib=['m', 'stdc++'],
                 use='pixienetpl')
     bld.program(feature='c',
