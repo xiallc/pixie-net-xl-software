@@ -37,7 +37,6 @@
 #define RUN_H
 
 #include "commands.h"
-#include "fippi.h"
 #include "hw.h"
 
 namespace xia
@@ -50,11 +49,10 @@ namespace control
 {
   struct run
   {
-    hw::io& io;
-    fippi& fippi_;
+    hw::hal& hal;
     util::commands::command command;
 
-    run(hw::io& io, fippi& fippi_);
+    run(hw::hal& hal);
 
     int handler(const util::commands::argv& args);
   };

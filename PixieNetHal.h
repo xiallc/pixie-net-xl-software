@@ -33,32 +33,21 @@
  * SUCH DAMAGE.
  */
 
-#if !defined(STATUS_H)
-#define STATUS_H
+#if !defined(PIXIENET_HAL_H)
+#define PIXIENET_HAL_H
 
-#include "commands.h"
-#include "hw.h"
+#include "PixieNetConfig.h"
 
-namespace xia
-{
-namespace pixie
-{
-namespace net
-{
-namespace control
-{
-  struct status
-  {
-    hw::hal& hal;
-    util::commands::command command;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-    status(hw::hal& hal);
+int program_fippi(int verbose,
+                  PixieNetFippiConfig *fippiconfig,
+                  volatile unsigned int *mapped);
 
-    int handler(const util::commands::argv& args);
-  };
+#ifdef __cplusplus
 }
-}
-}
-}
+#endif
 
 #endif

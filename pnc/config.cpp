@@ -37,8 +37,7 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "config.h"
-#include "fippi.h"
+#include "hw.h"
 
 namespace xia
 {

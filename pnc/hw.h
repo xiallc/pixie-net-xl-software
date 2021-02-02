@@ -40,33 +40,84 @@
 
 #include "commands.h"
 
+#include <PixieNetConfig.h>
+#include <PixieNetHal.h>
+
 namespace xia
 {
 namespace pixie
 {
+namespace net
+{
 namespace hw
 {
-  struct io
+  struct element
   {
-    std::string dev;
-    int fd;
-    void* base;
+    const std::string label;
+    const bool        single;
+    const std::string type;
+    std::string       setting;
 
-    io(const char* dev_);
-    ~io();
+    element(const char* label_, const bool single_, const char* type_);
 
+    void set(const std::string& new_setting);
+
+    bool operator< (const element& right) const {
+      return label.length() < right.label.length();
+    }
+  };
+
+  typedef std::vector<element> elements;
+
+  struct hal
+  {
+    const std::string dev;
+
+    hw::elements elements;
+    struct PixieNetFippiConfig config;
+
+    hal(const char* dev, const char* defaults);
+    ~hal();
+
+    /*
+     * Set a config element
+     */
+    int set(element& el, const std::string& setting);
+
+    /*
+     * Program the FIPPI. Loads the settings from the string table
+     * delimited with line feeds.
+     */
+    int program(int verbose);
+
+    /*
+     * Print run stats
+     */
+    int print_runstats(int mode);
+
+    /*
+     * IO interfaces.
+     */
     volatile unsigned int* addr() const {
       return static_cast<volatile unsigned int*>(base);
     }
-
     unsigned int read(const size_t reg) const {
       return addr()[reg];
     }
-
     void write(const size_t reg, const unsigned int value) {
       addr()[reg] = value;
     }
+
+  private:
+    int fd;
+    void* base;
   };
+
+  /*
+   * Externally generated from the PixieNet sources.
+   */
+  void load(elements& e);
+}
 }
 }
 }

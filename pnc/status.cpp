@@ -37,8 +37,6 @@
 
 #include "status.h"
 
-#include <PixieNetCommon.h>
-
 namespace xia
 {
 namespace pixie
@@ -48,8 +46,8 @@ namespace net
 namespace control
 {
 
-  status::status(hw::io& io_)
-    : io(io_),
+  status::status(hw::hal& hal_)
+    : hal(hal_),
       command("status", "Status, try 'status -h'",
               *this, &status::handler)
   {
@@ -89,7 +87,7 @@ namespace control
           }
         }
       }
-      int r = ::read_print_runstats_XL_2x4(mode, 1, io.addr());
+      int r = hal.print_runstats(mode);
       if (r == 0) {
         std::cout << "ok" << std::endl;
       } else {

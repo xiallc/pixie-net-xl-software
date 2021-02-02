@@ -37,10 +37,9 @@
 #define PNC_H
 
 #include "commands.h"
-#include "config.h"
 #include "exit.h"
-#include "fippi.h"
 #include "hw.h"
+#include "program.h"
 #include "report.h"
 #include "run.h"
 #include "set.h"
@@ -67,13 +66,14 @@ namespace net
   {
     struct session
     {
-      hw::io io;
-      fippi fippi_;
+      hw::hal hal;
 
-      util::commands::help help_;
-      util::commands::exit exit_;
-      run run_;
+      util::commands::help help;
+      util::commands::exit exit;
+
       set set_;
+      program program_;
+      run run_;
       status status_;
       report report_;
 

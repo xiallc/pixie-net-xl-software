@@ -37,7 +37,7 @@
 #define REPORT_H
 
 #include "commands.h"
-#include "fippi.h"
+#include "hw.h"
 
 namespace xia
 {
@@ -49,10 +49,10 @@ namespace control
 {
   struct report
   {
-    fippi& fippi_;
+    hw::hal& hal;
     util::commands::command command;
 
-    report(fippi& fippy_);
+    report(hw::hal& hal);
 
     int handler(const util::commands::argv& args);
   };

@@ -78,12 +78,12 @@ namespace net
   {
     session::session(const char* defaults,
                      const char* uio)
-      : io(uio),
-        fippi_(defaults),
-        run_(io, fippi_),
-        set_(fippi_),
-        status_(io),
-        report_(fippi_)
+      : hal(uio, defaults),
+        set_(hal),
+        program_(hal),
+        run_(hal),
+        status_(hal),
+        report_(hal)
     {
     }
 

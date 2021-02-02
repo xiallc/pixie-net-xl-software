@@ -37,7 +37,7 @@
 #include <iomanip>
 #include <iostream>
 
-#include "pnc.h"
+#include "set.h"
 
 namespace xia
 {
@@ -47,8 +47,8 @@ namespace net
 {
 namespace control
 {
-  set::set(fippi& fippi__)
-    : fippi_(fippi__),
+  set::set(hw::hal& hal_)
+    : hal(hal_),
       command("set", "Set a configuration value",
               *this, &set::handler)
   {
@@ -60,12 +60,12 @@ namespace control
     bool verbose = false;
     for (auto f : args.flags) {
       if (f == "-l") {
-        auto maxi = std::max_element(fippi_.elements.begin(),
-                                     fippi_.elements.end());
+        auto maxi = std::max_element(hal.elements.begin(),
+                                     hal.elements.end());
         const auto max = (*maxi).label.length() + 1;
         auto cstate(std::cout.flags());
         std::cout << std::setfill(' ');
-        for (auto& e : fippi_.elements) {
+        for (auto& e : hal.elements) {
           std::cout << std::setw(static_cast<int>(max)) << e.label
                     << " " << static_cast<const char*>(e.single ? "single" : "multi ")
                     << " " << e.type
@@ -86,7 +86,7 @@ namespace control
       return 1;
     }
 
-    for (auto& e : fippi_.elements) {
+    for (auto& e : hal.elements) {
       if (e.label == args.options[0]) {
         std::string s;
         for (auto si = args.options.begin() + 1;
@@ -98,12 +98,12 @@ namespace control
         }
         if (verbose)
           std::cout << args.options[0] << " <= " << s << std::endl;
-        int r = fippi_.set(args.options[0] + ' ' + s);
+        int r = hal.set(e, s);
         if (r == 0) {
-          e.setting = s;
           std::cout << "ok" << std::endl;
         } else {
-          std::cerr << "error: setting " << args.options[0] << std::endl;
+          std::cerr << "error: setting " << args.options[0]
+                    << ": " << r << std::endl;
         }
         return 0;
       }

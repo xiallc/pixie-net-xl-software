@@ -33,12 +33,9 @@
  * SUCH DAMAGE.
  */
 
-#if !defined(FIPPI_H)
-#define FIPPI_H
+#include <iostream>
 
-#include "config.h"
-
-#include <PixieNetConfig.h>
+#include "program.h"
 
 namespace xia
 {
@@ -48,18 +45,39 @@ namespace net
 {
 namespace control
 {
-  struct fippi
+  program::program(hw::hal& hal_)
+    : hal(hal_),
+      command("program", "Program the FIPPI. Use -v for verbose",
+              *this, &program::handler)
   {
-    config::elements elements;
-    struct PixieNetFippiConfig config;
+  }
 
-    fippi(const char* defaults);
+  int
+  program::handler(const util::commands::argv& args)
+  {
+    int verbose = 0;
+    if (args.options.size() > 1) {
+      for (auto fi = args.options.begin() + 1;
+           fi != args.options.end();
+           ++fi) {
+        const std::string& f = *fi;
+        if (f == "-v" || f == "--verbose") {
+          verbose = 1;
+        } else {
+          std::cerr << "warning: unknown option: " << f << std::endl;
+        }
+      }
+    }
+    int r = hal.program(verbose);
+    if (r == 0) {
+      std::cout << "ok" << std::endl;
+    } else {
+      std::cout << "error: code: " << r << std::endl;
+    }
+    return 0;
+  }
 
-    int set(const std::string& text);
-  };
 }
 }
 }
 }
-
-#endif

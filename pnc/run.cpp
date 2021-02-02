@@ -37,14 +37,6 @@
 
 #include "run.h"
 
-#include <PixieNetConfig.h>
-
-extern "C" {
-  extern int program_fippi(int verbose,
-                           PixieNetFippiConfig *fippiconfig,
-                           volatile unsigned int *mapped);
-}
-
 namespace xia
 {
 namespace pixie
@@ -53,9 +45,8 @@ namespace net
 {
 namespace control
 {
-  run::run(hw::io& io_, fippi& fippi__)
-    : io(io_),
-      fippi_(fippi__),
+  run::run(hw::hal& hal_)
+    : hal(hal_),
       command("run", "Run control, try 'run -h'",
               *this, &run::handler)
   {
@@ -93,7 +84,7 @@ namespace control
           }
         }
       }
-      int r = program_fippi(verbose, &fippi_.config, io.addr());
+      int r = 0;
       if (r == 0) {
         std::cout << "ok" << std::endl;
       } else {

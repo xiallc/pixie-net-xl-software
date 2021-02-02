@@ -88,21 +88,20 @@ def build(bld):
     pixienetpl(bld)
 
     bld(rule = 'python ../c-to-config.py ${SRC} > ${TGT}',
-        target='pnc/config-elements.cpp',
+        target='pnc/hw-elements.cpp',
         source='PixieNetConfig.cpp',
         color = 'BLUE')
 
     source = ['pnc/pnc.cpp',
+              'pnc/set.cpp',
+              'pnc/program.cpp',
               'pnc/run.cpp',
               'pnc/status.cpp',
-              'pnc/set.cpp',
-              'pnc/config.cpp',
-              'pnc/config-elements.cpp',
               'pnc/report.cpp',
-              'pnc/fippi.cpp',
               'pnc/exit.cpp',
               'pnc/commands.cpp',
-              'pnc/hw.cpp']
+              'pnc/hw.cpp',
+              'pnc/hw-elements.cpp']
 
     bld.program(source=source,
                 target='pncontrol',

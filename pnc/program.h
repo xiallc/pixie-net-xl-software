@@ -33,8 +33,8 @@
  * SUCH DAMAGE.
  */
 
-#if !defined(STATUS_H)
-#define STATUS_H
+#if !defined(PROGRAM_H)
+#define PROGRAM_H
 
 #include "commands.h"
 #include "hw.h"
@@ -47,12 +47,12 @@ namespace net
 {
 namespace control
 {
-  struct status
+  struct program
   {
     hw::hal& hal;
     util::commands::command command;
 
-    status(hw::hal& hal);
+    program(hw::hal& hal);
 
     int handler(const util::commands::argv& args);
   };

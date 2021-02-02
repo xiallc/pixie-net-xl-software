@@ -47,8 +47,8 @@ namespace net
 {
 namespace control
 {
-  report::report(fippi& fippi__)
-    : fippi_(fippi__),
+  report::report(hw::hal& hal_)
+    : hal(hal_),
       command("report", "Report the configuration",
               *this, &report::handler)
   {
@@ -62,14 +62,14 @@ namespace control
       return 1;
     }
 
-    auto maxi = std::max_element(fippi_.elements.begin(),
-                                 fippi_.elements.end());
+    auto maxi = std::max_element(hal.elements.begin(),
+                                 hal.elements.end());
     const auto max = (*maxi).label.length() + 1;
 
     auto cstate(std::cout.flags());
     std::cout << std::setfill(' ');
 
-    for (auto& e : fippi_.elements) {
+    for (auto& e : hal.elements) {
       std::cout << std::setw(static_cast<int>(max)) << std::left << e.label
                 << ' ' << e.setting
                 << std::endl;

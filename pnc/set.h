@@ -37,7 +37,7 @@
 #define SET_H
 
 #include "commands.h"
-#include "fippi.h"
+#include "hw.h"
 
 namespace xia
 {
@@ -49,10 +49,10 @@ namespace control
 {
   struct set
   {
-    fippi& fippi_;
+    hw::hal& hal;
     util::commands::command command;
 
-    set(fippi& fippi_);
+    set(hw::hal& hal);
 
     int handler(const util::commands::argv& args);
   };
