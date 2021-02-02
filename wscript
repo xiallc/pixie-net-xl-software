@@ -65,7 +65,7 @@ def pixie_tools(bld):
                 use='pixienetpl')
     bld.program(feature='c',
                 source='bootfpga.c',
-                target='bootfpgs',
+                target='pnkintex',
                 lib=['m', 'stdc++'],
                 use='pixienetpl')
 
