@@ -100,6 +100,7 @@ def build(bld):
               'pnc/config-elements.cpp',
               'pnc/report.cpp',
               'pnc/fippi.cpp',
+              'pnc/exit.cpp',
               'pnc/commands.cpp',
               'pnc/hw.cpp']
 

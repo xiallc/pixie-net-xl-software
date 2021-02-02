@@ -92,14 +92,30 @@ namespace net
     }
 
     void
-    session::shell()
+    session::shell(bool editing, bool echo)
     {
-      char buf[512];
-      while (::crossline_readline("pnet # ", buf, sizeof(buf)) != nullptr) {
-        xia::util::commands::execute(buf);
+      while (true) {
+        if (editing) {
+          char buf[512];
+          if (::crossline_readline("pnet # ", buf, sizeof(buf)) == nullptr)
+            break;
+          xia::util::commands::execute(buf);
+        }
+        else {
+          if (std::cin.eof())
+            break;
+          std::string line;
+          std::cout << "pnet # " << std::flush;
+          std::getline(std::cin, line);
+          if (echo)
+            std::cout << line << std::endl << std::flush;
+          xia::util::commands::execute(line.c_str());
+        }
+        std::cout << std::flush;
+        std::cerr << std::flush;
       }
+      std::cout << "Finished" << std::endl;
     }
-
   }
 }
 }
@@ -146,7 +162,7 @@ usage (int exit_code)
             << " -V          : print version and exit (also --version)" << std::endl
             << " -v          : verbose, can supply multiple times" << std::endl
             << "               to increase verbosity (also --verbose)" << std::endl
-            << " -d file     : fippi defaults (default: "
+            << " -c file     : fippi default config (default: "
             << fippi_defaults << ")" << std::endl
             << " -u path     : IO device (default: "
             << io_device << ")" << std::endl;
@@ -160,7 +176,7 @@ static struct option pnc_opts[] = {
   { "help",        no_argument,            nullptr,           'h' },
   { "version",     no_argument,            nullptr,           'V' },
   { "verbose",     no_argument,            nullptr,           'v' },
-  { "defaults",    no_argument,            nullptr,           'd' },
+  { "defaults",    no_argument,            nullptr,           'c' },
   { "user-io",     no_argument,            nullptr,           'u' },
   { NULL,          0,                      nullptr,            0 }
 };
@@ -168,6 +184,7 @@ static struct option pnc_opts[] = {
 int
 main (int argc, char* argv[])
 {
+  bool editing = ::isatty(STDIN_FILENO);
   const char* defaults = fippi_defaults;
   const char* uio = io_device;
   int ec = 0;
@@ -176,13 +193,13 @@ main (int argc, char* argv[])
 
   try {
     while (true) {
-      int opt = ::getopt_long (argc, argv, "hVvd:u:", pnc_opts, NULL);
+      int opt = ::getopt_long (argc, argv, "hVvc:u:", pnc_opts, NULL);
       if (opt < 0)
         break;
 
       switch (opt) {
       case 'V':
-        std::cout << "pnc (Pixie Net Control) "
+        std::cout << "pncontrol (Pixie Net Control) "
                   << xia::pixie::net::version ()
                   << std::endl;
         ::exit (0);
@@ -197,7 +214,11 @@ main (int argc, char* argv[])
       case 'h':
         usage (0);
 
-      case 'd':
+      case 'n':
+        editing = false;
+        break;
+
+      case 'c':
         defaults = optarg;
         break;
 
@@ -210,17 +231,27 @@ main (int argc, char* argv[])
     argc -= optind;
     argv += optind;
 
+    std::cout.setf(std::ios::boolalpha);
+    std::cerr.setf(std::ios::boolalpha);
+
+    xia::pixie::net::control::session session(defaults, uio);
+
     if (xia::pixie::net::verbose()) {
       std::cout << "Pixie Net Control "
                 << xia::pixie::net::version () << std::endl
                 << " defaults: " << defaults << std::endl
-                << " user-io:  " << uio << std::endl;
+                << " user-io:  " << uio << std::endl
+                << " editing:  " << editing << std::endl;
     }
 
-    xia::pixie::net::control::session session(defaults, uio);
-
-    session.shell();
-
+    session.shell(editing, false);
+  }
+  catch (xia::exit& e) {
+    if (e.exit_code == 0)
+      std::cout << e.what () << std::endl;
+    else
+      std::cerr << "error: " << e.what () << std::endl;
+    ec = e.exit_code;
   }
   catch (std::exception& e) {
     std::cerr << "error: " << e.what () << std::endl;

@@ -33,61 +33,40 @@
  * SUCH DAMAGE.
  */
 
-#if !defined(PNC_H)
-#define PNC_H
+#if !defined(EXIT_H)
+#define EXIT_H
+
+#include <exception>
+#include <string>
 
 #include "commands.h"
-#include "config.h"
-#include "exit.h"
-#include "fippi.h"
-#include "hw.h"
-#include "report.h"
-#include "run.h"
-#include "set.h"
-#include "status.h"
 
 namespace xia
 {
-namespace pixie
-{
-namespace net
-{
-  /*
-   * Version of this control app.
-   */
-  const char* version();
-
-  /*
-   * Verbose control.
-   */
-  void verbose_inc();
-  bool verbose(int level = 1);
-
-  namespace control
+  struct exit
+    : public std::exception
   {
-    struct session
+    const int exit_code;
+    const std::string why;
+
+    explicit exit(const int exit_code, const std::string& why);
+    const char* what() const noexcept override;
+  };
+
+  namespace util
+  {
+  namespace commands
+  {
+    struct exit
     {
-      hw::io io;
-      fippi fippi_;
+      util::commands::command command;
 
-      util::commands::help help_;
-      util::commands::exit exit_;
-      run run_;
-      set set_;
-      status status_;
-      report report_;
+      exit();
 
-      session(const char* defaults,
-              const char* uio);
-      ~session();
-
-      void shell(bool editing, bool echo);
-
+      [[ noreturn ]] int handler(const util::commands::argv& args);
     };
-
   }
-}
-}
+  }
 }
 
 #endif
