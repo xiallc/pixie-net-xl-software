@@ -161,6 +161,7 @@ namespace hw
 
   hal::~hal()
   {
+    std::lock_guard<std::mutex> guard(lock);
     if (base != nullptr)
       ::munmap(base, io_size);
     if (fd >= 0)
@@ -170,6 +171,7 @@ namespace hw
   int
   hal::set(element& e, const std::string& setting)
   {
+    std::lock_guard<std::mutex> guard(lock);
     std::string text = e.label + ' ' + setting;
     int r = ::init_PixieNetFippiConfig_from_buffer(&text[0],
                                                    2,
@@ -183,12 +185,50 @@ namespace hw
   int
   hal::program(int verbose)
   {
-    return program_fippi(verbose, &config, addr());
+    std::lock_guard<std::mutex> guard(lock);
+    return ::program_fippi(verbose, &config, addr());
+  }
+
+  int
+  hal::daq_start(bool verbose, memfile::file& data)
+  {
+    std::lock_guard<std::mutex> guard(lock);
+    return ::daq_start(verbose ? 1 : 0,
+                       &data.pn,
+                       &config,
+                       addr());
+  }
+
+  int
+  hal::daq_run(int mode, size_t count, size_t maxmsg, bool verbose,
+               memfile::file& data, memfile::file& mca)
+  {
+    std::lock_guard<std::mutex> guard(lock);
+    return ::daq_run(mode,
+                     count,
+                     verbose ? 1 : 0,
+                     static_cast<int>(maxmsg),
+                     &data.pn,
+                     &mca.pn,
+                     &config,
+                     addr());
+  }
+
+  int
+  hal::daq_stop(bool verbose, memfile::file& data, memfile::file& mca)
+  {
+    std::lock_guard<std::mutex> guard(lock);
+    return ::daq_stop(verbose ? 1 : 0,
+                      &data.pn,
+                      &mca.pn,
+                      &config,
+                      addr());
   }
 
   int
   hal::print_runstats(int mode)
   {
+    std::lock_guard<std::mutex> guard(lock);
     return ::read_print_runstats_XL_2x4(mode, 1, addr());
   }
 }

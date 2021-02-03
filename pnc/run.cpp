@@ -33,9 +33,15 @@
  * SUCH DAMAGE.
  */
 
+#include <chrono>
 #include <iostream>
 
 #include "run.h"
+
+/*
+ * For ease of milliseconds
+ */
+using namespace std::chrono_literals;
 
 namespace xia
 {
@@ -48,8 +54,21 @@ namespace control
   run::run(hw::hal& hal_)
     : hal(hal_),
       command("run", "Run control, try 'run -h'",
-              *this, &run::handler)
+              *this, &run::handler),
+      state(run_idle),
+      trace(true),
+      data(5 * 1024 * 1024),
+      mca(5 * 1024 * 1024)
   {
+  }
+
+  run::~run()
+  {
+    if (is_running()) {
+      state = run_finishing;
+      while (!is_idle())
+        std::this_thread::sleep_for(10ms);
+    }
   }
 
   int
@@ -67,31 +86,58 @@ namespace control
           return 0;
         }
       }
+      if (!is_idle()) {
+        std::cout << "run active" << std::endl;
+      }
       return 0;
     }
 
-    if (args.options[0] == "start") {
-      int verbose = 0;
-      if (args.options.size() > 1) {
-        for (auto fi = args.options.begin() + 1;
-             fi != args.options.end();
-             ++fi) {
-          const std::string& f = *fi;
-          if (f == "-v" || f == "--verbose") {
-            verbose = 1;
-          } else {
-            std::cerr << "warning: unknown option: " << f << std::endl;
-          }
+    bool verbose = false;
+    if (args.options.size() > 1) {
+      for (auto fi = args.options.begin() + 1;
+           fi != args.options.end();
+           ++fi) {
+        const std::string& f = *fi;
+        if (f == "-v" || f == "--verbose") {
+          verbose = true;
+        } else {
+          std::cerr << "warning: unknown option: " << f << std::endl;
         }
       }
-      int r = 0;
+    }
+
+    if (args.options[0] == "start") {
+      if (!is_idle()) {
+        std::cerr << "error: already running" << std::endl;
+        return 1;
+      }
+      state = run_starting;
+      int r = hal.daq_start(verbose, data);
+      if (r == 0) {
+        std::promise<int> result;
+        runner_answer = result.get_future();
+        runner = std::thread(&run::monitor, this, std::move(result), 0, verbose);
+        runner.detach();
+      }
       if (r == 0) {
         std::cout << "ok" << std::endl;
       } else {
         std::cout << "error: code: " << r << std::endl;
       }
     } else if (args.options[0] == "stop") {
-      /* How to stop a run? */
+      if (!is_running()) {
+        std::cerr << "error: not running" << std::endl;
+        return 1;
+      }
+      state = run_finishing;
+      int r = hal.daq_stop(verbose, data, mca);
+      if (r == 0) {
+        std::cout << "ok" << std::endl;
+      } else {
+        std::cout << "error: code: " << r << std::endl;
+      }
+      while (!is_idle())
+        std::this_thread::sleep_for(10ms);
     } else {
       std::cerr << "error: invalid command" << std::endl;
       return 1;
@@ -100,6 +146,39 @@ namespace control
     return 0;
   }
 
+  void
+  run::monitor(std::promise<int> result, size_t maxmsg, bool verbose)
+  {
+    int r = 0;
+    state = run_running;
+    while (is_running()) {
+      r = hal.daq_run(1, 1, maxmsg, verbose, data, mca);
+      if (r != 0)
+        break;
+      std::this_thread::sleep_for(1ms);
+    }
+    result.set_value(r);
+    state = run_idle;
+  }
+
+  bool
+  run::is_idle() const
+  {
+    return state.load() == run_idle;
+  }
+
+  bool
+  run::is_starting() const
+  {
+    return state.load() == run_starting;
+  }
+
+  bool
+  run::is_running() const
+  {
+    run_state s = state.load();
+    return s == run_starting || s == run_running;
+  }
 }
 }
 }

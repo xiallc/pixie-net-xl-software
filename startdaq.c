@@ -2,36 +2,37 @@
  * Copyright (c) 2019 XIA LLC
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, 
- * with or without modification, are permitted provided 
+ * Redistribution and use in source and binary forms,
+ * with or without modification, are permitted provided
  * that the following conditions are met:
  *
- *   * Redistributions of source code must retain the above 
- *     copyright notice, this list of conditions and the 
+ *   * Redistributions of source code must retain the above
+ *     copyright notice, this list of conditions and the
  *     following disclaimer.
- *   * Redistributions in binary form must reproduce the 
- *     above copyright notice, this list of conditions and the 
- *     following disclaimer in the documentation and/or other 
+ *   * Redistributions in binary form must reproduce the
+ *     above copyright notice, this list of conditions and the
+ *     following disclaimer in the documentation and/or other
  *     materials provided with the distribution.
  *   * Neither the name of XIA LLC
- *     nor the names of its contributors may be used to endorse 
- *     or promote products derived from this software without 
+ *     nor the names of its contributors may be used to endorse
+ *     or promote products derived from this software without
  *     specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
- * CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, 
- * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
- * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR 
- * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF 
- * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ * CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+ * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+ * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *----------------------------------------------------------------------*/
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -52,7 +53,6 @@
 #include "PixieNetDefs.h"
 #include "PixieNetCommon.h"
 #include "PixieNetConfig.h"
-#include "PixieNetHal.h"
 
 static unsigned int RunType, SyncT, ReqRunTime, PollTime, WR_RTCtrl;
 static unsigned int SL[NCHANNELS], CCSRA[NCHANNELS], PILEUPCTRL[NCHANNELS];
@@ -86,43 +86,43 @@ static unsigned int psa_base, psa_Q0, psa_Q1, psa_ampl, psa_R;
 
 static void zero_data(void)
 {
-#define ZERO(_v) memset(&_v[0], 0, sizeof(_v));
-    ZERO(baseline);
-    ZERO(GoodChanMASK);
-    ZERO(buffer1);
-    ZERO(buffer2);
-    cs[0] = CS_K0;
-    cs[1] = CS_K1;
-    memset(&mca[0][0], 0, sizeof(mca));
-    memset(&wmca[0][0], 0, sizeof(wmca));
+  #define ZERO(_v) memset(&_v[0], 0, sizeof(_v));
+  ZERO(baseline);
+  ZERO(GoodChanMASK);
+  ZERO(buffer1);
+  ZERO(buffer2);
+  cs[0] = CS_K0;
+  cs[1] = CS_K1;
+  memset(&mca[0][0], 0, sizeof(mca));
+  memset(&wmca[0][0], 0, sizeof(wmca));
 }
 
 #ifndef EMBED_FIPPI
 
 static int libC_Open(PixieNet_File* pf, const char* name, const char* mode)
 {
-    pf->data = fopen(name, mode);
-    return pf->data != NULL ? 0 : -1;
+  pf->data = fopen(name, mode);
+  return pf->data != NULL ? 0 : -1;
 }
 
 static int libC_Close(PixieNet_File* pf)
 {
-    return fclose(pf->data);
+  return fclose(pf->data);
 }
 
-static size_t libC_Write(const void* ptr, size_t size, size_t memb, PixieNet_File* pf)
+static ssize_t libC_Write(const void* ptr, size_t size, size_t memb, PixieNet_File* pf)
 {
-    return fwrite(ptr, size, memb, pf->data);
+  return fwrite(ptr, size, memb, pf->data);
 }
 
 static int libC_Printf(PixieNet_File* pf, const char* format, ...)
 {
-    int len;
-    va_list ap;
-    va_start(ap, format);
-    len = vfprintf(pf->data, format, ap);
-    va_end(ap);
-    return len;
+  int len;
+  va_list ap;
+  va_start(ap, format);
+  len = vfprintf(pf->data, format, ap);
+  va_end(ap);
+  return len;
 }
 
 int main(void) {
@@ -162,7 +162,6 @@ int main(void) {
   // 0 print errors and minimal info only
   // 1 print errors and full info
 
-
   // ******************* read ini file and fill struct with values ********************
 
   PixieNetFippiConfig fippiconfig;		// struct holding the input parameters
@@ -181,82 +180,81 @@ int main(void) {
     return rval;
   }
 
-    PixieNet_File fil = {
-            .open = libC_Open,
-            .close = libC_Close,
-            .write = libC_Write,
-            .printf = libC_Printf
-    };
+  PixieNet_File fil = {
+    .open = libC_Open,
+    .close = libC_Close,
+    .write = libC_Write,
+    .printf = libC_Printf
+  };
 
-    PixieNet_File filmca = {
-            .open = libC_Open,
-            .close = libC_Close,
-            .write = libC_Write,
-            .printf = libC_Printf
-    };
+  PixieNet_File filmca = {
+    .open = libC_Open,
+    .close = libC_Close,
+    .write = libC_Write,
+    .printf = libC_Printf
+  };
 
-    rval = daq_start(verbose, &fil, &fippiconfig, mapped);
-    if (rval == 0)
-        rval = daq_run(0, 0, verbose, maxmsg, &fil, &filmca, &fippiconfig, mapped);
-    if (rval == 0)
-        rval = daq_stop(verbose, &fil, &filmca, &fippiconfig, mapped);
+  rval = daq_start(verbose, &fil, &fippiconfig, mapped);
+  if (rval == 0)
+    rval = daq_run(0, 0, verbose, maxmsg, &fil, &filmca, &fippiconfig, mapped);
+  if (rval == 0)
+    rval = daq_stop(verbose, &fil, &filmca, &fippiconfig, mapped);
 
-    flock( fd, LOCK_UN );
-    munmap(map_addr, size);
-    close(fd);
+  flock( fd, LOCK_UN );
+  munmap(map_addr, size);
+  close(fd);
 
-    return rval;
+  return rval;
 }
 #endif
 
 int daq_start(int verbose, PixieNet_File* fil,
               PixieNetFippiConfig *fippiconfig, volatile unsigned int *mapped)
 {
-    int k;
+  int k;
 
-    char filename[64];
+  char filename[64];
 
-    onlinebin=MAX_MCA_BINS/WEB_MCA_BINS;
+  onlinebin=MAX_MCA_BINS/WEB_MCA_BINS;
 
-    if (RunType != 0) {
-        printf( "Run type is set, must be 0\n");
-        return(-1);
-    }
+  if (RunType != 0) {
+      printf( "Run type is set, must be 0\n");
+      return(-1);
+  }
 
-    zero_data();
+  zero_data();
 
-    // ************************** check HW version ********************************
+  // ************************** check HW version ********************************
 
-    revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
-
-    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
-    {
-        NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
-        NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
-        ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB02;
-        FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
-    }
-    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
-    {
-        NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
-        NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
-        ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01_125;
-        FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
-    }
-    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75)
-    {
-        NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
-        NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
-        ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01_75;
-        FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
-    }
-    if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
-    {
-        NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
-        NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
-        ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB06_250;
-        FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB06;
-    }
+   revsn = hwinfo(mapped,I2C_SELMAIN);    // some settings may depend on HW variants
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB02_12_250)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB02;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB02;
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
+   }
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_125)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01_125;
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB02;
+   }
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB01_14_75)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB01_75;
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB01;
+   }
+   if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB06_16_250)
+   {
+      NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB01;
+      NCHANNELS_PER_K7  =  NCHANNELS_PER_K7_DB01;
+      ADC_CLK_MHZ       =  ADC_CLK_MHZ_DB06_250;
+      FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB06;
+   }
     if((revsn & PNXL_DB_VARIANT_MASK) == PNXL_DB04_14_250)
     {
         NCHANNELS_PRESENT =  NCHANNELS_PRESENT_DB02;
@@ -272,12 +270,12 @@ int daq_start(int verbose, PixieNet_File* fil,
         FILTER_CLOCK_MHZ  =  FILTER_CLOCK_MHZ_DB06;
     }
 
-    // check if FPGA booted
-    tmp0 = mapped[AMZ_CSROUTL];
-    if( (tmp0 & 0x4000) ==0) {
-        printf( "FPGA not booted, please run ./bootfpga first\n" );
-        return -5;
-    }
+   // check if FPGA booted
+   tmp0 = mapped[AMZ_CSROUTL];
+   if( (tmp0 & 0x4000) ==0) {
+       printf( "FPGA not booted, please run ./bootfpga first\n" );
+       return -5;
+   }
 
   // assign to local variables, including any rounding/discretization
   RunType      = fippiconfig->RUN_TYPE;
@@ -381,7 +379,7 @@ int daq_start(int verbose, PixieNet_File* fil,
             buffer1[8+ch] =(int)floor((TL[ch]*TRACEENA[ch] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400);			// each channel's event length, in blocks
  //           printf( "N blocks %d \n",(int)floor((TL[ch]*TRACEENA[ch] + CHAN_HEAD_LENGTH_400) / BLOCKSIZE_400));
         }
-        fil->write( buffer1, 2, FILE_HEAD_LENGTH_400, fil );     // write to file
+        fil->write(buffer1, 2, FILE_HEAD_LENGTH_400, fil );     // write to file
       }
 
 
@@ -502,21 +500,21 @@ int daq_start(int verbose, PixieNet_File* fil,
 int daq_run(int mode, size_t count, int verbose, int maxmsg, PixieNet_File* fil, PixieNet_File* filmca,
             PixieNetFippiConfig *fippiconfig, volatile unsigned int *mapped)
 {
-    int k;
+   int k;
 
-    if (RunType == 0) {
-        printf( "Run type is not set\n");
-        return(-1);
-    }
+   if (RunType == 0) {
+      printf( "Run type is not set\n");
+      return(-1);
+   }
 
-    if (mode > 2) {
-        printf( "Invalid run mode\n");
-        return(-1);
-    }
+   if (mode > 2) {
+      printf( "Invalid run mode\n");
+      return(-1);
+   }
 
-    unsigned int loopcount_on_entry = loopcount;
+   unsigned int loopcount_on_entry = loopcount;
 
-    starttime = time(NULL);                         // capture OS start time
+   starttime = time(NULL);                         // capture OS start time
 
     // ********************** Run Loop **********************
     while (true) {
@@ -992,31 +990,31 @@ int daq_run(int mode, size_t count, int verbose, int maxmsg, PixieNet_File* fil,
 
                                    if( TRACEENA[ch] )  {   // previously checked if TL >0 and traces are recorded (bit 8 of CCSRA)
                                      fil->write( wf, TL[ch]/2, 4, fil );
-                                 
+
                                    }   // end trace write
                          //     } //energy limit
                            }      // 0x400
-   
+
                            if(RunType==0x401) {// && ch<NCHANNEL_MAX400)   {
                            // ASCII file, no trace (like AutoPRocessLMData=3)
                               chw = ch & 0x03;         // map channels into 0-3, assume only one set of 4 connected
                               WR_tm_tai = (unsigned long long)timeL + TWOTO32* (unsigned long long)timeH;  // full timestamp
                               // "Event\tChannel\tTimeStamp\tEnergy\tRT\tApeak\tBsum\tQ0\tQ1\tPSAval\n
-                              fil->printf(fil, "%u\t%hu\t%llu\t%hu\t%hu\t%hu\t%hu\t%hu\t%hu\t%hu\n", 
-                                 eventcount, 
+                              fil->printf(fil, "%u\t%hu\t%llu\t%hu\t%hu\t%hu\t%hu\t%hu\t%hu\t%hu\n",
+                                 eventcount,
                                  chw,
-                                 WR_tm_tai>>1,     // full timestamp in 2ns units  
-                                 energy, 
+                                 WR_tm_tai>>1,     // full timestamp in 2ns units
+                                 energy,
                                  0,    // no rise time
-                                 psa_ampl, 
+                                 psa_ampl,
                                  psa_base,
                                  psa_Q0,
                                  psa_Q1,
                                  psa_R       );
                            }    // 0x401
-   
+
                         } // end DATA_FLOW < 3
-   
+
                         //  histogramming if E< max mcabin
                         bin = energy >> Binfactor[ch];
                         if( (bin<MAX_MCA_BINS) && (bin>0) ) {
@@ -1024,7 +1022,7 @@ int daq_run(int mode, size_t count, int verbose, int maxmsg, PixieNet_File* fil,
                            bin = bin >> WEB_LOGEBIN;
                            if(bin>0) wmca[ch][bin] = wmca[ch][bin] + 1;	// increment wmca
                         }
-   
+
                         /*
                         //debug - 2nd MCA in unused block of channels
                         bin = energyF >> Binfactor[ch];
@@ -1035,12 +1033,12 @@ int daq_run(int mode, size_t count, int verbose, int maxmsg, PixieNet_File* fil,
                            if(bin>0) wmca[ch+out7][bin] = wmca[ch+out7][bin] + 1;	// increment wmca
                         }
                         */
-                        
-                        eventcount++;    
+
+                        eventcount++;
                         eventcount_ch[ch]++;
                      }
-                     else { // event not acceptable (piled up) 
-   
+                     else { // event not acceptable (piled up)
+
                      //   eventcount_ch[ch+1]++; // debug
                           // advance header memory by 5 x4 words
                           for( k=0; k < 5; k++)
@@ -1049,40 +1047,40 @@ int daq_run(int mode, size_t count, int verbose, int maxmsg, PixieNet_File* fil,
                               hdr[k] = mapped[AMZ_EXDRD];      // read 16 bits, no double read required
                              // the next 8 words only need to be read if reading QDC data
                             }
-   
+
                           //  now also advance trace memory address if traces are enabled
-                          if(TRACEENA[ch]==1)  { 
+                          if(TRACEENA[ch]==1)  {
                              mapped[AMZ_EXAFRD] = AK7_SKIPTRACE;             // select the "skiptrace" address in channel's page
                              out7 = mapped[AMZ_EXDWR];     // any read ok
-                          }  // end if trace enabled 
+                          }  // end if trace enabled
                      }  // end not acceptable
                   }     // end event in this channel
                }        // end for ch
-            }           // end event in any channel  
+            }           // end event in any channel
          } // end auto UDP
       }              // end for K7s
 
 
 
         // ----------- Periodically save MCA, PSA, and Run Statistics  -----------
-       
-        if(loopcount % PollTime == 0) 
+
+        if(loopcount % PollTime == 0)
         {
-       
-            // 1) Run Statistics 
+
+            // 1) Run Statistics
 
             // for debug purposes, print to std out so we see what's going on
             mapped[AMZ_DEVICESEL] = CS_MZ;
             tmp0 = mapped[AMZ_RS_TT+0];   // address offset by 1?
             tmp1 = mapped[AMZ_RS_TT+1];
-             if(verbose) printf("%s %4.5G \n","Total_Time",((double)tmp0*65536+(double)tmp1*TWOTO32)*1e-9);    
+             if(verbose) printf("%s %4.5G \n","Total_Time",((double)tmp0*65536+(double)tmp1*TWOTO32)*1e-9);
             // print (small) set of RS to file, visible to web
             //read_print_runstats_XL_2x4(1, 0, mapped);
             read_print_rates_XL_2x4(0,mapped);
-      
+
 
             // 2) MCA
-            filmca->open(filmca, "MCA.csv","w");
+            filmca->open(filmca,"MCA.csv","w");
             filmca->printf(filmca,"bin");
             for(ch=0;ch<NCHANNELS_PRESENT;ch++) filmca->printf(filmca,",MCAch%02d",ch);
             filmca->printf(filmca,"\n");
@@ -1096,25 +1094,25 @@ int daq_run(int mode, size_t count, int verbose, int maxmsg, PixieNet_File* fil,
 
         }
 
-        
-        
+
+
         // ----------- loop housekeeping -----------
 
-        loopcount ++;
-        if (mode == 0) {
-            currenttime = time(NULL);
-            if (currenttime > starttime+ReqRunTime)
-                break;
-        } else if (mode == 1) {
-            if (count > loopcount - loopcount_on_entry)
-                break;
-        } else {
-            if (eventcount > count)
-                break;
-        }
-    }
+         loopcount ++;
+         if (mode == 0) {
+           currenttime = time(NULL);
+           if (currenttime > starttime+ReqRunTime)
+             break;
+         } else if (mode == 1) {
+           if ((loopcount - loopcount_on_entry) > count)
+             break;
+         } else {
+           if (eventcount > count)
+             break;
+         }
+      }
 
-    return 0;
+   return 0;
 }
 
 int daq_stop(int verbose, PixieNet_File* fil, PixieNet_File* filmca,
@@ -1125,19 +1123,19 @@ int daq_stop(int verbose, PixieNet_File* fil, PixieNet_File* filmca,
    // ********************** Run Stop **********************
 
    /* debug */
-   
-      mapped[AMZ_DEVICESEL] = CS_K1;	   // specify which K7 
+
+      mapped[AMZ_DEVICESEL] = CS_K1;	   // specify which K7
       mapped[AMZ_EXAFWR] = AK7_PAGE;      // specify   K7's addr:    PAGE register
       mapped[AMZ_EXDWR]  = PAGE_SYS;      //  PAGE 0: system, page 0x10n = channel n
 
          // get current time
-      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+0;   
+      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+0;
       tmp0 =  mapped[AMZ_EXDRD];
       if(SLOWREAD)      tmp0 =  mapped[AMZ_EXDRD];
-      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+1;   
+      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+1;
       tmp1 =  mapped[AMZ_EXDRD];
       if(SLOWREAD)      tmp1 =  mapped[AMZ_EXDRD];
-      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+2;   
+      mapped[AMZ_EXAFRD] = AK7_WR_TM_TAI+2;
       tmp2 =  mapped[AMZ_EXDRD];
       if(SLOWREAD)      tmp2 =  mapped[AMZ_EXDRD];
       WR_tm_tai = tmp0 +  65536*tmp1 + TWOTO32*tmp2;
@@ -1145,25 +1143,25 @@ int daq_stop(int verbose, PixieNet_File* fil, PixieNet_File* filmca,
       printf( "Run completed. Current WR time %llu\n",WR_tm_tai );
       //printf( "Events transferred %d, rejected %d\n",eventcount,eventcount_ch[14] );
       printf( "Events transferred %d\n",eventcount );
-      
-     
-      
+
+
+
       /* end debug */
 
    // set nLive bit to stop run
     mapped[AMZ_DEVICESEL] = CS_MZ;	 // select MZ
-    mapped[AMZ_CSRIN] = 0x0000; // all off       
+    mapped[AMZ_CSRIN] = 0x0000; // all off
    // todo: there may be events left in the buffers. need to stop, then keep reading until nothing left
-                      
+
    // final save MCA and RS
-   filmca->open(filmca,"MCA.csv","w");
-   filmca->printf(filmca,"bin");
+    filmca->open(filmca,"MCA.csv","w");
+    filmca->printf(filmca,"bin");
    for(ch=0;ch<NCHANNELS_PRESENT;ch++) filmca->printf(filmca,",MCAch%d",ch);
    filmca->printf(filmca,"\n");
-   //filmca->printf(filmca,"bin,MCAch0,MCAch1,MCAch2,MCAch3,MCAch4,MCAch5,MCAch6,MCAch7\n");
+   //fprintf(filmca,"bin,MCAch0,MCAch1,MCAch2,MCAch3,MCAch4,MCAch5,MCAch6,MCAch7\n");
    for( k=0; k <MAX_MCA_BINS; k++)
    {
-    //  filmca->printf(filmca,"%d,%u,%u,%u,%u\n ", k,mca[0][k],mca[1][k],mca[2][k],mca[3][k] );
+    //  fprintf(filmca,"%d,%u,%u,%u,%u\n ", k,mca[0][k],mca[1][k],mca[2][k],mca[3][k] );
        filmca->printf(filmca,"%d",k);                  // bin number
        for(ch=0;ch<NCHANNELS_PRESENT;ch++) filmca->printf(filmca,",%d",mca[ch][k]);    // print channel data
        filmca->printf(filmca,"\n");
@@ -1175,9 +1173,9 @@ int daq_stop(int verbose, PixieNet_File* fil, PixieNet_File* filmca,
    read_print_rates_XL_2x4(0,mapped);
    mapped[AMZ_DEVICESEL] = CS_MZ;
 
- 
- // clean up  
- if( (RunType==0x100) || (RunType==0x104) ||  (RunType==0x400) ||  (RunType==0x401) )  { 
+
+ // clean up
+ if( (RunType==0x100) || (RunType==0x104) ||  (RunType==0x400) ||  (RunType==0x401) )  {
    fil->close(fil);
  }
  return 0;

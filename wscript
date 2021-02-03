@@ -56,6 +56,8 @@ def pixienetpl(bld):
                       'progfippi.c',
                       'startdaq.c'],
               defines=['EMBED_FIPPI'],
+              cflags=['-g'],
+              cxxflags=['-g'],
               target='pixienetpl')
 
 def pixie_tools(bld):
@@ -83,7 +85,8 @@ def build(bld):
                     '-Wno-global-constructors',
                     '-Wno-reserved-id-macro',
                     '-Wno-c++98-compat-pedantic',
-                    '-Wno-padded']
+                    '-Wno-padded',
+                    '-Wno-format-nonliteral']
     else:
         warnings = ['-Wall',
                     '-Wextra']
@@ -106,6 +109,7 @@ def build(bld):
               'pnc/report.cpp',
               'pnc/exit.cpp',
               'pnc/commands.cpp',
+              'pnc/memfile.cpp',
               'pnc/hw.cpp',
               'pnc/hw-elements.cpp']
 
@@ -113,6 +117,7 @@ def build(bld):
                 target='pncontrol',
                 cxxflags=cxxflags,
                 includes='.',
+                lib=['pthread'],
                 use=['pixienetpl', 'crossline'])
 
     pixie_tools(bld)

@@ -33,16 +33,13 @@
  * SUCH DAMAGE.
  */
 
-#if !defined(RUN_H)
-#define RUN_H
+#if !defined(MEMFILE_H)
+#define MEMFILE_H
 
-#include <atomic>
-#include <future>
-#include <thread>
+#include <list>
+#include <memory>
 
-#include "commands.h"
-#include "hw.h"
-#include "memfile.h"
+#include <PixieNetCommon.h>
 
 namespace xia
 {
@@ -50,47 +47,67 @@ namespace pixie
 {
 namespace net
 {
-namespace control
+namespace memfile
 {
-  struct run
+  const size_t block_size = 4096;
+
+  struct block
   {
-    hw::hal& hal;
-    util::commands::command command;
+    typedef std::unique_ptr<block> ptr;
 
-    run(hw::hal& hal);
-    ~run();
+    size_t in;
+    size_t out;
+    unsigned char data[block_size];
 
-    int handler(const util::commands::argv& args);
+    block();
+
+    void clear();
+    bool full() const;
+
+    size_t write(const void* ptr, size_t size);
+    size_t read(void* ptr, size_t size);
+  };
+
+  struct blocks
+  {
+    typedef std::list<block::ptr> block_data;
+
+    block_data data;
+
+    size_t max_blocks;
+    size_t block_count;
+
+    size_t bytes_in;
+    size_t bytes_out;
+
+    blocks(size_t max_mem);
+
+    size_t write(const void* ptr, size_t size);
+    size_t read(void* ptr, size_t size);
+  };
+
+  struct file
+  {
+    typedef std::unique_ptr<file> ptr;
+
+    const size_t max_mem;
+
+    std::string name;
+    bool bin;
+
+    ::PixieNet_File pn;
+
+    file(size_t max_mem);
+
+    int open(const char* name, const char* mode);
+    int close();
+    ssize_t write(const void* ptr, size_t size, size_t memb);
+    int vprintf(const char* format, va_list ap);
 
   private:
 
-    enum run_state {
-      run_idle,
-      run_starting,
-      run_running,
-      run_finishing
-    };
-
-    enum run_mode {
-      run_manual,
-      run_period,
-      run_event_count
-    };
-
-    void monitor(std::promise<int> result, size_t maxmsg, bool verbose);
-
-    bool is_idle() const;
-    bool is_starting() const;
-    bool is_running() const;
-
-    std::thread runner;
-    std::atomic<run_state> state;
-    std::atomic<bool> trace;
-
-    memfile::file data;
-    memfile::file mca;
-
-    std::future<int> runner_answer;
+    std::unique_ptr<blocks> data;
+    std::unique_ptr<char[]> buffer;
   };
 }
 }

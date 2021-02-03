@@ -36,12 +36,14 @@
 #if !defined(HW_H)
 #define HW_H
 
+#include <mutex>
 #include <string>
 
 #include "commands.h"
+#include "memfile.h"
 
 #include <PixieNetConfig.h>
-#include <PixieNetHal.h>
+#include <PixieNetCommon.h>
 
 namespace xia
 {
@@ -91,6 +93,14 @@ namespace hw
     int program(int verbose);
 
     /*
+     * Data acquisition.
+     */
+    int daq_start(bool verbose, memfile::file& data);
+    int daq_run(int mode, size_t count, size_t maxmsg, bool verbose,
+                memfile::file& data, memfile::file& mca);
+    int daq_stop(bool verbose, memfile::file& data, memfile::file& mca);
+
+    /*
      * Print run stats
      */
     int print_runstats(int mode);
@@ -111,6 +121,8 @@ namespace hw
   private:
     int fd;
     void* base;
+
+    std::mutex lock;
   };
 
   /*
