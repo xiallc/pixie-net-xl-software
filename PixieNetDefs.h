@@ -427,8 +427,8 @@
 #define SCSR_HDRENA              5  // if set, store LM output data in header memory (else only E in E fifo)
 #define SCSR_DMCONTROL           6  // if set, Ethernet output data is held in SDRAM FIFO until DM approves
 #define SCSR_TGTEST              7  // reserved
-#define SCSR_FP_COUNT            8  // option to count FP pulses as ext_ts, else local clock (or WR)     
-#define SCSR_FP_VETO             9  // option to use FP as VETO                                          
-#define SCSR_FP_EXTCLR          10  // option to use FP to clear ext_ts                                  
-#define SCSR_FP_PEDGE           11  // option to select rising/falling edge for count or clear.          
+#define SCSR_FP_COUNT            8  // option to count FP pulses as ext_ts, else local clock (or WR)
+#define SCSR_FP_VETO             9  // option to use FP as VETO
+#define SCSR_FP_EXTCLR          10  // option to use FP to clear ext_ts
+#define SCSR_FP_PEDGE           11  // option to select rising/falling edge for count or clear.
 #define SCSR_HDRLONG            12  // enable long header for list mode data

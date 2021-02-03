@@ -567,7 +567,7 @@ int daq_run(int mode, size_t count, int verbose, int maxmsg, PixieNet_File* fil,
                         ph = C1[ch]*lsum+Cg[ch]*gsum+C0[ch]*tsum;
                         if (tsum>0 && ((tsum&0x80000000)==0) )		// tum=0 or high bit set indicates bad baseline
                         {
-                          if( (BLcut[ch]==0) || (abs(ph-baseline[ch])<BLcut[ch]) || (BLbad[ch] >=MAX_BADBL) )       // only accept "good" baselines < BLcut, or if too many bad in a row (to start over)
+                          if( (BLcut[ch]==0) || (abs((int)(ph-baseline[ch]))<BLcut[ch]) || (BLbad[ch] >=MAX_BADBL) )       // only accept "good" baselines < BLcut, or if too many bad in a row (to start over)
                           {
                               if( (BLavg[ch]==0) || (BLbad[ch] >=MAX_BADBL) )
                               {
@@ -1099,6 +1099,7 @@ int daq_run(int mode, size_t count, int verbose, int maxmsg, PixieNet_File* fil,
         // ----------- loop housekeeping -----------
 
          loopcount ++;
+
          if (mode == 0) {
            currenttime = time(NULL);
            if (currenttime > starttime+ReqRunTime)
