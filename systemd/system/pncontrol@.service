@@ -5,8 +5,7 @@ Requires=pncontrol.socket
 
 [Service]
 Type=simple
-ExecStart=/root/pncontrol -v
-WorkingDirectory=/root
+ExecStart=/var/www/bin/pncontrol -vv -c /var/www/defaults.ini
 StandardInput=socket
 StandardOutput=socket
 StandardError=inherit
