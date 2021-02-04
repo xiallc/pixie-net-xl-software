@@ -1,7 +1,7 @@
-TARGET = adcinit bootfpga cgitraces.cgi gettraces progfippi runstats cgistats.cgi startdaq mcadaq findsettings cgireadsettings.cgi cgiwritesettings.cgi
+TARGET = adcinit bootfpga cgitraces.cgi gettraces progfippi runstats cgistats.cgi startdaq mcadaq findsettings cgireadsettings.cgi cgiwritesettings.cgi pncontrol
 LIBS = -lm 
 CFLAGS = -std=c99 -Wall
-CXXFLAGS = -Wall -O3 -DNDEBUG   -pthread -std=gnu++98
+CXXFLAGS = -Wall -O3 -DNDEBUG   -pthread -std=c++11
 INCDIRS = -I/usr  -I/usr/include -I/usr/local/include
 LINKFLAGS =  -static -static-libstdc++
 BOOSTLIBS = -L/usr/local/lib -lboost_date_time -lboost_chrono -lboost_atomic -lboost_program_options -lboost_system -lboost_thread -lrt -pthread
@@ -23,7 +23,7 @@ adcinit: adcinit.o PixieNetCommon.o PixieNetDefs.h
 
 bootfpga: bootfpga.o PixieNetCommon.o PixieNetConfig.o PixieNetDefs.h
 	g++ bootfpga.o PixieNetCommon.o PixieNetConfig.o $(LIBS) -o bootfpga
-	
+
 cgitraces.cgi: cgitraces.o PixieNetCommon.o PixieNetConfig.o PixieNetDefs.h
 	g++ cgitraces.o PixieNetCommon.o PixieNetConfig.o $(LIBS) -o cgitraces.cgi
 
@@ -69,6 +69,11 @@ pollcsr: pollcsr.o PixieNetDefs.h
 cgiwritesettings.cgi: cgiwritesettings.o PixieNetDefs.h
 	g++ cgiwritesettings.o PixieNetCommon.o  $(LIBS) -o cgiwritesettings.cgi
 
+pncontrol:
+	python3 waf configure build install --prefix=$(shell pwd)
+
 clean:
 	-rm -f *.o
 	-rm -f $(TARGET)
+	-rm -rf build-linux/
+	-rm -rf bin/
