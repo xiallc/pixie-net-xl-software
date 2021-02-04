@@ -127,10 +127,6 @@ The `run` command starts and stops a run:
 
 ```
 pnet # run start
-ANALOG_GAIN = 1.600000 not matching available gains exactly, please choose from this list:
-    2.400000
-    5.400000
-error: code: -8000
 ```
 
 ### Report
