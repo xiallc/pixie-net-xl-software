@@ -354,7 +354,7 @@ int daq_start(int verbose, PixieNet_File* fil,
    for( ch=0; ch < NCHANNELS; ch++) eventcount_ch[ch] = 0;
 
    if( (RunType==0x100) || (RunType==0x104) ||  (RunType==0x400) ||  (RunType==0x401) ||  (RunType==0x404) )  {    // list mode runtypes
-      if( (RunType==0x100) || (RunType==0x104) ){
+      if( (RunType==0x100) | (RunType==0x104) ){
         // write a 0x100 header  -- actually there is no header, just events
         sprintf(filename, "LMdata%d.bin", fippiconfig->MODULE_ID);
         fil->open(fil, filename,"wb");
