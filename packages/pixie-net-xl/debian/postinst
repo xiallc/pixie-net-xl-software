@@ -7,4 +7,8 @@ echo "pixie-net-xl: enable pncontrol service"
 systemctl enable pncontrol.socket
 echo "pixie-net-xl: starting pncontrol service"
 systemctl start pncontrol.socket
+echo "pixie-net-xl: enable pixie-net-init service"
+systemctl enable pixie-net-init.service
+echo "pixie-net-xl: starting pixie-net-init service"
+systemctl start pixie-net-init.service
 exit 0

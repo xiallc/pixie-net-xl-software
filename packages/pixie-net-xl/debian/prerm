@@ -7,4 +7,6 @@ systemctl-exists pncontrol && \
     echo "pixie-net-xl: stopping pncontrol service" && systemctl stop pncontrol.socket
 systemctl-exists pncontrol && \
     echo "pixie-net-xl: disabling pncontrol service" && systemctl disable pncontrol.socket
+systemctl-exists pixie-net-init && \
+    echo "pixie-net-xl: disabling pixie-net-init service" && systemctl disable pixie-net-init.service
 exit 0

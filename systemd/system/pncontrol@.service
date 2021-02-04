@@ -5,7 +5,8 @@ Requires=pncontrol.socket
 
 [Service]
 Type=simple
-ExecStart=/var/www/bin/pncontrol -vv -c /etc/xia/pixie-net-xl/defaults.ini
+ExecStart=/usr/bin/pncontrol -vv -c /etc/xia/pixie-net-xl/defaults.ini
+WorkingDirectory=/etc/xia/pixie-net-xl
 StandardInput=socket
 StandardOutput=socket
 StandardError=inherit

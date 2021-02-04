@@ -24,7 +24,8 @@ EXE	= \
 CONF	= \
 	defaults.ini
 
-BFILE	=
+BFILE = \
+    PNXLK7B_DB06_16_250_10G.bin
 
 SYSD	= \
 	systemd/system/pncontrol.socket \
@@ -41,7 +42,7 @@ RM_RF	= rm -rf
 BIN	= bin
 ETC	= etc
 CFG	= $(ETC)/xia/pixie-net-xl
-BITFILE	= $(CFG)/bitfiles
+BITFILES = $(CFG)
 SYSTEMD = systemd
 
 VAR	 = var
@@ -71,7 +72,7 @@ install-bitfiles: $(BFILES)
 	$(QUIET)echo "Installing bitfiles"; \
 	for f in $(foreach B,$^,$(notdir $(B))); \
 	do \
-	 $(INSTALL) -D $(BITFILES)/$$f $(DESTDIR)/$(NESITES)/$$f; \
+	 $(INSTALL) -D $(BITFILES)/$$f $(DESTDIR)/$(BITFILES)/$$f; \
 	done
 
 install-exe: $(EXES)
@@ -113,6 +114,7 @@ endef
 $(foreach D,$(DIRS),$(eval $(call MKDIR,$(strip $(D)))))
 $(foreach E,$(EXE),$(eval $(call COPY,$(strip $(E)),$(BUILD),$(BIN)/$(notdir $(E)))))
 $(foreach C,$(CONF),$(eval $(call COPY,$(strip $(C)),$(SRC),$(CFG)/$(notdir $(C)))))
+$(foreach B,$(BFILE),$(eval $(call COPY,$(strip $(B)),$(SRC),$(BITFILES)/$(notdir $(B)))))
 $(foreach C,$(CONFEXE),$(eval $(call COPY,$(strip $(C)),$(SRC),$(CFG)/$(notdir $(C)))))
 $(foreach S,$(SYSD),$(eval $(call COPY,$(strip $(S)),$(SRC),$(SYSTEMD)/$(notdir $(S)))))
 $(foreach W,$(WUIB), \
