@@ -1555,7 +1555,7 @@ int program_fippi(int verbose, PixieNetFippiConfig *fippiconfig, volatile unsign
       {
            if( !( (fippiconfig->ANALOG_GAIN[ch] == DB01_GAIN1)  ||
                   (fippiconfig->ANALOG_GAIN[ch] == DB01_GAIN3)   ) ) {
-           printf("ANALOG_GAIN = %f not matching available gains exactly, please choose from this list:\n",fippiconfig.ANALOG_GAIN[ch]);
+           printf("ANALOG_GAIN = %f not matching available gains exactly, please choose from this list:\n",fippiconfig->ANALOG_GAIN[ch]);
            printf("    %f \n",DB01_GAIN1);
            printf("    %f \n",DB01_GAIN3);
            return -8000-ch;
@@ -1590,7 +1590,7 @@ int program_fippi(int verbose, PixieNetFippiConfig *fippiconfig, volatile unsign
                   (fippiconfig->ANALOG_GAIN[ch] == DB01_GAIN5)  ||
                   (fippiconfig->ANALOG_GAIN[ch] == DB01_GAIN6)  ||
                   (fippiconfig->ANALOG_GAIN[ch] == DB01_GAIN7)   ) ) {
-           printf("ANALOG_GAIN = %f not matching available gains exactly, please choose from this list:\n",fippiconfig.ANALOG_GAIN[ch]);
+           printf("ANALOG_GAIN = %f not matching available gains exactly, please choose from this list:\n",fippiconfig->ANALOG_GAIN[ch]);
            printf("    %f \n",DB01_GAIN0);
            printf("    %f \n",DB01_GAIN1);
            printf("    %f \n",DB01_GAIN2);
@@ -1900,7 +1900,7 @@ int program_fippi(int verbose, PixieNetFippiConfig *fippiconfig, volatile unsign
         mapped[AMZ_EXAFWR] = AK7_PAGE;         // write to  k7's addr        addr 3 = channel/system, select
         mapped[AMZ_EXDWR] = PAGE_SYS;          //  0x000  = system page
 
-        mval = fippiconfig.MAX_EVENTS; // 5;    // ADC clk delay delay
+        mval = fippiconfig->MAX_EVENTS; // 5;    // ADC clk delay delay
 
         mapped[AMZ_EXAFWR] = AK7_PLLSPIA;    // write to  k7's addr     addr 0x1B = PLL SPIA (for upper 8 bit)
         mapped[AMZ_EXDWR] = mval;           //  write to ADC SPI
@@ -1919,7 +1919,7 @@ int program_fippi(int verbose, PixieNetFippiConfig *fippiconfig, volatile unsign
            mapped[AMZ_EXAFWR] = AK7_PLLSPIA;    // write to  k7's addr     addr 0x1B = PLL SPIA (for upper 8 bit)
            mapped[AMZ_EXDWR] = mval;            //  write to ADC SPI
 
-           if(fippiconfig.REQ_RUNTIME >20)   {
+           if(fippiconfig->REQ_RUNTIME >20)   {
              mval = 0xC0A0;     // turn on ramp
            } else {
              mval = 0xC000;  // turn off ramp
