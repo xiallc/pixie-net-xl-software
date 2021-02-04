@@ -28,7 +28,7 @@ BFILE	=
 
 SYSD	= \
 	systemd/system/pncontrol.socket \
-	systemd/system/pncontrol@.service
+	systemd/system/pncontrol@.service \
 	systemd/system/pixie-net-init.service
 
 prefix	= /usr
