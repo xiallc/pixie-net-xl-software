@@ -1,10 +1,35 @@
 ### Additional files and folders
 .idea/
+
+### Build files
 build*/
 .gdb*
-PNXLK*.bin
+
+### document files
 *.docx
 *.pdf
+
+### Data files
+*.csv
+*.dat
+*.txt
+*.b00
+*.dt2
+
+### Firmware files
+PNXLK*.bin
+
+### Programs
+bin/
+*.cgi
+adcinit
+bootfpga
+gettraces
+progfippi
+runstats
+startdaq
+mcadaq
+findsettings
 
 ### C++ template
 # Prerequisites
