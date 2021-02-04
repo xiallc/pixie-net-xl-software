@@ -22,7 +22,8 @@ EXE	= \
 	pnkintex
 
 CONF	= \
-	defaults.ini
+	defaults.ini \
+	settings.ini
 
 BFILE = \
     PNXLK7B_DB06_16_250_10G.bin
