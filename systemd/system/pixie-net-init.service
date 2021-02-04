@@ -1,0 +1,13 @@
+[Unit]
+Description=PixieNet XL Initialization
+After=network.target
+Before=pncontrol.socket
+
+[Service]
+Type=oneshot
+WorkingDirectory=/var/www
+ExecStart=/var/www/bootfpga -10G
+ExecStart=/var/www/progfippi
+
+[Install]
+WantedBy=multi-user.target
