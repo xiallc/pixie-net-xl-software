@@ -1,0 +1,13 @@
+#! /bin/sh
+set -e
+
+build() {
+    echo "Building $1 package"
+    cd $1
+    echo "debuild -us -uc -b -d"
+    debuild -us -uc -b -d
+    debclean
+    cd ..
+}
+
+build pixie-net-xl

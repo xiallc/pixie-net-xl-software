@@ -1,11 +1,11 @@
 [Unit]
-Description=PixieNet XL Control
+Description=Pixie-Net XL Control
 After=network.target
 Requires=pncontrol.socket
 
 [Service]
 Type=simple
-ExecStart=/var/www/bin/pncontrol -vv -c /var/www/defaults.ini
+ExecStart=/var/www/bin/pncontrol -vv -c /etc/xia/pixie-net-xl/defaults.ini
 StandardInput=socket
 StandardOutput=socket
 StandardError=inherit

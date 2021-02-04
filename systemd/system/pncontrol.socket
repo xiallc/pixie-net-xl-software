@@ -1,5 +1,5 @@
 [Unit]
-Description=PixieNet XL Control Socket
+Description=Pixie-Net XL Control Socket
 
 [Socket]
 ListenStream=0.0.0.0:9999

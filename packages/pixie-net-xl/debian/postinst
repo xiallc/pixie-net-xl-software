@@ -1,0 +1,10 @@
+#!/bin/bash
+set -e
+echo "pixie-net-xl: reload systemd"
+systemctl daemon-reload
+systemctl reset-failed
+echo "pixie-net-xl: enable pncontrol service"
+systemctl enable pncontrol.socket
+echo "pixie-net-xl: starting pncontrol service"
+systemctl start pncontrol.socket
+exit 0

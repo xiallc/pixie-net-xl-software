@@ -1,0 +1,17 @@
+Source: pixie-net-xl
+Section: xia
+Priority: required
+Maintainer: XIA <support@xia.com>
+Build-Depends: debhelper (>=9)
+Standards-Version: 3.9.6
+Homepage: https://www.xia.com/
+
+Package: pixie-net-xl
+Architecture: armhf
+Multi-Arch: foreign
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: XIA Pixie-Net XL
+ The Pixie-Net is a Zynq System on Module (SoM) combined with an ADC input board.
+ The Zynq is a combination of an FPGA (Programmable Logic, PL) with an ARM processor
+ (Processing System, PS). The PL captures the ADC data and applies digital pulse
+ processing
