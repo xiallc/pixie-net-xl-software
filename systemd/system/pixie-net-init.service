@@ -5,9 +5,8 @@ Before=pncontrol.socket
 
 [Service]
 Type=oneshot
-WorkingDirectory=/var/www
-ExecStart=/var/www/bootfpga -10G
-ExecStart=/var/www/progfippi
+WorkingDirectory=/etc/xia/pixie-net-xl/
+ExecStart=/usr/bin/pnkintex -10G
 
 [Install]
 WantedBy=multi-user.target
