@@ -69,11 +69,6 @@ namespace control
           return 0;
         }
       }
-      std::cout << "[[ print run state ]]" << std::endl;
-      return 0;
-    }
-
-    if (args.options[0] == "runstats") {
       int mode = 1;
       if (args.options.size() > 1) {
         for (auto fi = args.options.begin() + 1;

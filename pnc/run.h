@@ -37,6 +37,7 @@
 #define RUN_H
 
 #include <atomic>
+#include <chrono>
 #include <future>
 #include <thread>
 
@@ -87,8 +88,10 @@ namespace control
     std::atomic<run_state> state;
     std::atomic<bool> trace;
 
-    memfile::file data;
-    memfile::file mca;
+    std::chrono::time_point<std::chrono::system_clock> start;
+
+    memfile::files data;
+    memfile::files mca;
 
     std::future<int> runner_answer;
   };

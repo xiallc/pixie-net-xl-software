@@ -38,6 +38,7 @@
 
 #include <list>
 #include <memory>
+#include <mutex>
 
 #include <PixieNetCommon.h>
 
@@ -66,13 +67,19 @@ namespace memfile
 
     size_t write(const void* ptr, size_t size);
     size_t read(void* ptr, size_t size);
+
+    size_t size() const {
+      return in - out;
+    }
   };
 
-  struct blocks
+  struct file
   {
+    typedef std::unique_ptr<file> ptr;
     typedef std::list<block::ptr> block_data;
 
-    block_data data;
+    const std::string name;
+    const bool bin;
 
     size_t max_blocks;
     size_t block_count;
@@ -80,34 +87,67 @@ namespace memfile
     size_t bytes_in;
     size_t bytes_out;
 
-    blocks(size_t max_mem);
+    file(const char* name, bool bin, size_t max_mem);
 
     size_t write(const void* ptr, size_t size);
     size_t read(void* ptr, size_t size);
+
+    size_t size() const;
+
+  private:
+
+    block_data data;
   };
 
-  struct file
+  struct files
   {
     typedef std::unique_ptr<file> ptr;
 
     const size_t max_mem;
 
-    std::string name;
-    bool bin;
+    files(size_t max_mem);
 
-    ::PixieNet_File pn;
+    /*
+     * Files stats
+     */
+    file::ptr get();
+    size_t count();
+    size_t total_bytes_in();
 
-    file(size_t max_mem);
+    /*
+     * Open file stats.
+     */
+    size_t size();
+    size_t bytes_in();
+    size_t bytes_out();
 
+    /*
+     * Backend interface. Public to avoid a list of friends.
+     * Do not use these calls.
+     */
     int open(const char* name, const char* mode);
     int close();
     ssize_t write(const void* ptr, size_t size, size_t memb);
     int vprintf(const char* format, va_list ap);
 
+    /*
+     * Get the C PixieNet file instance.
+     */
+    PixieNet_File* get_pn() {
+      return &pn;
+    }
+
   private:
 
-    std::unique_ptr<blocks> data;
+    std::mutex lock;
+
+    ::PixieNet_File pn;
+
+    std::list<file::ptr> files_;
+    file::ptr file_;
     std::unique_ptr<char[]> buffer;
+
+    size_t bytes_in_;
   };
 }
 }

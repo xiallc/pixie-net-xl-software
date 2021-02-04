@@ -190,37 +190,37 @@ namespace hw
   }
 
   int
-  hal::daq_start(bool verbose, memfile::file& data)
+  hal::daq_start(bool verbose, memfile::files& data)
   {
     std::lock_guard<std::mutex> guard(lock);
     return ::daq_start(verbose ? 1 : 0,
-                       &data.pn,
+                       data.get_pn(),
                        &config,
                        addr());
   }
 
   int
   hal::daq_run(int mode, size_t count, size_t maxmsg, bool verbose,
-               memfile::file& data, memfile::file& mca)
+               memfile::files& data, memfile::files& mca)
   {
     std::lock_guard<std::mutex> guard(lock);
     return ::daq_run(mode,
                      count,
                      verbose ? 1 : 0,
                      static_cast<int>(maxmsg),
-                     &data.pn,
-                     &mca.pn,
+                     data.get_pn(),
+                     mca.get_pn(),
                      &config,
                      addr());
   }
 
   int
-  hal::daq_stop(bool verbose, memfile::file& data, memfile::file& mca)
+  hal::daq_stop(bool verbose, memfile::files& data, memfile::files& mca)
   {
     std::lock_guard<std::mutex> guard(lock);
     return ::daq_stop(verbose ? 1 : 0,
-                      &data.pn,
-                      &mca.pn,
+                      data.get_pn(),
+                      mca.get_pn(),
                       &config,
                       addr());
   }

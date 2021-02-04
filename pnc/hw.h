@@ -95,10 +95,10 @@ namespace hw
     /*
      * Data acquisition.
      */
-    int daq_start(bool verbose, memfile::file& data);
+    int daq_start(bool verbose, memfile::files& data);
     int daq_run(int mode, size_t count, size_t maxmsg, bool verbose,
-                memfile::file& data, memfile::file& mca);
-    int daq_stop(bool verbose, memfile::file& data, memfile::file& mca);
+                memfile::files& data, memfile::files& mca);
+    int daq_stop(bool verbose, memfile::files& data, memfile::files& mca);
 
     /*
      * Print run stats

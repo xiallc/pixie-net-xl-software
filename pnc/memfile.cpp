@@ -53,14 +53,14 @@ namespace memfile
             const char* name,
             const char* mode)
   {
-    file* f = static_cast<file*>(pf->data);
+    files* f = static_cast<files*>(pf->data);
     return f->open(name, mode);
   }
 
   static int
   file_close(::PixieNet_File* pf)
   {
-    file* f = static_cast<file*>(pf->data);
+    files* f = static_cast<files*>(pf->data);
     return f->close();
   }
 
@@ -70,14 +70,14 @@ namespace memfile
              size_t memb,
              ::PixieNet_File* pf)
   {
-    file* f = static_cast<file*>(pf->data);
+    files* f = static_cast<files*>(pf->data);
     return f->write(ptr, size, memb);
   }
 
   static int
   file_printf(::PixieNet_File* pf,  const char* format, ...)
   {
-    file* f = static_cast<file*>(pf->data);
+    files* f = static_cast<files*>(pf->data);
     va_list ap;
     va_start(ap, format);
     int len = f->vprintf(format, ap);
@@ -136,8 +136,10 @@ namespace memfile
     return copy;
   }
 
-  blocks::blocks(size_t max_mem)
-    : max_blocks(mem_to_blocks(max_mem)),
+  file::file(const char* name_, bool bin_, size_t max_mem)
+    : name(name_),
+      bin(bin_),
+      max_blocks(mem_to_blocks(max_mem)),
       block_count(0),
       bytes_in(0),
       bytes_out(0)
@@ -145,7 +147,7 @@ namespace memfile
   }
 
   size_t
-  blocks::write(const void* ptr, size_t size)
+  file::write(const void* ptr, size_t size)
   {
     size_t bytes_written = 0;
 
@@ -181,14 +183,20 @@ namespace memfile
   }
 
   size_t
-  blocks::read(void* , size_t )
+  file::read(void* , size_t )
   {
     return 0;
   }
 
-  file::file(size_t max_mem_)
+  size_t
+  file::size() const
+  {
+    return data.size();
+  }
+
+  files::files(size_t max_mem_)
     : max_mem(max_mem_),
-      bin(true)
+      bytes_in_(0)
   {
     pn.open = file_open;
     pn.close = file_close;
@@ -198,51 +206,97 @@ namespace memfile
   }
 
   int
-  file::open(const char* name_, const char* mode)
+  files::open(const char* name, const char* mode)
   {
-    if (data) {
+    std::lock_guard<std::mutex> guard(lock);
+    if (file_) {
       errno = EBUSY;
       return -1;
     }
-    name = name_;
-    bin = ::strchr(mode, 'b') != nullptr;
+    bool bin = ::strchr(mode, 'b') != nullptr;
     buffer = std::make_unique<char[]>(block_size);
-    data = std::make_unique<blocks>(max_mem);
+    file_ = std::make_unique<file>(name, bin, max_mem);
     return 0;
   }
 
   int
-  file::close()
+  files::close()
   {
-    if (!data) {
+    std::lock_guard<std::mutex> guard(lock);
+    if (!file_) {
       errno = EBADF;
       return -1;
     }
-    data.release();
+    bytes_in_ += file_->bytes_in;
+    files_.push_back(std::move(file_));
     return 0;
   }
 
   ssize_t
-  file::write(const void* ptr, size_t size, size_t memb)
+  files::write(const void* ptr, size_t size, size_t memb)
   {
-    if (!data) {
+    std::lock_guard<std::mutex> guard(lock);
+    if (!file_) {
       errno = EBADF;
       return -1;
     }
-    return static_cast<ssize_t>(data->write(ptr, size * memb));
+    return static_cast<ssize_t>(file_->write(ptr, size * memb));
   }
 
   int
-  file::vprintf(const char* format, va_list ap)
+  files::vprintf(const char* format, va_list ap)
   {
-    if (!data) {
+    std::lock_guard<std::mutex> guard(lock);
+    if (!file_) {
       errno = EBADF;
       return -1;
     }
     int len = ::vsnprintf(buffer.get(), block_size, format, ap);
-    len = static_cast<int>(data->write(buffer.get(), static_cast<size_t>(len)));
+    len = static_cast<int>(file_->write(buffer.get(), static_cast<size_t>(len)));
     return len;
   }
+
+  size_t
+  files::count()
+  {
+    std::lock_guard<std::mutex> guard(lock);
+    return files_.size();
+  }
+
+  size_t
+  files::total_bytes_in()
+  {
+    std::lock_guard<std::mutex> guard(lock);
+    return bytes_in_;
+  }
+
+  size_t
+  files::size()
+  {
+    std::lock_guard<std::mutex> guard(lock);
+    if (!file_)
+      return 0;
+    return file_->size();
+  }
+
+  size_t
+  files::bytes_in()
+  {
+    std::lock_guard<std::mutex> guard(lock);
+    if (!file_)
+      return 0;
+    return file_->bytes_in;
+  }
+
+  size_t
+  files::bytes_out()
+  {
+    std::lock_guard<std::mutex> guard(lock);
+    if (!file_)
+      return 0;
+    return file_->bytes_out;
+  }
+
 }
 }
 }

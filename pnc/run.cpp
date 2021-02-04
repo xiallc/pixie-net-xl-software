@@ -86,8 +86,29 @@ namespace control
           return 0;
         }
       }
-      if (!is_idle()) {
-        std::cout << "run active" << std::endl;
+      std::cout << "run: ";
+      switch (state.load()) {
+      case run_idle:
+        std::cout << "IDLE" << std::endl;
+        break;
+      case run_starting:
+        std::cout << "STARTING" << std::endl;
+        break;
+      case run_running:
+        {
+          auto now = std::chrono::system_clock::now();
+          std::chrono::duration<double> period = now - start;
+          std::cout << "RUNNING period:" << period.count() << "s files:(data:c:"
+                    << data.count() << ",i:" << data.total_bytes_in() << ",s:" << data.size()
+                    << " mca:"
+                    << mca.count() << ",i:" << mca.total_bytes_in() << ",s:" << mca.size()
+                    << ')'
+                  << std::endl;
+        }
+        break;
+      case run_finishing:
+        std::cout << "FINISHING" << std::endl;
+        break;
       }
       return 0;
     }
@@ -112,6 +133,7 @@ namespace control
         return 1;
       }
       state = run_starting;
+      start = std::chrono::system_clock::now();
       int r = hal.daq_start(verbose, data);
       if (r == 0) {
         std::promise<int> result;
@@ -131,6 +153,9 @@ namespace control
       }
       state = run_finishing;
       int r = hal.daq_stop(verbose, data, mca);
+      auto now = std::chrono::system_clock::now();
+      std::chrono::duration<double> period = now - start;
+      std::cout << "Run duration: " << period.count() << "s" << std::endl;
       if (r == 0) {
         std::cout << "ok" << std::endl;
       } else {
@@ -155,7 +180,9 @@ namespace control
       r = hal.daq_run(1, 1, maxmsg, verbose, data, mca);
       if (r != 0)
         break;
-      std::this_thread::sleep_for(1ms);
+      if (/* DISABLES CODE */ (false)) {
+        std::this_thread::sleep_for(1ms);
+      }
     }
     result.set_value(r);
     state = run_idle;
