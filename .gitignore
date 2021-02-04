@@ -2,6 +2,9 @@
 .idea/
 build*/
 .gdb*
+PNXLK*.bin
+*.docx
+*.pdf
 
 ### C++ template
 # Prerequisites
