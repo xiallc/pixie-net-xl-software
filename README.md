@@ -32,17 +32,24 @@ root@PixieNet:~/pixie-net-xl-software#make
 ```
 
 ### Installation via debian package
-You can download the latest Debian package from our [Support page](https://xiallc.atlassian.net/wiki/spaces/SUPPORT/pages/207552533/Pixie-Net+XL+Software).
+You can download the latest Debian package from our [Support page](https://s3.us-west-1.amazonaws.com/files.xia.com/hardware/pixie/pixie-net-xl/software/pixie-net-xl_1.0.0_armhf.deb).
 Once the package is on your system. You can install it with 
 ```shell
 root@PixieNet:~#dpkg -i pixie-net-xl_X.Y.Z_armhf.deb
 ```
-Where X.Y.Z is the version number.
+Where X.Y.Z is the version number. 
 
+**Note:** You should modify `/etc/xia/pixie-net-xl/settings.ini` to ensure that the correct MAC and IP
+locations load during system boot. Once you make the update, either reboot your system or execute
+```shell
+systemctl restart pixie-net-init.service
+```
+This will execute `bootfpga` and load the information from `/etc/xia/pixie-net-xl/defaults.ini` and
+`/etc/xia/pixie-net-xl/settings.ini`
 ## PixieNet Control
 Pixie-Net Control or `pncontrol` is an interactive command-line program that allows control of a 
 Pixie-Net XL. The program can be used over a TCP connection to remotely configure the system and 
-start data runs. **The program does not save the state of any changes. You are responsible for this.**
+start data runs. **The program does not save any changes. You are responsible for this.** 
 
 ### Command line Arguments
 ```
@@ -71,11 +78,13 @@ pnet #
 We use systemd to enable TCP communication with the system. To enable this support you should 
 either 
 1. install 
-[the Debian package](https://xiallc.atlassian.net/wiki/spaces/SUPPORT/pages/207552533/Pixie-Net+XL+Software)
+[the Debian package](https://s3.us-west-1.amazonaws.com/files.xia.com/hardware/pixie/pixie-net-xl/software/pixie-net-xl_1.0.0_armhf.deb)
 2. or install the systemd scripts located in `<project root>/systemd/system`.
 
 Once configured the system will be listening on port `31057`. You can connect to the remote session
-via telnet or other appropriate method.
+via telnet or other appropriate method. **Note: Each invocation of `pncontrol` starts with 
+defaults provided in `/etc/xia/pixie-net-xl/defaults.ini`. Users will be expected to override these
+defaults if they are not suitable.** 
 
 We recommend using this configuration only with `DATA_FLOW=4` and `RUN_TYPE=0x404`. 
 
