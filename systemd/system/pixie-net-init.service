@@ -1,0 +1,12 @@
+[Unit]
+Description=PixieNet XL Initialization
+After=network.target
+Before=pncontrol.socket
+
+[Service]
+Type=oneshot
+WorkingDirectory=/etc/xia/pixie-net-xl/
+ExecStart=/usr/bin/pnkintex -10G
+
+[Install]
+WantedBy=multi-user.target

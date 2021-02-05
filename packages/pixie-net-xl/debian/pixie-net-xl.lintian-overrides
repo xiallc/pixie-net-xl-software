@@ -1,0 +1,13 @@
+#
+# Overrides for our package.
+#
+pixie-net-xl binary: readme-debian-contains-debmake-template
+pixie-net-xl binary: unknown-section xia
+
+pixie-net-xl binary: systemd-service-file-outside-lib etc/systemd/system/*
+
+pixie-net-xl binary: binary-without-manpage usr/bin/*
+
+pixie-net-xl binary: executable-not-elf-or-script usr/lib/systemd/system/*
+
+pixie-net-xl binary: maintainer-script-calls-systemctl *
