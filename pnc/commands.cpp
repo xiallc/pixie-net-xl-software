@@ -156,7 +156,6 @@ namespace commands
   int
   help::handler(const util::commands::argv& )
   {
-    std::lock_guard<std::mutex> guard(handlers_lock);
     size_t max_length = 0;
 
     for (auto& h : handlers)
