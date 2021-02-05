@@ -19,6 +19,11 @@ You will need to have at minimum the following dependencies installed on your sy
 * python 3.6+
 * GNU make
 
+### Firmware support list
+| Software Revision | Firmware | Notes |
+|---|---|---|
+| <ul><li>1.0.0</li><li>0x313</li></ul> | PNXLK7B_DB06_16_250_10G.bin  |   |
+
 ## Installation
 
 There are two methods to install the software.
@@ -101,7 +106,10 @@ We use systemd to enable TCP communication with the system. To enable this suppo
 Once configured the system will be listening on port `31057`. You can connect to the remote session
 via telnet or other appropriate method. **Note: Each invocation of `pncontrol` starts with defaults
 provided in `/etc/xia/pixie-net-xl/defaults.ini`. Users will be expected to override these defaults
-if they are not suitable.**
+if they are not suitable.** 
+
+The commands listed in the following section are the same commands used to control the system in a 
+TCP session. You'll need to ensure that you submit a `\n` character with the command to execute.
 
 We recommend using this configuration only with `DATA_FLOW=4` and `RUN_TYPE=0x404`.
 
@@ -175,6 +183,22 @@ pnet # set  -v UDP_PAUSE 100
 UDP_PAUSE <= 100
 ok
 pnet # program
+```
+
+#### `program`
+This command will upload the settings to the FPGAs and the system will then be ready to take data. 
+
+```shell
+pnet # program
+Note RUN_TYPE = 0x404 is currently only supported for 10G interface
+WR Ethernet data checksum FPGA 0 (SHORT) = 0xf7d1
+WR Ethernet data checksum FPGA 0 (LONG)  = 0xf551
+WR Ethernet data checksum FPGA 1 (SHORT) = 0xf7d2
+WR Ethernet data checksum FPGA 1 (LONG)  = 0xf552
+ PXdesk board temperature: 34 C
+ Main board Revision 0xA161, Serial Number 2007
+ok
+pnet #
 ```
 
 #### `run`
