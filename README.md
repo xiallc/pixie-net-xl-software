@@ -121,7 +121,7 @@ pnet # help
  program Program the FIPPI. Use -v for verbose
 ```
 
-### Set
+#### `set`
 The `set` command sets a parameter. You can list the parameters with the `-l` option:
 ```
 pnet # set -l
@@ -145,7 +145,7 @@ ok
 pnet # program
 ```
 
-### Run
+#### `run`
 The `run` command starts and stops a run. Subsequent calls provide users with basic run information.
 
 ```
@@ -156,7 +156,7 @@ run: RUNNING period:1.72701s files:(data:c:0,i:0,s:437 mca:1,i:88790,s:0)
 pnet #
 ```
 
-### Report
+#### `report`
 The `report` command reports the current parameter settings. The output can be used to create a new
 configuration file. 
 
@@ -168,7 +168,7 @@ BASELINE_PERCENT        5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 10.0 10.0 10.0 ...
  ...
 ```
 
-### Status
+#### `status`
 The `status` command reports the status the PixieNet.
 
 ```
