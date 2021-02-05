@@ -23,7 +23,7 @@ PNXLK*.bin
 packages/pixie-net-xl_*.build
 packages/pixie-net-xl_*.buildinfo
 packages/pixie-net-xl_*.changes
-packages/pixie-net-xl_*.deb
+pixie-net-xl_*.deb
 
 ### Programs
 bin/
