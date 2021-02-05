@@ -1,57 +1,72 @@
 # Pixie-Net XL Software
 
-The Pixie-Net Xl Software provides users an interface to configure and acquire data from a 
-Pixie-Net XL device. The software can be compiled locally and run from the project root directory. 
-We also provide the ability to create a Debian package for easy installation onto Debian based Linux
-systems. 
+The Pixie-Net Xl Software provides users an interface to configure and acquire data from a Pixie-Net
+XL device. The software can be compiled locally and run from the project root directory. We also
+provide the ability to create a Debian package for easy installation onto Debian based Linux
+systems.
 
-Firmware files for the Kintex FPGAs are provided separately from this distribution. You can download 
-these files from our [Public File Browser](http://files.xia.com/#hardware/pixie/pixie-net-xl/). Users
-will need to ensure that the FPGA firmware files are installed into the root level of this project. 
-The Pixie-Net XL User's Manual is available from [here](http://files.xia.com/#hardware/pixie/pixie-net-xl/documentation/).
+Firmware files for the Kintex FPGAs are provided separately from this distribution. You can download
+these files from our [Public File Browser](http://files.xia.com/#hardware/pixie/pixie-net-xl/).
+Users will need to ensure that the FPGA firmware files are installed into the root level of this
+project. The Pixie-Net XL User's Manual is available
+from [here](http://files.xia.com/#hardware/pixie/pixie-net-xl/documentation/).
 
 ## Dependencies
+
 You will need to have at minimum the following dependencies installed on your system:
+
 * gcc
 * python 3.6+
 * GNU make
 
 ## Installation
+
 There are two methods to install the software.
 
 ### Installation from source
-This is the traditional method for installation. In this case, you simply need to download the repository
-and ensure that the project root directory is `/var/www`. Then you'll build the software using the instructions
-below. 
+
+This is the traditional method for installation. In this case, you simply need to download the
+repository and ensure that the project root directory is `/var/www`. Then you'll build the software
+using the instructions below.
 
 #### Building
+
 The software's build system is GNU make. You can build the software using the following command in
 the project root directory:
+
 ```shell
 root@PixieNet:~/pixie-net-xl-software#make
 ```
 
 ### Installation via debian package
-You can download the latest Debian package from our [Support page](https://s3.us-west-1.amazonaws.com/files.xia.com/hardware/pixie/pixie-net-xl/software/pixie-net-xl_1.0.0_armhf.deb).
-Once the package is on your system. You can install it with 
+
+We've created a [Debian package](http://files.xia.com/#hardware/pixie/pixie-net-xl/software/) to
+help ease installation of the software. Once the package is on your system. You can install it with
+
 ```shell
 root@PixieNet:~#dpkg -i pixie-net-xl_X.Y.Z_armhf.deb
 ```
-Where X.Y.Z is the version number. 
 
-**Note:** You should modify `/etc/xia/pixie-net-xl/settings.ini` to ensure that the correct MAC and IP
-locations load during system boot. Once you make the update, either reboot your system or execute
+Where X.Y.Z is the version number.
+
+**Note:** You should modify `/etc/xia/pixie-net-xl/defaults.ini` to ensure that the correct
+parameters load during system boot. Once you make the update, either reboot your system or execute
+
 ```shell
 systemctl restart pixie-net-init.service
 ```
+
 This will execute `bootfpga` and load the information from `/etc/xia/pixie-net-xl/defaults.ini` and
 `/etc/xia/pixie-net-xl/settings.ini`
+
 ## PixieNet Control
-Pixie-Net Control or `pncontrol` is an interactive command-line program that allows control of a 
-Pixie-Net XL. The program can be used over a TCP connection to remotely configure the system and 
-start data runs. **The program does not save any changes. You are responsible for this.** 
+
+Pixie-Net Control or `pncontrol` is an interactive command-line program that allows control of a
+Pixie-Net XL. The program can be used over a TCP connection to remotely configure the system and
+start data runs. **The program does not save any changes. You are responsible for this.**
 
 ### Command line Arguments
+
 ```
 root@PixieNet:~# pncontrol -h
 pnc [options]
@@ -65,30 +80,33 @@ Options and arguments:
 ```
 
 ### Command prompt
-`pnconrtol` provides an interactive command prompt. It supports arrow keys, home, end and history. 
+
+`pnconrtol` provides an interactive command prompt. It supports arrow keys, home, end and history.
 To exit `pncontrol` enter `^D` or Ctrl-D.
+
 ```
 root@PixieNet:~# pncontrol -c /etc/xia/pixie-net-xl/defaults.ini
 pnet #
 ```
 
-`pncontrol` is ready to accept a command then the prompt is displayed. 
+`pncontrol` is ready to accept a command then the prompt is displayed.
 
 ### Remote connections
-We use systemd to enable TCP communication with the system. To enable this support you should 
-either 
-1. install 
-[the Debian package](https://s3.us-west-1.amazonaws.com/files.xia.com/hardware/pixie/pixie-net-xl/software/pixie-net-xl_1.0.0_armhf.deb)
+
+We use systemd to enable TCP communication with the system. To enable this support you should either
+
+1. install [the Debian package](http://files.xia.com/#hardware/pixie/pixie-net-xl/software/)
 2. or install the systemd scripts located in `<project root>/systemd/system`.
 
 Once configured the system will be listening on port `31057`. You can connect to the remote session
-via telnet or other appropriate method. **Note: Each invocation of `pncontrol` starts with 
-defaults provided in `/etc/xia/pixie-net-xl/defaults.ini`. Users will be expected to override these
-defaults if they are not suitable.** 
+via telnet or other appropriate method. **Note: Each invocation of `pncontrol` starts with defaults
+provided in `/etc/xia/pixie-net-xl/defaults.ini`. Users will be expected to override these defaults
+if they are not suitable.**
 
-We recommend using this configuration only with `DATA_FLOW=4` and `RUN_TYPE=0x404`. 
+We recommend using this configuration only with `DATA_FLOW=4` and `RUN_TYPE=0x404`.
 
 #### Telnet example
+
 ```shell
 user@localhost:~/>telnet X.X.X.X 31057
 Trying X.X.X.X...
@@ -100,24 +118,26 @@ Pixie Net Control 1.0
  editing:  false
 pnet #
 ```
+
 Where you replace `X.X.X.X` with the actual IP of the Pixie-Net XL in the telnet command.
 
 ### Commands
+
 `pncontrol` recognizes a number of commands. A command has a general format of:
+
 ```
 command [options] [cmds ...] [options]
 ```
 
-You need to check each command to see the specific options and commands. Not
-all commands support options. Options start with a `-`. A `cmd` is the
-command line option that does not have a `-`.
+You need to check each command to see the specific options and commands. Not all commands support
+options. Options start with a `-`. A `cmd` is the command line option that does not have a `-`.
 
-A command finishes with `ok` to indicate a success. It will end with `error: message` to indicate 
+A command finishes with `ok` to indicate a success. It will end with `error: message` to indicate
 failure. You will need to investigate error messages to determine the failure's cause.
 
 #### `help`
-Display a simple help. Some commands support a more detailed help by issuing
-the command with `-h`.
+
+Display a simple help. Some commands support a more detailed help by issuing the command with `-h`.
 
 ```
 pnet # help
@@ -131,13 +151,16 @@ pnet # help
 ```
 
 #### `set`
+
 The `set` command sets a parameter. You can list the parameters with the `-l` option:
+
 ```
 pnet # set -l
 ```
-The list will indicate is the parameter requires a single or multiple options and the type. To set 
-a parameter enter the parameter and the value or values. **Note**: You must execute `program` to 
-apply the settings to the FPGAs. 
+
+The list will indicate is the parameter requires a single or multiple options and the type. To set a
+parameter enter the parameter and the value or values. **Note**: You must execute `program` to apply
+the settings to the FPGAs.
 
 ```
 pnet # set UDP_PAUSE 100
@@ -155,6 +178,7 @@ pnet # program
 ```
 
 #### `run`
+
 The `run` command starts and stops a run. Subsequent calls provide users with basic run information.
 
 ```
@@ -166,8 +190,9 @@ pnet #
 ```
 
 #### `report`
+
 The `report` command reports the current parameter settings. The output can be used to create a new
-configuration file. 
+configuration file.
 
 ```
 pnet # report
@@ -178,6 +203,7 @@ BASELINE_PERCENT        5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 10.0 10.0 10.0 ...
 ```
 
 #### `status`
+
 The `status` command reports the status the PixieNet.
 
 ```
