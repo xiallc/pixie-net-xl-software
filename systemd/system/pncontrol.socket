@@ -2,7 +2,7 @@
 Description=Pixie-Net XL Control Socket
 
 [Socket]
-ListenStream=0.0.0.0:9999
+ListenStream=0.0.0.0:31057
 Accept=yes
 
 [Install]
