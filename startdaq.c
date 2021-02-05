@@ -217,11 +217,6 @@ int daq_start(int verbose, PixieNet_File* fil,
 
   onlinebin=MAX_MCA_BINS/WEB_MCA_BINS;
 
-  if (RunType != 0) {
-      printf( "Run type is set, must be 0\n");
-      return(-1);
-  }
-
   zero_data();
 
   // ************************** check HW version ********************************
