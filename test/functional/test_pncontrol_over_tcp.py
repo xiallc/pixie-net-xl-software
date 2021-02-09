@@ -87,6 +87,15 @@ def execute_run_control(conn, cmd):
     if not has_ok_response(result) and cmd:
         raise RuntimeError(f"Executing run control command ended with error: {result}")
 
+def program_system(conn):
+    logging.info("Loading parameter changes to module before run.")
+    conn.send(b'program\n')
+    result = retrieve_response(conn)
+    if has_ok_response(result):
+        logging.info("Finished loading parameters, starting run.")
+    else:
+        raise RuntimeError(f"Loading parameters failed with message: {result}")
+
 
 def main(conn):
     """
@@ -103,6 +112,7 @@ def main(conn):
         logging.error(str(err))
 
     try:
+        program_system(conn)
         execute_run_control(conn, "start")
         start_time = time.time()
         while time.time() - start_time <= 5:
