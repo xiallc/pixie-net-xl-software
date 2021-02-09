@@ -114,7 +114,7 @@ TCP session. You'll need to ensure that you submit a `\n` character with the com
 We recommend using this configuration only with `DATA_FLOW=4` and `RUN_TYPE=0x404`.
 
 #### Telnet example
-
+**Note: The telnet session is only for debugging purposes. It's not intended for production use!**
 ```shell
 user@localhost:~/>telnet X.X.X.X 31057
 Trying X.X.X.X...

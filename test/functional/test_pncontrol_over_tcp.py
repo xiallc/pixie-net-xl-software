@@ -1,3 +1,35 @@
+# Copyright (c) 2019 XIA LLC
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms,
+# with or without modification, are permitted provided
+# that the following conditions are met:
+#
+#   1. Redistributions of source code must retain the above
+#        copyright notice, this list of conditions and the
+#        following disclaimer.
+#   2. Redistributions in binary form must reproduce the
+#        above copyright notice, this list of conditions and the
+#        following disclaimer in the documentation and/or other
+#        materials provided with the distribution.
+#   3. Neither the name of XIA LLC
+#        nor the names of its contributors may be used to endorse
+#        or promote products derived from this software without
+#        specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+# CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+# INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+# TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+# THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
 import logging
 import socket
 import time
@@ -7,10 +39,21 @@ logging.basicConfig(format=('[%(asctime)s] %(levelname)s-%(name)s-%(message)s'),
 
 
 def split_result(result):
+    """
+    Splits out the results based on new line characters (\n) from the TCP response and removes the
+    prompt.
+    :param result: The result that we're going to process.
+    :return: A list containing each line of the response.
+    """
     return [x for x in result.split("\n") if x != "pnet # "]
 
 
 def has_ok_response(result):
+    """
+    Verifies that the "ok" for a successful command execution exists in the results.
+    :param result: The result list that we're going to search in
+    :return: True if the command finished with a success. False otherwise.
+    """
     if "ok" in result:
         return True
     return False
@@ -22,12 +65,18 @@ def check_for_prompt(result):
     that the system is ready to accept another command.
 
     :param result: The string that we're going to check for the prompt
-    :returns True if we found the result, False otherwise.
+    :return: True if we found the result, False otherwise.
     """
     return result.find("pnet # ") != -1
 
 
 def retrieve_response(conn):
+    """
+    Retrieves the full response from a TCP request. The response is considered complete when we've
+    hit the prompt ("pnet # "). This indicates that the system is ready to accept another command.
+    :param conn: The connection to parse for the response.
+    :return: A list containing each line of the response.
+    """
     result = ""
     while not check_for_prompt(result):
         result = result + conn.recv(1024).decode('ascii')
@@ -51,6 +100,12 @@ def parse_startup_message(conn):
 
 
 def get_parameter_report(conn):
+    """
+    Gets the parameter report from the system as a list. Each element corresponds to one and
+    only one parameter.
+    :param conn: The connection that we'll request the report from.
+    :return: A list containing each element of the current system settings.
+    """
     logging.info('Sending a request to report the status of the system...')
     conn.send('report\n'.encode())
     logging.info("Receiving results of report")
@@ -107,7 +162,7 @@ def main(conn):
 
     try:
         set_parameter(conn, "UDP_PAUSE", 10)
-        set_parameter(conn, "UDP_PAUSEer", 10)
+        set_parameter(conn, "DUMMY_PARAMETER", 8675309)
     except AttributeError as err:
         logging.error(str(err))
 
