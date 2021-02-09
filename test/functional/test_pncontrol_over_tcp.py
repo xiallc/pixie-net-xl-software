@@ -142,6 +142,7 @@ def execute_run_control(conn, cmd):
     if not has_ok_response(result) and cmd:
         raise RuntimeError(f"Executing run control command ended with error: {result}")
 
+
 def program_system(conn):
     logging.info("Loading parameter changes to module before run.")
     conn.send(b'program\n')
