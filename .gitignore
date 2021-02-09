@@ -37,6 +37,9 @@ startdaq
 mcadaq
 findsettings
 
+### Python environment
+venv/
+
 ### C++ template
 # Prerequisites
 *.d
