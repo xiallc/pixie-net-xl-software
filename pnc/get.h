@@ -33,18 +33,11 @@
  * SUCH DAMAGE.
  */
 
-#if !defined(PNC_H)
-#define PNC_H
+#if !defined(GET_H)
+#define GET_H
 
 #include "commands.h"
-#include "exit.h"
-#include "get.h"
 #include "hw.h"
-#include "program.h"
-#include "report.h"
-#include "run.h"
-#include "set.h"
-#include "status.h"
 
 namespace xia
 {
@@ -52,42 +45,18 @@ namespace pixie
 {
 namespace net
 {
-  /*
-   * Version of this control app.
-   */
-  const char* version();
-
-  /*
-   * Verbose control.
-   */
-  void verbose_inc();
-  bool verbose(int level = 1);
-
-  namespace control
+namespace control
+{
+  struct get
   {
-    struct session
-    {
-      hw::hal hal;
+    hw::hal& hal;
+    util::commands::command command;
 
-      util::commands::help help;
-      util::commands::exit exit;
+    get(hw::hal& hal);
 
-      set set_;
-      get get_;
-      program program_;
-      run run_;
-      status status_;
-      report report_;
-
-      session(const char* defaults,
-              const char* uio);
-      ~session();
-
-      void shell(bool editing, bool echo);
-
-    };
-
-  }
+    int handler(const util::commands::argv& args);
+  };
+}
 }
 }
 }

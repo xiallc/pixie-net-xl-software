@@ -103,6 +103,7 @@ def build(bld):
 
     source = ['pnc/pnc.cpp',
               'pnc/set.cpp',
+              'pnc/get.cpp',
               'pnc/program.cpp',
               'pnc/run.cpp',
               'pnc/status.cpp',
