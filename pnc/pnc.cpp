@@ -80,6 +80,7 @@ namespace net
                      const char* uio)
       : hal(uio, defaults),
         set_(hal),
+        get_(hal),
         program_(hal),
         run_(hal),
         status_(hal),
