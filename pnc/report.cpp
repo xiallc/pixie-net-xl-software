@@ -49,7 +49,7 @@ namespace control
 {
   report::report(hw::hal& hal_)
     : hal(hal_),
-      command("report", "Report the configuration",
+      command("report", "Report the configuration (-q for quiet)",
               *this, &report::handler)
   {
   }
@@ -57,9 +57,14 @@ namespace control
   int
   report::handler(const util::commands::argv& args)
   {
-    if (args.options.size() != 0 && args.flags.size() != 0) {
-      std::cerr << "error: no options or flags support" << std::endl;
-      return 1;
+    bool quiet = false;
+    for (auto f : args.flags) {
+      if (f == "-q") {
+        quiet = true;
+      } else {
+        std::cerr << "error: invalid option: " << f << std::endl;
+        return 1;
+      }
     }
 
     auto maxi = std::max_element(hal.elements.begin(),
@@ -76,6 +81,9 @@ namespace control
     }
 
     std::cout.flags(cstate);
+
+    if (!quiet)
+      std::cout << "ok" << std::endl;
 
     return 0;
   }
