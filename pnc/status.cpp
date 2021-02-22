@@ -65,6 +65,8 @@ namespace control
                     << " Print the runstat in JSON format" << std::endl
                     << "   -r  : include raw values (also '--raw')" << std::endl;
           return 0;
+        } else if (f == "-r" || f == "--raw") {
+          /* empty */
         } else {
           std::cerr << "warning: unknown option: " << f << std::endl;
           return 1;
