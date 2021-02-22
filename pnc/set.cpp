@@ -49,7 +49,7 @@ namespace control
 {
   set::set(hw::hal& hal_)
     : hal(hal_),
-      command("set", "Set a configuration value",
+      command("set", "Set a configuration value, try 'set -h'",
               *this, &set::handler)
   {
   }
@@ -59,7 +59,17 @@ namespace control
   {
     bool verbose = false;
     for (auto f : args.flags) {
-      if (f == "-l") {
+      if (f == "-h" || f == "-?") {
+        std::cout << "usage: set [option] label [value(s)]:" << std::endl
+                  << " Options:" << std::endl
+                  << "   -h   : help (also '-?')" << std::endl
+                  << "   -l   : list the labels" << std::endl
+                  << " Set a setting to the value(s) provided. This does not" << std::endl
+                  << " program the value in to the hardware." << std::endl
+                  << " Note, setting are not persistent." << std::endl;
+        return 0;
+      }
+      else if (f == "-l") {
         auto maxi = std::max_element(hal.elements.begin(),
                                      hal.elements.end());
         const auto max = (*maxi).label.length() + 1;
@@ -82,7 +92,7 @@ namespace control
     }
 
     if (args.options.size() < 2) {
-      std::cerr << "error: no seting/value pair" << std::endl;
+      std::cerr << "error: no setting/value pair" << std::endl;
       return 1;
     }
 
@@ -98,6 +108,7 @@ namespace control
         }
         if (verbose)
           std::cout << args.options[0] << " <= " << s << std::endl;
+
         int r = hal.set(e, s);
         if (r == 0) {
           std::cout << "ok" << std::endl;
