@@ -66,7 +66,7 @@ namespace control
                   << "   -l   : list the labels" << std::endl
                   << " Set a setting to the value(s) provided. This does not" << std::endl
                   << " program the value in to the hardware." << std::endl
-                  << " Note, setting are not persistent." << std::endl;
+                  << " Note, settings are not persistent." << std::endl;
         return 0;
       }
       else if (f == "-l") {
