@@ -59,14 +59,17 @@ namespace control
     if (args.options.empty()) {
       for (auto f : args.flags) {
         if (f == "-h" || f == "-?") {
-          std::cout << "usage: status [option] [cmd ..]:" << std::endl
+          std::cout << "usage: status:" << std::endl
                     << " Options:" << std::endl
                     << "   -h   : help (also '-?')" << std::endl
-                    << " Commands:" << std::endl
-                    << "   runstats [options] : Print the runstat in JSON format"
-                    << std::endl
-                    << "    -r  : include raw values (also '--raw')" << std::endl;
+                    << " Print the runstat in JSON format" << std::endl
+                    << "   -r  : include raw values (also '--raw')" << std::endl;
           return 0;
+        } else if (f == "-r" || f == "--raw") {
+          /* empty */
+        } else {
+          std::cerr << "warning: unknown option: " << f << std::endl;
+          return 1;
         }
       }
       int mode = 1;
