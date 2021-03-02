@@ -1,5 +1,9 @@
-pixie-net-xl (1.0.0) beta; urgency=low
+pixie-net-xl (1.2.0) beta; urgency=low
 
-  * Initial packaging of pncontrol
+  * Fixes status command option reported by help
+  * Users can get a single configuration value using the get command
+  * Fixes spelling mistake in message when submitting set command without value
+  * Reduces the default verbosity on pncontrol socket
+  * Adds OK to end of report command to make it consistent with other commands
 
- -- XIA <support@sxia.com>  Thu, 4 Feb 2021 02:18:05 +1100
+ -- XIA <support@xia.com>  Tue, 02 Mar 2021 09:11:56 -0500
